@@ -147,4 +147,42 @@ namespace Boxfish
 		return result;
 	}
 
+	std::ostream& operator<<(std::ostream& stream, const Position& position)
+	{
+		for (Rank rank = RANK_8; rank >= RANK_1; rank--)
+		{
+			stream << ' ' << '+';
+			for (Rank rank = RANK_8; rank >= RANK_1; rank--)
+			{
+				stream << "---+";
+			}
+			stream << std::endl << ' ' << '|';
+			for (File file = FILE_A; file < FILE_MAX; file++)
+			{
+				char pieceFen = ' ';
+				for (Piece piece = PIECE_PAWN; piece < PIECE_MAX; piece++)
+				{
+					if (position.Teams[TEAM_WHITE].Pieces[piece].GetAt({ file, rank }))
+					{
+						pieceFen = PieceToFEN(piece, true);
+						break;
+					}
+					if (position.Teams[TEAM_BLACK].Pieces[piece].GetAt({ file, rank }))
+					{
+						pieceFen = PieceToFEN(piece, false);
+						break;
+					}
+				}
+				stream << ' ' << pieceFen << ' ' << '|';
+			}
+			stream << std::endl;
+		}
+		stream << ' ' << '+';
+		for (Rank rank = RANK_8; rank >= RANK_1; rank--)
+		{
+			stream << "---+";
+		}
+		return stream;
+	}
+
 }
