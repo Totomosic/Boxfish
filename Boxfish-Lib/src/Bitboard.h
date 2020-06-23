@@ -15,6 +15,7 @@ namespace Boxfish
 	public:
 		BitBoard();
 		BitBoard(uint64_t board);
+		BitBoard(SquareIndex index);
 
 		bool GetAt(const Square& square) const;
 		int GetCount() const;
@@ -24,9 +25,33 @@ namespace Boxfish
 		void Invert();
 
 		void Reset();
-	private:
-		int SquareToBitIndex(const Square& square) const;
-		Square BitIndexToSquare(int index) const;
+
+		operator bool() const;
+		friend BitBoard operator&(const BitBoard& left, const BitBoard& right);
+		friend BitBoard operator|(const BitBoard& left, const BitBoard& right);
+		friend BitBoard operator^(const BitBoard& left, const BitBoard& right);
+		friend BitBoard operator&(const BitBoard& left, uint64_t right);
+		friend BitBoard operator|(const BitBoard& left, uint64_t right);
+		friend BitBoard operator^(const BitBoard& left, uint64_t right);
+		friend BitBoard operator~(const BitBoard& board);
+		friend BitBoard& operator&=(BitBoard& left, const BitBoard& right);
+		friend BitBoard& operator|=(BitBoard& left, const BitBoard& right);
+		friend BitBoard& operator^=(BitBoard& left, const BitBoard& right);
+		friend BitBoard operator<<(const BitBoard& left, int right);
+		friend BitBoard operator>>(const BitBoard& left, int right);
+		friend std::ostream& operator<<(std::ostream& stream, const BitBoard& board);
+
+	public:
+		static int SquareToBitIndex(const Square& square);
+		static Square BitIndexToSquare(int index);
+		static Rank RankOfIndex(int index);
+		static File FileOfIndex(int index);
 	};
+
+	int ForwardBitScan(const BitBoard& board);
+	int BackwardBitScan(const BitBoard& board);
+	int PopLeastSignificantBit(BitBoard& board);
+	BitBoard ShiftEast(const BitBoard& board, int count);
+	BitBoard ShiftWest(const BitBoard& board, int count);
 
 }

@@ -68,7 +68,111 @@ namespace Boxfish
 
 	Position CreatePositionFromFEN(const std::string& fen)
 	{
-		return Position();
+		Position position;
+		File currentFile = FILE_A;
+		Rank currentRank = RANK_8;
+		int index = 0;
+		for (char c : fen)
+		{
+			index++;
+			if (c == ' ')
+				break;
+			if (std::isdigit(c))
+			{
+				int count = c - '0';
+				currentFile = (File)((int)currentFile + count);
+			}
+			if (c == '/')
+			{
+				currentRank--;
+				currentFile = FILE_A;
+			}
+			switch (c)
+			{
+			case 'P':
+				position.Teams[TEAM_WHITE].Pieces[PIECE_PAWN].SetAt({ currentFile++, currentRank });
+				break;
+			case 'N':
+				position.Teams[TEAM_WHITE].Pieces[PIECE_KNIGHT].SetAt({ currentFile++, currentRank });
+				break;
+			case 'B':
+				position.Teams[TEAM_WHITE].Pieces[PIECE_BISHOP].SetAt({ currentFile++, currentRank });
+				break;
+			case 'R':
+				position.Teams[TEAM_WHITE].Pieces[PIECE_ROOK].SetAt({ currentFile++, currentRank });
+				break;
+			case 'Q':
+				position.Teams[TEAM_WHITE].Pieces[PIECE_QUEEN].SetAt({ currentFile++, currentRank });
+				break;
+			case 'K':
+				position.Teams[TEAM_WHITE].Pieces[PIECE_KING].SetAt({ currentFile++, currentRank });
+				break;
+			case 'p':
+				position.Teams[TEAM_BLACK].Pieces[PIECE_PAWN].SetAt({ currentFile++, currentRank });
+				break;
+			case 'n':
+				position.Teams[TEAM_BLACK].Pieces[PIECE_KNIGHT].SetAt({ currentFile++, currentRank });
+				break;
+			case 'b':
+				position.Teams[TEAM_BLACK].Pieces[PIECE_BISHOP].SetAt({ currentFile++, currentRank });
+				break;
+			case 'r':
+				position.Teams[TEAM_BLACK].Pieces[PIECE_ROOK].SetAt({ currentFile++, currentRank });
+				break;
+			case 'q':
+				position.Teams[TEAM_BLACK].Pieces[PIECE_QUEEN].SetAt({ currentFile++, currentRank });
+				break;
+			case 'k':
+				position.Teams[TEAM_BLACK].Pieces[PIECE_KING].SetAt({ currentFile++, currentRank });
+				break;
+			}
+		}
+		position.TeamToPlay = (fen[index] == 'w') ? TEAM_WHITE : TEAM_BLACK;
+		index += 2;
+
+		position.Teams[TEAM_WHITE].CastleKingSide = false;
+		position.Teams[TEAM_WHITE].CastleQueenSide = false;
+		position.Teams[TEAM_BLACK].CastleKingSide = false;
+		position.Teams[TEAM_BLACK].CastleQueenSide = false;
+
+		while (fen[index] != ' ')
+		{
+			switch (fen[index])
+			{
+			case 'K':
+				position.Teams[TEAM_WHITE].CastleKingSide = true;
+				break;
+			case 'Q':
+				position.Teams[TEAM_WHITE].CastleQueenSide = true;
+				break;
+			case 'k':
+				position.Teams[TEAM_BLACK].CastleKingSide = true;
+				break;
+			case 'q':
+				position.Teams[TEAM_BLACK].CastleQueenSide = true;
+				break;
+			}
+			index++;
+		}
+		index++;
+
+		if (fen[index] != '-')
+		{
+			position.EnpassantSquare = SquareFromString(fen.substr(index, 2));
+			index += 3;
+		}
+		else
+		{
+			index += 2;
+		}
+
+		size_t space = fen.find_first_of(' ', index);
+		position.HalfTurnsSinceCaptureOrPush = std::stoi(fen.substr(index, space - index));
+		index = space + 1;
+		space = fen.find_first_of(' ', index);
+		position.TotalTurns = std::stoi(fen.substr(index)) - 1;
+	
+		return position;
 	}
 
 	std::string GetFENFromPosition(const Position& position)
@@ -145,6 +249,38 @@ namespace Boxfish
 		result += " " + std::to_string(position.TotalTurns + 1);
 
 		return result;
+	}
+
+	BitBoard GetTeamPiecesBitBoard(const Position& position, Team team)
+	{
+		BitBoard result = 0;
+		for (Piece piece = PIECE_PAWN; piece < PIECE_MAX; piece++)
+			result |= position.Teams[team].Pieces[piece];
+		return result;
+	}
+
+	BitBoard GetOverallPiecesBitBoard(const Position& position)
+	{
+		return GetTeamPiecesBitBoard(position, TEAM_WHITE) | GetTeamPiecesBitBoard(position, TEAM_BLACK);
+	}
+
+	Piece GetPieceAtSquare(const Position& position, Team team, const Square& square)
+	{
+		BitBoard squareBoard(1ULL << BitBoard::SquareToBitIndex(square));
+		if (squareBoard & position.Teams[team].Pieces[PIECE_PAWN])
+			return PIECE_PAWN;
+		if (squareBoard & position.Teams[team].Pieces[PIECE_KNIGHT])
+			return PIECE_KNIGHT;
+		if (squareBoard & position.Teams[team].Pieces[PIECE_BISHOP])
+			return PIECE_BISHOP;
+		if (squareBoard & position.Teams[team].Pieces[PIECE_ROOK])
+			return PIECE_ROOK;
+		if (squareBoard & position.Teams[team].Pieces[PIECE_QUEEN])
+			return PIECE_QUEEN;
+		if (squareBoard & position.Teams[team].Pieces[PIECE_KING])
+			return PIECE_KING;
+		BOX_ASSERT(false, "No piece found");
+		return PIECE_PAWN;
 	}
 
 	std::ostream& operator<<(std::ostream& stream, const Position& position)

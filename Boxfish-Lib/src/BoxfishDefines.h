@@ -4,4 +4,4 @@
 
 #define BOX_API
 
-#define BOX_BIT(x) (1LL << ((uint64_t)(x)))
+#define BOX_BIT(x) (1ULL << ((uint64_t)(x)))

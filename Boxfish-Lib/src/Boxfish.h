@@ -3,6 +3,10 @@
 #include "Position.h"
 #include "PositionUtils.h"
 #include "Utils.h"
+#include "Rays.h"
+
+#include "Attacks.h"
+#include "MoveGenerator.h"
 
 namespace Boxfish
 {

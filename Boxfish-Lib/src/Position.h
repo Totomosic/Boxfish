@@ -4,13 +4,6 @@
 namespace Boxfish
 {
 
-	struct BOX_API Move
-	{
-	public:
-		Square From;
-		Square To;
-	};
-
 	struct BOX_API Position
 	{
 	public:
