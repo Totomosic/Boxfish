@@ -54,4 +54,6 @@ namespace Boxfish
 	BitBoard ShiftEast(const BitBoard& board, int count);
 	BitBoard ShiftWest(const BitBoard& board, int count);
 
+	int GetForwardShift(Team team);
+
 }

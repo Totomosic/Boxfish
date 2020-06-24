@@ -220,4 +220,9 @@ namespace Boxfish
 		return newBoard;
 	}
 
+	int GetForwardShift(Team team)
+	{
+		return (team == TEAM_WHITE) ? FILE_MAX : -FILE_MAX;
+	}
+
 }

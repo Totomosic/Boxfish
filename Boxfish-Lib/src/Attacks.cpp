@@ -105,7 +105,7 @@ namespace Boxfish
                 (((start << 6) | (start >> 10)) & ~(FILE_G_MASK | FILE_H_MASK)) |   // Left 2
                 (((start >> 6) | (start << 10)) & ~(FILE_A_MASK | FILE_B_MASK));    // Right 2
             s_NonSlidingAttacks[TEAM_WHITE][PIECE_KNIGHT][i] = attack;
-            s_NonSlidingAttacks[TEAM_WHITE][PIECE_KNIGHT][i] = attack;
+            s_NonSlidingAttacks[TEAM_BLACK][PIECE_KNIGHT][i] = attack;
         }
     }
 
@@ -118,7 +118,7 @@ namespace Boxfish
                 (((start << 9) | (start >> 7) | (start << 1)) & (~FILE_A_MASK)) |
                 ((start >> 8) | (start << 8));
             s_NonSlidingAttacks[TEAM_WHITE][PIECE_KING][i] = attack;
-            s_NonSlidingAttacks[TEAM_WHITE][PIECE_KING][i] = attack;
+            s_NonSlidingAttacks[TEAM_BLACK][PIECE_KING][i] = attack;
         }
     }
 

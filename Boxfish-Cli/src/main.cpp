@@ -46,7 +46,7 @@ int main(int argc, const char** argv)
 			size_t isFen = args.find("fen ");
 			if (isFen != std::string_view::npos)
 			{
-				engine.SetPosition(Boxfish::CreatePositionFromFEN(std::string(args.substr(isFen + 5))));
+				engine.SetPosition(Boxfish::CreatePositionFromFEN(std::string(args.substr(isFen + 4))));
 			}
 		}
 		else if (command == "moves")
