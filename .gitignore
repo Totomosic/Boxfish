@@ -2,6 +2,7 @@
 .vscode/
 bin/
 bin-int/
+!vendor/bin/
 *.sln
 *.vcxproj*
 Makefile
