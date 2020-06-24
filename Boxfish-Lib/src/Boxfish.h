@@ -7,6 +7,7 @@
 
 #include "Attacks.h"
 #include "MoveGenerator.h"
+#include "Evaluation.h"
 
 namespace Boxfish
 {

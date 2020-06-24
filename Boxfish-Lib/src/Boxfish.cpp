@@ -9,6 +9,7 @@ namespace Boxfish
 		Logger::Init();
 		InitRays();
 		InitAttacks();
+		InitEvaluation();
 	}
 
 	const Position& Boxfish::GetCurrentPosition() const

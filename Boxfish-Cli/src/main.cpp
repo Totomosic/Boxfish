@@ -6,12 +6,9 @@ int main(int argc, const char** argv)
 	Boxfish::Position position = Boxfish::CreateStartingPosition();
 	engine.SetPosition(position);
 
-	std::string version = "220620 64";
+	std::string version = __TIMESTAMP__;
 
 	std::cout << "Boxfish " << version << " by J. Morrison" << std::endl;
-
-	std::cout << Boxfish::GetNonSlidingAttacks(Boxfish::PIECE_KING, { Boxfish::FILE_E, Boxfish::RANK_2 }, Boxfish::TEAM_WHITE) << std::endl;
-	std::cout << Boxfish::GetSlidingAttacks(Boxfish::PIECE_QUEEN, { Boxfish::FILE_D, Boxfish::RANK_4 }, Boxfish::GetOverallPiecesBitBoard(engine.GetCurrentPosition())) << std::endl;
 
 	char buffer[4096];
 	while (true)
@@ -48,14 +45,59 @@ int main(int argc, const char** argv)
 			{
 				engine.SetPosition(Boxfish::CreatePositionFromFEN(std::string(args.substr(isFen + 4))));
 			}
+			size_t startPos = args.find("startpos");
+			if (startPos != std::string_view::npos)
+			{
+				engine.SetPosition(Boxfish::CreateStartingPosition());
+			}
+			size_t moves = args.find("moves ");
+			if (moves != std::string_view::npos)
+			{
+				size_t begin = moves + 6;
+				while (begin != std::string_view::npos && begin < args.size())
+				{
+					size_t end = args.find(' ', begin);
+					std::string_view move = args.substr(begin, end - begin);
+					if (move.size() == 4)
+					{
+						std::string from = std::string(move.substr(0, 2));
+						std::string to = std::string(move.substr(2));
+						Boxfish::Square fromSquare = Boxfish::SquareFromString(from);
+						Boxfish::Square toSquare = Boxfish::SquareFromString(to);
+						Boxfish::Position position = engine.GetCurrentPosition();
+						Boxfish::ApplyMove(position, Boxfish::CreateMove(position, fromSquare, toSquare));
+						engine.SetPosition(position);
+					}
+					else
+					{
+						BOX_WARN("Invalid move length");
+						break;
+					}
+					if (end != std::string_view::npos)
+						begin = args.find_first_not_of(' ', end + 1);
+					else
+						begin = end;
+				}
+			}
+		}
+		else if (command == "eval")
+		{
+			std::cout << Boxfish::Evaluate(engine.GetCurrentPosition(), Boxfish::TEAM_WHITE) << std::endl;
 		}
 		else if (command == "moves")
 		{
 			Boxfish::MoveGenerator generator(engine.GetCurrentPosition());
-			const std::vector<Boxfish::Move>& moves = generator.GetPseudoLegalMoves();
-			for (const Boxfish::Move& move : moves)
+			const std::vector<Boxfish::Move>& moves = generator.GetLegalMoves();
+			if (moves.size() > 0)
 			{
-				std::cout << Boxfish::SquareToString(move.GetFromSquare()) << Boxfish::SquareToString(move.GetToSquare()) << std::endl;
+				for (const Boxfish::Move& move : moves)
+				{
+					std::cout << Boxfish::FormatMove(move) << std::endl;
+				}
+			}
+			else
+			{
+				std::cout << Boxfish::FormatNullMove() << std::endl;
 			}
 		}
 		else

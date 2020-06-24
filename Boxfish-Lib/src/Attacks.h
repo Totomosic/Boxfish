@@ -8,5 +8,7 @@ namespace Boxfish
 	void InitAttacks();
 	BitBoard GetNonSlidingAttacks(Piece piece, const Square& fromSquare, Team team);
 	BitBoard GetSlidingAttacks(Piece piece, const Square& fromSquare, const BitBoard& blockers);
+	BitBoard GetNonSlidingAttacks(Piece piece, SquareIndex fromSquare, Team team);
+	BitBoard GetSlidingAttacks(Piece piece, SquareIndex fromSquare, const BitBoard& blockers);
 
 }

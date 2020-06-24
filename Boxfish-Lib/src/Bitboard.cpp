@@ -14,7 +14,7 @@ namespace Boxfish
 	}
 
 	BitBoard::BitBoard(SquareIndex index)
-		: Board(1ULL << index)
+		: Board(1ULL << (int)index)
 	{
 	}
 
@@ -26,13 +26,14 @@ namespace Boxfish
 	int BitBoard::GetCount() const
 	{
 		// TODO: Use popcount
-		int count = 0;
+		return (int)__popcnt64(Board);
+		/*int count = 0;
 		for (int i = 0; i < RANK_MAX * FILE_MAX; i++)
 		{
 			if (Board & BOX_BIT(i))
 				count++;
 		}
-		return count;
+		return count;*/
 	}
 
 	std::vector<Square> BitBoard::GetSquares() const
@@ -41,7 +42,7 @@ namespace Boxfish
 		for (int i = 0; i < RANK_MAX * FILE_MAX; i++)
 		{
 			if (Board & BOX_BIT(i))
-				result.push_back(BitIndexToSquare(i));
+				result.push_back(BitIndexToSquare((SquareIndex)i));
 		}
 		return result;
 	}
@@ -66,13 +67,13 @@ namespace Boxfish
 		Board = 0;
 	}
 
-	int BitBoard::SquareToBitIndex(const Square& square)
+	SquareIndex BitBoard::SquareToBitIndex(const Square& square)
 	{
 		BOX_ASSERT(square.File >= 0 && square.File < FILE_MAX && square.Rank >= 0 && square.Rank < RANK_MAX, "Invalid square");
-		return square.File + square.Rank * FILE_MAX;
+		return (SquareIndex)(square.File + square.Rank * FILE_MAX);
 	}
 
-	Square BitBoard::BitIndexToSquare(int index)
+	Square BitBoard::BitIndexToSquare(SquareIndex index)
 	{
 		return { FileOfIndex(index), RankOfIndex(index) };
 	}
@@ -172,32 +173,32 @@ namespace Boxfish
 		return stream;
 	}
 
-	int ForwardBitScan(const BitBoard& board)
+	SquareIndex ForwardBitScan(const BitBoard& board)
 	{
 		unsigned long lsb;
 		unsigned char success = _BitScanForward64(&lsb, board.Board);
 		if (success == 0)
-			return -1;
-		return (int)lsb;
+			return (SquareIndex)-1;
+		return (SquareIndex)lsb;
 	}
 
-	int BackwardBitScan(const BitBoard& board)
+	SquareIndex BackwardBitScan(const BitBoard& board)
 	{
 		unsigned long msb;
 		unsigned char success = _BitScanReverse64(&msb, board.Board);
 		if (success == 0)
-			return -1;
-		return (int)msb;
+			return (SquareIndex)-1;
+		return (SquareIndex)msb;
 	}
 
-	int PopLeastSignificantBit(BitBoard& board)
+	SquareIndex PopLeastSignificantBit(BitBoard& board)
 	{
 		unsigned long lsb;
 		unsigned char success = _BitScanForward64(&lsb, board.Board);
 		if (success == 0)
-			return -1;
+			return (SquareIndex)-1;
 		board &= board.Board - 1;
-		return (int)lsb;
+		return (SquareIndex)lsb;
 	}
 
 	BitBoard ShiftEast(const BitBoard& board, int count)

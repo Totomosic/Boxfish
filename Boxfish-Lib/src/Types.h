@@ -131,6 +131,13 @@ namespace Boxfish
 		return !(left == right);
 	}
 
+	enum GameStage
+	{
+		MIDGAME,
+		ENDGAME,
+		GAME_STAGE_MAX
+	};
+
 	constexpr Square INVALID_SQUARE = { FILE_INVALID, RANK_INVALID };
 
 	constexpr uint64_t RANK_1_MASK = 0xffull;
@@ -153,7 +160,8 @@ namespace Boxfish
 	constexpr uint64_t DARK_SQUARES_MASK = 0xAA55AA55AA55AA55;
 	constexpr uint64_t LIGHT_SQUARES_MASK = 0x55AA55AA55AA55AA;
 
-	enum SquareIndex {
+	enum SquareIndex : int 
+	{
 		a1, b1, c1, d1, e1, f1, g1, h1,
 		a2, b2, c2, d2, e2, f2, g2, h2,
 		a3, b3, c3, d3, e3, f3, g3, h3,
@@ -163,5 +171,17 @@ namespace Boxfish
 		a7, b7, c7, d7, e7, f7, g7, h7,
 		a8, b8, c8, d8, e8, f8, g8, h8
 	};
+
+	inline SquareIndex operator++(SquareIndex& index, int)
+	{
+		index = (SquareIndex)(index + 1);
+		return (SquareIndex)(index - 1);
+	}
+
+	inline SquareIndex operator--(SquareIndex& index, int)
+	{
+		index = (SquareIndex)(index - 1);
+		return (SquareIndex)(index + 1);
+	}
 
 }

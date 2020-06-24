@@ -1,5 +1,6 @@
 #include "PositionUtils.h"
 #include "Utils.h"
+#include "Attacks.h"
 
 namespace Boxfish
 {
@@ -266,7 +267,12 @@ namespace Boxfish
 
 	Piece GetPieceAtSquare(const Position& position, Team team, const Square& square)
 	{
-		BitBoard squareBoard(1ULL << BitBoard::SquareToBitIndex(square));
+		return GetPieceAtSquare(position, team, BitBoard::SquareToBitIndex(square));
+	}
+
+	Piece GetPieceAtSquare(const Position& position, Team team, SquareIndex square)
+	{
+		BitBoard squareBoard(1ULL << (int)square);
 		if (squareBoard & position.Teams[team].Pieces[PIECE_PAWN])
 			return PIECE_PAWN;
 		if (squareBoard & position.Teams[team].Pieces[PIECE_KNIGHT])
@@ -281,6 +287,189 @@ namespace Boxfish
 			return PIECE_KING;
 		BOX_ASSERT(false, "No piece found");
 		return PIECE_PAWN;
+	}
+
+	bool IsInCheck(const Position& position, Team team)
+	{
+		BitBoard king = position.Teams[team].Pieces[PIECE_KING];
+		while (king)
+		{
+			SquareIndex index = PopLeastSignificantBit(king);
+			if (IsSquareUnderAttack(position, OtherTeam(team), index))
+				return true;
+		}
+		return false;
+	}
+
+	bool IsSquareUnderAttack(const Position& position, Team byTeam, const Square& square)
+	{
+		return IsSquareUnderAttack(position, byTeam, BitBoard::SquareToBitIndex(square));
+	}
+
+	bool IsSquareUnderAttack(const Position& position, Team byTeam, SquareIndex square)
+	{
+		if (GetNonSlidingAttacks(PIECE_PAWN, square, OtherTeam(byTeam)) & position.Teams[byTeam].Pieces[PIECE_PAWN])
+			return true;
+		if (GetNonSlidingAttacks(PIECE_KNIGHT, square, OtherTeam(byTeam)) & position.Teams[byTeam].Pieces[PIECE_KNIGHT])
+			return true;
+		if (GetNonSlidingAttacks(PIECE_KING, square, OtherTeam(byTeam)) & position.Teams[byTeam].Pieces[PIECE_KING])
+			return true;
+
+		BitBoard bishopsAndQueens = position.Teams[byTeam].Pieces[PIECE_BISHOP] | position.Teams[byTeam].Pieces[PIECE_QUEEN];
+		if (GetSlidingAttacks(PIECE_BISHOP, square, position.GetAllPieces()) & bishopsAndQueens)
+			return true;
+
+		BitBoard rooksAndQueens = position.Teams[byTeam].Pieces[PIECE_ROOK] | position.Teams[byTeam].Pieces[PIECE_QUEEN];
+		if (GetSlidingAttacks(PIECE_ROOK, square, position.GetAllPieces()) & rooksAndQueens)
+			return true;
+		
+		return false;
+	}
+
+	void MovePiece(Position& position, Team team, Piece piece, SquareIndex from, SquareIndex to)
+	{
+		BitBoard mask = BitBoard{ from } | BitBoard{ to };
+		position.Teams[team].Pieces[piece] ^= mask;
+		position.InvalidateTeam(team);
+	}
+
+	void RemovePiece(Position& position, Team team, Piece piece, SquareIndex square)
+	{
+		position.Teams[team].Pieces[piece] ^= BitBoard{ square };
+		position.InvalidateTeam(team);
+	}
+
+	void AddPiece(Position& position, Team team, Piece piece, SquareIndex square)
+	{
+		position.Teams[team].Pieces[piece] |= BitBoard{ square };
+		position.InvalidateTeam(team);
+	}
+
+	void UpdateCastleInfoFromMove(Position& position, Team team, const Move& move)
+	{
+		if (move.GetMovingPiece() == PIECE_ROOK)
+		{
+			if (team == TEAM_WHITE && move.GetFromSquareIndex() == a1)
+				position.Teams[team].CastleQueenSide = false;
+			else if (team == TEAM_WHITE && move.GetFromSquareIndex() == h1)
+				position.Teams[team].CastleKingSide = false;
+			if (team == TEAM_BLACK && move.GetFromSquareIndex() == a8)
+				position.Teams[team].CastleQueenSide = false;
+			else if (team == TEAM_BLACK && move.GetFromSquareIndex() == h8)
+				position.Teams[team].CastleKingSide = false;
+		}
+		else if (move.GetMovingPiece() == PIECE_KING)
+		{
+			position.Teams[team].CastleKingSide = false;
+			position.Teams[team].CastleQueenSide = false;
+		}
+	}
+
+	void ApplyMove(Position& position, const Move& move)
+	{
+		position.EnpassantSquare = INVALID_SQUARE;
+		MoveFlag flags = move.GetFlags();
+		Team currentTeam = position.TeamToPlay;
+		if (!flags)
+		{
+			MovePiece(position, currentTeam, move.GetMovingPiece(), move.GetFromSquareIndex(), move.GetToSquareIndex());
+		}
+		else if ((flags & MOVE_CAPTURE) && (flags & MOVE_PROMOTION))
+		{
+			Piece capturedPiece = move.GetCapturedPiece();
+			RemovePiece(position, OtherTeam(currentTeam), capturedPiece, move.GetToSquareIndex());
+			RemovePiece(position, currentTeam, move.GetMovingPiece(), move.GetFromSquareIndex());
+			Piece promotionPiece = move.GetPromotionPiece();
+			AddPiece(position, currentTeam, promotionPiece, move.GetToSquareIndex());
+		}
+		else if (flags & MOVE_CAPTURE)
+		{
+			Piece capturedPiece = move.GetCapturedPiece();
+			RemovePiece(position, OtherTeam(currentTeam), capturedPiece, move.GetToSquareIndex());
+			MovePiece(position, currentTeam, move.GetMovingPiece(), move.GetFromSquareIndex(), move.GetToSquareIndex());
+		}
+		else if (flags & MOVE_KINGSIDE_CASTLE)
+		{
+			MovePiece(position, currentTeam, move.GetMovingPiece(), move.GetFromSquareIndex(), move.GetToSquareIndex());
+			if (currentTeam == TEAM_WHITE)
+				MovePiece(position, currentTeam, PIECE_ROOK, h1, f1);
+			else
+				MovePiece(position, currentTeam, PIECE_ROOK, h8, f8);
+		}
+		else if (flags & MOVE_QUEENSIDE_CASTLE)
+		{
+			MovePiece(position, currentTeam, move.GetMovingPiece(), move.GetFromSquareIndex(), move.GetToSquareIndex());
+			if (currentTeam == TEAM_WHITE)
+				MovePiece(position, currentTeam, PIECE_ROOK, a1, d1);
+			else
+				MovePiece(position, currentTeam, PIECE_ROOK, a8, d8);
+		}
+		else if (flags & MOVE_PROMOTION)
+		{
+			RemovePiece(position, currentTeam, move.GetMovingPiece(), move.GetFromSquareIndex());
+			AddPiece(position, currentTeam, move.GetPromotionPiece(), move.GetToSquareIndex());
+		}
+		else if (flags & MOVE_DOUBLE_PAWN_PUSH)
+		{
+			MovePiece(position, currentTeam, move.GetMovingPiece(), move.GetFromSquareIndex(), move.GetToSquareIndex());
+			SquareIndex enPassantSquare = (SquareIndex)(move.GetToSquareIndex() - GetForwardShift(currentTeam));
+			position.EnpassantSquare = BitBoard::BitIndexToSquare(enPassantSquare);
+		}
+		else if (flags & MOVE_EN_PASSANT)
+		{
+			RemovePiece(position, OtherTeam(currentTeam), PIECE_PAWN, (SquareIndex)(move.GetToSquareIndex() - GetForwardShift(currentTeam)));
+			MovePiece(position, currentTeam, move.GetMovingPiece(), move.GetFromSquareIndex(), move.GetToSquareIndex());
+		}
+
+		if (position.Teams[currentTeam].CastleKingSide || position.Teams[currentTeam].CastleQueenSide)
+			UpdateCastleInfoFromMove(position, currentTeam, move);
+
+		if (move.GetMovingPiece() == PIECE_PAWN || (flags & MOVE_CAPTURE))
+			position.HalfTurnsSinceCaptureOrPush = 0;
+		else
+			position.HalfTurnsSinceCaptureOrPush++;
+		
+		if (position.TeamToPlay == TEAM_BLACK)
+			position.TotalTurns++;
+		position.TeamToPlay = OtherTeam(position.TeamToPlay);
+	}
+
+	Move CreateMove(const Position& position, const Square& from, const Square& to, Piece promotionPiece)
+	{
+		MoveDefinition definition;
+		definition.FromSquare = BitBoard::SquareToBitIndex(from);
+		definition.ToSquare = BitBoard::SquareToBitIndex(to);
+		definition.MovingPiece = GetPieceAtSquare(position, position.TeamToPlay, definition.FromSquare);
+		Move move(definition);
+
+		BitBoard toBitboard = BitBoard::SquareToBitIndex(to);
+
+		bool occupied = position.GetTeamPieces(OtherTeam(position.TeamToPlay)) & toBitboard;
+		if (occupied)
+		{
+			move.SetFlags(MOVE_CAPTURE);
+			move.SetCapturedPiece(GetPieceAtSquare(position, OtherTeam(position.TeamToPlay), to));
+		}
+
+		BitBoard promotionMask = (position.TeamToPlay == TEAM_WHITE) ? RANK_8_MASK : RANK_1_MASK;
+		if (toBitboard & promotionMask)
+		{
+			move.SetFlags(move.GetFlags() | MOVE_PROMOTION);
+			move.SetPromotionPiece(promotionPiece);
+		}
+
+		if (abs(to.Rank - from.Rank) == 2 && definition.MovingPiece == PIECE_PAWN)
+			move.SetFlags(MOVE_DOUBLE_PAWN_PUSH);
+
+		if (definition.MovingPiece == PIECE_KING && from.File == FILE_E && to.File == FILE_C)
+			move.SetFlags(MOVE_QUEENSIDE_CASTLE);
+
+		if (definition.MovingPiece == PIECE_KING && from.File == FILE_E && to.File == FILE_G)
+			move.SetFlags(MOVE_KINGSIDE_CASTLE);
+		
+		if (to == position.EnpassantSquare)
+			move.SetFlags(MOVE_EN_PASSANT);
+		return move;
 	}
 
 	std::ostream& operator<<(std::ostream& stream, const Position& position)

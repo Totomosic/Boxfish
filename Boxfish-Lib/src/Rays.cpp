@@ -26,9 +26,9 @@ namespace Boxfish
 		}
 	}
 
-	BitBoard GetRay(RayDirection direction, const Square& square)
+	BitBoard GetRay(RayDirection direction, SquareIndex square)
 	{
-		return s_Rays[direction][BitBoard::SquareToBitIndex(square)];
+		return s_Rays[direction][square];
 	}
 
 }

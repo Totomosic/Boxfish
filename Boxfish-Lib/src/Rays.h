@@ -17,6 +17,6 @@ namespace Boxfish
 	};
 
 	void InitRays();
-	BitBoard GetRay(RayDirection direction, const Square& square);
+	BitBoard GetRay(RayDirection direction, SquareIndex square);
 
 }

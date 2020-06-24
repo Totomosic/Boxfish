@@ -1,6 +1,5 @@
 #pragma once
 #include "Position.h"
-#include "PositionUtils.h"
 
 namespace Boxfish
 {
@@ -16,11 +15,16 @@ namespace Boxfish
 		MOVE_PROMOTION = 1 << 6
 	};
 
+	inline MoveFlag operator|(MoveFlag left, MoveFlag right)
+	{
+		return (MoveFlag)((int)left | (int)right);
+	}
+
 	struct BOX_API MoveDefinition
 	{
 	public:
-		Square FromSquare;
-		Square ToSquare;
+		SquareIndex FromSquare;
+		SquareIndex ToSquare;
 		Piece MovingPiece;
 		MoveFlag Flags = (MoveFlag)0;
 	};
@@ -37,6 +41,8 @@ namespace Boxfish
 		MoveDefinition GetDefinition() const;
 		Square GetFromSquare() const;
 		Square GetToSquare() const;
+		SquareIndex GetFromSquareIndex() const;
+		SquareIndex GetToSquareIndex() const;
 		Piece GetMovingPiece() const;
 
 		MoveFlag GetFlags() const;
@@ -47,5 +53,8 @@ namespace Boxfish
 		Piece GetPromotionPiece() const;
 		void SetPromotionPiece(Piece piece);
 	};
+
+	std::string FormatMove(const Move& move);
+	std::string FormatNullMove();
 
 }

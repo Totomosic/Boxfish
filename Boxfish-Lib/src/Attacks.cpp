@@ -1,4 +1,5 @@
 #include "Attacks.h"
+#include <iostream>
 
 namespace Boxfish
 {
@@ -70,14 +71,14 @@ namespace Boxfish
 
     BitBoard GetBlockersFromIndex(int index, BitBoard mask)
     {
-        BitBoard blockers = 0;
+        BitBoard blockers = 0ULL;
         int bits = mask.GetCount();
         for (int i = 0; i < bits; i++)
         {
             int bitPosition = PopLeastSignificantBit(mask);
             if (index & (1 << i))
             {
-                blockers |= 1ULL << bitPosition;
+                blockers |= BitBoard{ 1ULL << bitPosition };
             }
         }
         return blockers;
@@ -124,127 +125,121 @@ namespace Boxfish
 
     void InitRookMasks()
     {
-        for (int square = 0; square < FILE_MAX * RANK_MAX; square++) {
-            Square sq = BitBoard::BitIndexToSquare(square);
-            s_RookMasks[square] = (GetRay(RAY_NORTH, sq) & ~RANK_8_MASK) | (GetRay(RAY_SOUTH, sq) & ~RANK_1_MASK) | (GetRay(RAY_EAST, sq) & ~FILE_H_MASK) | (GetRay(RAY_WEST, sq) & ~FILE_A_MASK);
+        for (SquareIndex square = a1; square < FILE_MAX * RANK_MAX; square++) {
+            s_RookMasks[square] = (GetRay(RAY_NORTH, square) & ~RANK_8_MASK) | (GetRay(RAY_SOUTH, square) & ~RANK_1_MASK) | (GetRay(RAY_EAST, square) & ~FILE_H_MASK) | (GetRay(RAY_WEST, square) & ~FILE_A_MASK);
         }
     }
 
     void InitBishopMasks()
     {
         BitBoard notEdges = ~(FILE_A_MASK | FILE_H_MASK | RANK_1_MASK | RANK_8_MASK);
-        for (int square = 0; square < FILE_MAX * RANK_MAX; square++) {
-            Square sq = BitBoard::BitIndexToSquare(square);
-            s_BishopMasks[square] = (GetRay(RAY_NORTH_EAST, sq)) | (GetRay(RAY_SOUTH_EAST, sq)) | (GetRay(RAY_SOUTH_WEST, sq)) | (GetRay(RAY_NORTH_WEST, sq)) & notEdges;
+        for (SquareIndex square = a1; square < FILE_MAX * RANK_MAX; square++) {
+            s_BishopMasks[square] = ((GetRay(RAY_NORTH_EAST, square)) | (GetRay(RAY_SOUTH_EAST, square)) | (GetRay(RAY_SOUTH_WEST, square)) | (GetRay(RAY_NORTH_WEST, square))) & notEdges;
         }
     }
 
-    BitBoard GetRookAttacksSlow(int square, BitBoard blockers)
+    BitBoard GetRookAttacksSlow(SquareIndex square, BitBoard blockers)
     {
-        Square sq = BitBoard::BitIndexToSquare(square);
         BitBoard attacks = 0;
-        BitBoard northRay = GetRay(RAY_NORTH, sq);
+        BitBoard northRay = GetRay(RAY_NORTH, square);
         attacks |= northRay;
         if (northRay & blockers)
         {
-            attacks &= ~(GetRay(RAY_NORTH, BitBoard::BitIndexToSquare(ForwardBitScan(northRay & blockers))));
+            attacks &= ~(GetRay(RAY_NORTH, ForwardBitScan(northRay & blockers)));
         }
 
-        BitBoard southRay = GetRay(RAY_SOUTH, sq);
+        BitBoard southRay = GetRay(RAY_SOUTH, square);
         attacks |= southRay;
         if (southRay & blockers)
         {
-            attacks &= ~(GetRay(RAY_SOUTH, BitBoard::BitIndexToSquare(BackwardBitScan(southRay & blockers))));
+            attacks &= ~(GetRay(RAY_SOUTH, BackwardBitScan(southRay & blockers)));
         }
 
-        BitBoard eastRay = GetRay(RAY_EAST, sq);
+        BitBoard eastRay = GetRay(RAY_EAST, square);
         attacks |= eastRay;
         if (eastRay & blockers)
         {
-            attacks &= ~(GetRay(RAY_EAST, BitBoard::BitIndexToSquare(ForwardBitScan(eastRay & blockers))));
+            attacks &= ~(GetRay(RAY_EAST, ForwardBitScan(eastRay & blockers)));
         }
 
-        BitBoard westRay = GetRay(RAY_WEST, sq);
+        BitBoard westRay = GetRay(RAY_WEST, square);
         attacks |= westRay;
         if (westRay & blockers)
         {
-            attacks &= ~(GetRay(RAY_WEST, BitBoard::BitIndexToSquare(BackwardBitScan(westRay & blockers))));
+            attacks &= ~(GetRay(RAY_WEST, BackwardBitScan(westRay & blockers)));
         }
         return attacks;
     }
 
-    BitBoard GetBishopAttacksSlow(int square, BitBoard blockers)
+    BitBoard GetBishopAttacksSlow(SquareIndex square, BitBoard blockers)
     {
-        Square sq = BitBoard::BitIndexToSquare(square);
         BitBoard attacks = 0;
-        BitBoard northEastRay = GetRay(RAY_NORTH_EAST, sq);
+        BitBoard northEastRay = GetRay(RAY_NORTH_EAST, square);
         attacks |= northEastRay;
         if (northEastRay & blockers)
         {
-            attacks &= ~(GetRay(RAY_NORTH_EAST, BitBoard::BitIndexToSquare(ForwardBitScan(northEastRay & blockers))));
+            attacks &= ~(GetRay(RAY_NORTH_EAST, ForwardBitScan(northEastRay & blockers)));
         }
 
-        BitBoard northWestRay = GetRay(RAY_NORTH_WEST, sq);
+        BitBoard northWestRay = GetRay(RAY_NORTH_WEST, square);
         attacks |= northWestRay;
         if (northWestRay & blockers)
         {
-            attacks &= ~(GetRay(RAY_NORTH_WEST, BitBoard::BitIndexToSquare(ForwardBitScan(northWestRay & blockers))));
+            attacks &= ~(GetRay(RAY_NORTH_WEST, ForwardBitScan(northWestRay & blockers)));
         }
 
-        BitBoard southEastRay = GetRay(RAY_SOUTH_EAST, sq);
+        BitBoard southEastRay = GetRay(RAY_SOUTH_EAST, square);
         attacks |= southEastRay;
         if (southEastRay & blockers)
         {
-            attacks &= ~(GetRay(RAY_SOUTH_EAST, BitBoard::BitIndexToSquare(BackwardBitScan(southEastRay & blockers))));
+            attacks &= ~(GetRay(RAY_SOUTH_EAST, BackwardBitScan(southEastRay & blockers)));
         }
 
-        BitBoard southWestRay = GetRay(RAY_SOUTH_WEST, sq);
+        BitBoard southWestRay = GetRay(RAY_SOUTH_WEST, square);
         attacks |= southWestRay;
         if (southWestRay & blockers)
         {
-            attacks &= ~(GetRay(RAY_SOUTH_WEST, BitBoard::BitIndexToSquare(BackwardBitScan(southWestRay & blockers))));
+            attacks &= ~(GetRay(RAY_SOUTH_WEST, BackwardBitScan(southWestRay & blockers)));
         }
         return attacks;
     }
 
     void InitRookMagicTable()
     {
-        for (int square = 0; square < FILE_MAX * RANK_MAX; square++)
+        for (SquareIndex square = a1; square < FILE_MAX * RANK_MAX; square++)
         {
             int maxBlockers = 1 << s_RookIndexBits[square];
             for (int blockerIndex = 0; blockerIndex < maxBlockers; blockerIndex++)
             {
                 BitBoard blockers = GetBlockersFromIndex(blockerIndex, s_RookMasks[square]);
-                s_RookTable[square][(blockers.Board * s_RookMagics[square]) >> (64 - s_RookIndexBits[square])] = GetRookAttacksSlow(square, blockers);
+                s_RookTable[square][(blockers.Board * s_RookMagics[square].Board) >> (int)(64 - s_RookIndexBits[square])] = GetRookAttacksSlow(square, blockers);
             }
         }
     }
 
     void InitBishopMagicTable()
     {
-        for (int square = 0; square < FILE_MAX * RANK_MAX; square++)
+        for (SquareIndex square = a1; square < FILE_MAX * RANK_MAX; square++)
         {
             int maxBlockers = 1 << s_BishopIndexBits[square];
             for (int blockerIndex = 0; blockerIndex < maxBlockers; blockerIndex++)
             {
                 BitBoard blockers = GetBlockersFromIndex(blockerIndex, s_BishopMasks[square]);
-                s_RookTable[square][(blockers.Board * s_BishopMagics[square]) >> (64 - s_BishopIndexBits[square])] = GetBishopAttacksSlow(square, blockers);
+                s_BishopTable[square][(blockers.Board * s_BishopMagics[square].Board) >> (int)(64 - s_BishopIndexBits[square])] = GetBishopAttacksSlow(square, blockers);
             }
         }
     }
 
-    BitBoard GetBishopAttacks(int squareIndex, BitBoard blockers)
+    BitBoard GetBishopAttacks(SquareIndex squareIndex, BitBoard blockers)
     {
-        //blockers &= s_BishopMasks[squareIndex];
-        //return s_BishopTable[squareIndex][(blockers.Board * s_BishopMagics[squareIndex]) >> (64 - s_BishopIndexBits[squareIndex])];
-        return GetBishopAttacksSlow(squareIndex, blockers);
+        blockers &= s_BishopMasks[squareIndex];
+        return s_BishopTable[squareIndex][(blockers.Board * s_BishopMagics[squareIndex].Board) >> (64 - s_BishopIndexBits[squareIndex])];
     }
 
-    BitBoard GetRookAttacks(int squareIndex, BitBoard blockers)
+    BitBoard GetRookAttacks(SquareIndex squareIndex, BitBoard blockers)
     {
-        //blockers &= s_RookMasks[squareIndex];
-        //return s_RookTable[squareIndex][(blockers.Board * s_RookMagics[squareIndex]) >> (64 - s_RookIndexBits[squareIndex])];
-        return GetRookAttacksSlow(squareIndex, blockers);
+        blockers &= s_RookMasks[squareIndex];
+        return s_RookTable[squareIndex][(blockers.Board * s_RookMagics[squareIndex].Board) >> (64 - s_RookIndexBits[squareIndex])];
     }
 
     void InitAttacks()
@@ -264,19 +259,29 @@ namespace Boxfish
 
     BitBoard GetNonSlidingAttacks(Piece piece, const Square& fromSquare, Team team)
     {
-        return s_NonSlidingAttacks[team][piece][BitBoard::SquareToBitIndex(fromSquare)];
+        return GetNonSlidingAttacks(piece, BitBoard::SquareToBitIndex(fromSquare), team);
     }
 
     BitBoard GetSlidingAttacks(Piece piece, const Square& fromSquare, const BitBoard& blockers)
     {
+        return GetSlidingAttacks(piece, BitBoard::SquareToBitIndex(fromSquare), blockers);
+    }
+
+    BitBoard GetNonSlidingAttacks(Piece piece, SquareIndex fromSquare, Team team)
+    {
+        return s_NonSlidingAttacks[team][piece][fromSquare];
+    }
+
+    BitBoard GetSlidingAttacks(Piece piece, SquareIndex fromSquare, const BitBoard& blockers)
+    {
         switch (piece)
         {
         case PIECE_BISHOP:
-            return GetBishopAttacks(BitBoard::SquareToBitIndex(fromSquare), blockers);
+            return GetBishopAttacks(fromSquare, blockers);
         case PIECE_ROOK:
-            return GetRookAttacks(BitBoard::SquareToBitIndex(fromSquare), blockers);
+            return GetRookAttacks(fromSquare, blockers);
         case PIECE_QUEEN:
-            return GetBishopAttacks(BitBoard::SquareToBitIndex(fromSquare), blockers) | GetRookAttacks(BitBoard::SquareToBitIndex(fromSquare), blockers);
+            return GetBishopAttacks(fromSquare, blockers) | GetRookAttacks(fromSquare, blockers);
         default:
             BOX_ASSERT(false, "Not a sliding piece");
         }

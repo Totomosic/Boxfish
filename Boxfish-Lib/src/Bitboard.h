@@ -42,15 +42,15 @@ namespace Boxfish
 		friend std::ostream& operator<<(std::ostream& stream, const BitBoard& board);
 
 	public:
-		static int SquareToBitIndex(const Square& square);
-		static Square BitIndexToSquare(int index);
+		static SquareIndex SquareToBitIndex(const Square& square);
+		static Square BitIndexToSquare(SquareIndex index);
 		static Rank RankOfIndex(int index);
 		static File FileOfIndex(int index);
 	};
 
-	int ForwardBitScan(const BitBoard& board);
-	int BackwardBitScan(const BitBoard& board);
-	int PopLeastSignificantBit(BitBoard& board);
+	SquareIndex ForwardBitScan(const BitBoard& board);
+	SquareIndex BackwardBitScan(const BitBoard& board);
+	SquareIndex PopLeastSignificantBit(BitBoard& board);
 	BitBoard ShiftEast(const BitBoard& board, int count);
 	BitBoard ShiftWest(const BitBoard& board, int count);
 
