@@ -33,6 +33,7 @@ int main(int argc, const char** argv)
 		{
 			std::cout << std::endl << engine.GetCurrentPosition() << std::endl;
 			std::cout << std::endl << "Fen: " << Boxfish::GetFENFromPosition(engine.GetCurrentPosition()) << std::endl;
+			std::cout << std::hex << "Hash: " << engine.GetCurrentPosition().Hash.Hash << std::endl;
 		}
 		else if (command == "isready")
 		{

@@ -64,6 +64,8 @@ namespace Boxfish
 		result.Teams[TEAM_BLACK].Pieces[PIECE_BISHOP].SetAt({ FILE_F, RANK_8 });
 		result.Teams[TEAM_BLACK].Pieces[PIECE_KNIGHT].SetAt({ FILE_G, RANK_8 });
 		result.Teams[TEAM_BLACK].Pieces[PIECE_ROOK].SetAt({ FILE_H, RANK_8 });
+
+		result.Hash.SetFromPosition(result);
 		return result;
 	}
 
@@ -172,7 +174,8 @@ namespace Boxfish
 		index = space + 1;
 		space = fen.find_first_of(' ', index);
 		position.TotalTurns = std::stoi(fen.substr(index)) - 1;
-	
+		
+		position.Hash.SetFromPosition(position);
 		return position;
 	}
 
@@ -331,18 +334,23 @@ namespace Boxfish
 		BitBoard mask = BitBoard{ from } | BitBoard{ to };
 		position.Teams[team].Pieces[piece] ^= mask;
 		position.InvalidateTeam(team);
+
+		position.Hash.RemovePieceAt(team, piece, from);
+		position.Hash.AddPieceAt(team, piece, to);
 	}
 
 	void RemovePiece(Position& position, Team team, Piece piece, SquareIndex square)
 	{
 		position.Teams[team].Pieces[piece] ^= BitBoard{ square };
 		position.InvalidateTeam(team);
+		position.Hash.RemovePieceAt(team, piece, square);
 	}
 
 	void AddPiece(Position& position, Team team, Piece piece, SquareIndex square)
 	{
 		position.Teams[team].Pieces[piece] |= BitBoard{ square };
 		position.InvalidateTeam(team);
+		position.Hash.AddPieceAt(team, piece, square);
 	}
 
 	void UpdateCastleInfoFromMove(Position& position, Team team, const Move& move)
@@ -350,24 +358,43 @@ namespace Boxfish
 		if (move.GetMovingPiece() == PIECE_ROOK)
 		{
 			if (team == TEAM_WHITE && move.GetFromSquareIndex() == a1)
+			{
 				position.Teams[team].CastleQueenSide = false;
+				position.Hash.RemoveCastleQueenside(team);
+			}
 			else if (team == TEAM_WHITE && move.GetFromSquareIndex() == h1)
+			{
 				position.Teams[team].CastleKingSide = false;
+				position.Hash.RemoveCastleKingside(team);
+			}
 			if (team == TEAM_BLACK && move.GetFromSquareIndex() == a8)
+			{
 				position.Teams[team].CastleQueenSide = false;
+				position.Hash.RemoveCastleQueenside(team);
+			}
 			else if (team == TEAM_BLACK && move.GetFromSquareIndex() == h8)
+			{
 				position.Teams[team].CastleKingSide = false;
+				position.Hash.RemoveCastleKingside(team);
+			}
 		}
 		else if (move.GetMovingPiece() == PIECE_KING)
 		{
 			position.Teams[team].CastleKingSide = false;
 			position.Teams[team].CastleQueenSide = false;
+			position.Hash.RemoveCastleKingside(team);
+			position.Hash.RemoveCastleQueenside(team);
 		}
 	}
 
 	void ApplyMove(Position& position, const Move& move)
 	{
-		position.EnpassantSquare = INVALID_SQUARE;
+		if (position.EnpassantSquare != INVALID_SQUARE)
+		{
+			position.Hash.RemoveEnPassant(position.EnpassantSquare.File);
+			position.EnpassantSquare = INVALID_SQUARE;
+		}
+		
 		MoveFlag flags = move.GetFlags();
 		Team currentTeam = position.TeamToPlay;
 		if (!flags)
@@ -414,6 +441,7 @@ namespace Boxfish
 			MovePiece(position, currentTeam, move.GetMovingPiece(), move.GetFromSquareIndex(), move.GetToSquareIndex());
 			SquareIndex enPassantSquare = (SquareIndex)(move.GetToSquareIndex() - GetForwardShift(currentTeam));
 			position.EnpassantSquare = BitBoard::BitIndexToSquare(enPassantSquare);
+			position.Hash.AddEnPassant(position.EnpassantSquare.File);
 		}
 		else if (flags & MOVE_EN_PASSANT)
 		{
@@ -432,6 +460,7 @@ namespace Boxfish
 		if (position.TeamToPlay == TEAM_BLACK)
 			position.TotalTurns++;
 		position.TeamToPlay = OtherTeam(position.TeamToPlay);
+		position.Hash.FlipTeamToPlay();
 	}
 
 	Move CreateMove(const Position& position, const Square& from, const Square& to, Piece promotionPiece)

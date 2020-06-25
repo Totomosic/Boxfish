@@ -1,5 +1,6 @@
 #pragma once
 #include "Bitboard.h"
+#include "ZobristHash.h"
 
 namespace Boxfish
 {
@@ -25,6 +26,7 @@ namespace Boxfish
 		int HalfTurnsSinceCaptureOrPush = 0;
 		int TotalTurns = 0;
 		Square EnpassantSquare = INVALID_SQUARE;
+		ZobristHash Hash;
 
 	public:
 		const BitBoard& GetTeamPieces(Team team) const;

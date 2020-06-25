@@ -1,5 +1,6 @@
 #pragma once
 #include "BoxfishDefines.h"
+#include "Logging.h"
 #include <cstdint>
 
 namespace Boxfish

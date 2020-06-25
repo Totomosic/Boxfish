@@ -4,6 +4,7 @@
 #include "PositionUtils.h"
 #include "Utils.h"
 #include "Rays.h"
+#include "ZobristHash.h"
 
 #include "Attacks.h"
 #include "MoveGenerator.h"

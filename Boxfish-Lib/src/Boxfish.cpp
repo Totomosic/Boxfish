@@ -7,6 +7,7 @@ namespace Boxfish
 		: m_CurrentPosition()
 	{
 		Logger::Init();
+		InitZobristHash();
 		InitRays();
 		InitAttacks();
 		InitEvaluation();
