@@ -510,11 +510,14 @@ namespace Boxfish
 			move.SetCapturedPiece(GetPieceAtSquare(position, OtherTeam(position.TeamToPlay), to));
 		}
 
-		BitBoard promotionMask = (position.TeamToPlay == TEAM_WHITE) ? RANK_8_MASK : RANK_1_MASK;
-		if (toBitboard & promotionMask)
+		if (move.GetMovingPiece() == PIECE_PAWN)
 		{
-			move.SetFlags(move.GetFlags() | MOVE_PROMOTION);
-			move.SetPromotionPiece(promotionPiece);
+			BitBoard promotionMask = (position.TeamToPlay == TEAM_WHITE) ? RANK_8_MASK : RANK_1_MASK;
+			if (toBitboard & promotionMask)
+			{
+				move.SetFlags(move.GetFlags() | MOVE_PROMOTION);
+				move.SetPromotionPiece(promotionPiece);
+			}
 		}
 
 		if (abs(to.Rank - from.Rank) == 2 && definition.MovingPiece == PIECE_PAWN)
