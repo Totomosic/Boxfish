@@ -83,31 +83,34 @@ namespace Boxfish
 		m_Move = (m_Move & ~mask) | ((piece << 3) & mask);
 	}
 
-	std::string FormatMove(const Move& move)
+	std::string FormatMove(const Move& move, bool includeSymbols)
 	{
 		std::string result = SquareToString(move.GetFromSquare()) + SquareToString(move.GetToSquare());
-		if (move.GetFlags() & MOVE_PROMOTION)
+		if (includeSymbols)
 		{
-			Piece promotion = move.GetPromotionPiece();
-			switch (promotion)
+			if (move.GetFlags() & MOVE_PROMOTION)
 			{
-			case PIECE_QUEEN:
-				result += 'q';
-				break;
-			case PIECE_ROOK:
-				result += 'r';
-				break;
-			case PIECE_BISHOP:
-				result += 'b';
-				break;
-			case PIECE_KNIGHT:
-				result += 'n';
-				break;
+				Piece promotion = move.GetPromotionPiece();
+				switch (promotion)
+				{
+				case PIECE_QUEEN:
+					result += 'q';
+					break;
+				case PIECE_ROOK:
+					result += 'r';
+					break;
+				case PIECE_BISHOP:
+					result += 'b';
+					break;
+				case PIECE_KNIGHT:
+					result += 'n';
+					break;
+				}
 			}
-		}
-		if (move.GetFlags() & MOVE_CAPTURE)
-		{
-			result += 'x';
+			if (move.GetFlags() & MOVE_CAPTURE)
+			{
+				result += 'x';
+			}
 		}
 		return result;
 	}

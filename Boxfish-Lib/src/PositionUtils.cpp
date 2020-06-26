@@ -268,6 +268,16 @@ namespace Boxfish
 		return GetTeamPiecesBitBoard(position, TEAM_WHITE) | GetTeamPiecesBitBoard(position, TEAM_BLACK);
 	}
 
+	bool IsSquareOccupied(const Position& position, Team team, const Square& square)
+	{
+		return IsSquareOccupied(position, team, BitBoard::SquareToBitIndex(square));
+	}
+
+	bool IsSquareOccupied(const Position& position, Team team, SquareIndex square)
+	{
+		return position.GetTeamPieces(team) & BitBoard { square };
+	}
+
 	Piece GetPieceAtSquare(const Position& position, Team team, const Square& square)
 	{
 		return GetPieceAtSquare(position, team, BitBoard::SquareToBitIndex(square));
@@ -461,6 +471,26 @@ namespace Boxfish
 			position.TotalTurns++;
 		position.TeamToPlay = OtherTeam(position.TeamToPlay);
 		position.Hash.FlipTeamToPlay();
+	}
+
+	bool SanityCheckMove(const Position& position, const Move& move)
+	{
+		if (!IsSquareOccupied(position, position.TeamToPlay, move.GetFromSquareIndex()))
+		{
+			// There is no piece at the position to move
+			return false;
+		}
+		if (GetPieceAtSquare(position, position.TeamToPlay, move.GetFromSquareIndex()) != move.GetMovingPiece())
+		{
+			// The wrong piece type is at the square
+			return false;
+		}
+		if ((move.GetFlags() & MOVE_CAPTURE) && !IsSquareOccupied(position, OtherTeam(position.TeamToPlay), move.GetToSquareIndex()))
+		{
+			// No piece to capture
+			return false;
+		}
+		return true;
 	}
 
 	Move CreateMove(const Position& position, const Square& from, const Square& to, Piece promotionPiece)

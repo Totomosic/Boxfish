@@ -14,6 +14,8 @@ namespace Boxfish
 	BitBoard GetTeamPiecesBitBoard(const Position& position, Team team);
 	BitBoard GetOverallPiecesBitBoard(const Position& position);
 
+	bool IsSquareOccupied(const Position& position, Team team, const Square& square);
+	bool IsSquareOccupied(const Position& position, Team team, SquareIndex square);
 	Piece GetPieceAtSquare(const Position& position, Team team, const Square& square);
 	Piece GetPieceAtSquare(const Position& position, Team team, SquareIndex square);
 
@@ -22,6 +24,7 @@ namespace Boxfish
 	bool IsSquareUnderAttack(const Position& position, Team byTeam, SquareIndex square);
 
 	void ApplyMove(Position& position, const Move& move);
+	bool SanityCheckMove(const Position& position, const Move& move);
 	Move CreateMove(const Position& position, const Square& from, const Square& to, Piece promotionPiece = PIECE_QUEEN);
 
 	std::ostream& operator<<(std::ostream& stream, const Position& position);

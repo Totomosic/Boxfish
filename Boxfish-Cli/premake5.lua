@@ -5,8 +5,8 @@ project "Boxfish-Cli"
     cppdialect "C++17"
     staticruntime "on"
     
-    targetdir ("../bin/" .. outputdir .. "/Boxfish-Cli")
-    objdir ("../bin-int/" .. outputdir .. "/Boxfish-Cli")
+    targetdir ("../bin/" .. BoxfishOutputDir .. "/Boxfish-Cli")
+    objdir ("../bin-int/" .. BoxfishOutputDir .. "/Boxfish-Cli")
     
     files
     {
@@ -17,8 +17,8 @@ project "Boxfish-Cli"
     includedirs
     {
         "src",
-        "../%{IncludeDirs.spdlog}",
-        "../%{IncludeDirs.Boxfish}"
+        "../%{BoxfishIncludeDirs.spdlog}",
+        "../%{BoxfishIncludeDirs.Boxfish}"
     }
 
     links

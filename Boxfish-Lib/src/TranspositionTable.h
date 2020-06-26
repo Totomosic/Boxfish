@@ -2,6 +2,7 @@
 #include "ZobristHash.h"
 #include "Move.h"
 #include "Evaluation.h"
+#include <memory>
 
 namespace Boxfish
 {
@@ -31,7 +32,7 @@ namespace Boxfish
 		static constexpr uint64_t TABLE_SIZE = 1638400;
 
 	private:
-		TranspositionTableEntry m_Entries[TABLE_SIZE];
+		std::unique_ptr<TranspositionTableEntry[]> m_Entries;
 
 	public:
 		TranspositionTable();

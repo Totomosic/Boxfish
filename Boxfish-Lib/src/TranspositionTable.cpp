@@ -4,8 +4,9 @@ namespace Boxfish
 {
 
 	TranspositionTable::TranspositionTable()
-		: m_Entries{}
+		: m_Entries{ std::make_unique<TranspositionTableEntry[]>(TABLE_SIZE) }
 	{
+		Clear();
 	}
 
 	const TranspositionTableEntry* TranspositionTable::GetEntry(const ZobristHash& hash) const
@@ -18,6 +19,20 @@ namespace Boxfish
 
 	void TranspositionTable::AddEntry(const TranspositionTableEntry& entry)
 	{
+		size_t index = GetIndexFromHash(entry.Hash);
+		if (m_Entries[index].Age < 0)
+		{
+			m_Entries[index] = entry;
+		}
+		else
+		{
+			TranspositionTableEntry& existingEntry = m_Entries[index];
+			// Decide whether to replace the entry
+			if (existingEntry.Depth < entry.Depth)
+			{
+				existingEntry = entry;
+			}
+		}
 	}
 
 	void TranspositionTable::Clear()

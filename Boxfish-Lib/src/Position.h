@@ -33,6 +33,8 @@ namespace Boxfish
 		const BitBoard& GetAllPieces() const;
 		BitBoard GetNotOccupied() const;
 
+		int GetTotalHalfMoves() const;
+
 		void InvalidateTeam(Team team);
 		void InvalidateAll();
 	};

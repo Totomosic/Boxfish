@@ -32,7 +32,7 @@ namespace Boxfish
 		s_MaterialValues[MIDGAME][PIECE_QUEEN] = 900;
 		s_MaterialValues[MIDGAME][PIECE_KING] = 0;
 
-		s_MaterialValues[ENDGAME][PIECE_PAWN] = 140;
+		s_MaterialValues[ENDGAME][PIECE_PAWN] = 100;
 		s_MaterialValues[ENDGAME][PIECE_KNIGHT] = 320;
 		s_MaterialValues[ENDGAME][PIECE_BISHOP] = 330;
 		s_MaterialValues[ENDGAME][PIECE_ROOK] = 500;
@@ -75,8 +75,9 @@ namespace Boxfish
 			Centipawns midgame = s_MaterialValues[MIDGAME][piece];
 			Centipawns endgame = s_MaterialValues[ENDGAME][piece];
 			int count = position.Teams[team].Pieces[piece].GetCount();
-			result.Material[team] = InterpolateGameStage(stage, midgame * count, endgame * count);
+			material += InterpolateGameStage(stage, midgame * count, endgame * count);
 		}
+		result.Material[team] = material;
 	}
 
 	void EvaluateMaterial(EvaluationResult& result, const Position& position, float stage)

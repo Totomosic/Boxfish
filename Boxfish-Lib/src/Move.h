@@ -54,7 +54,7 @@ namespace Boxfish
 		void SetPromotionPiece(Piece piece);
 	};
 
-	std::string FormatMove(const Move& move);
+	std::string FormatMove(const Move& move, bool includeSymbols = true);
 	std::string FormatNullMove();
 
 }

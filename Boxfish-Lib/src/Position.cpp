@@ -28,6 +28,11 @@ namespace Boxfish
 		return ~GetAllPieces();
 	}
 
+	int Position::GetTotalHalfMoves() const
+	{
+		return 2 * TotalTurns + ((TeamToPlay == TEAM_BLACK) ? 1 : 0);
+	}
+
 	void Position::InvalidateTeam(Team team)
 	{
 		m_IsValid[team] = false;

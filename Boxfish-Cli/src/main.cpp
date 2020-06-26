@@ -1,9 +1,11 @@
 #include "Boxfish.h"
 
+using namespace Boxfish;
+
 int main(int argc, const char** argv)
 {
-	Boxfish::Boxfish engine;
-	Boxfish::Position position = Boxfish::CreateStartingPosition();
+	::Boxfish::Boxfish engine;
+	Position position = CreateStartingPosition();
 	engine.SetPosition(position);
 
 	std::string version = __TIMESTAMP__;
@@ -32,8 +34,8 @@ int main(int argc, const char** argv)
 		if (command == "d")
 		{
 			std::cout << std::endl << engine.GetCurrentPosition() << std::endl;
-			std::cout << std::endl << "Fen: " << Boxfish::GetFENFromPosition(engine.GetCurrentPosition()) << std::endl;
-			std::cout << std::hex << "Hash: " << engine.GetCurrentPosition().Hash.Hash << std::endl;
+			std::cout << std::endl << "Fen: " << GetFENFromPosition(engine.GetCurrentPosition()) << std::endl;
+			std::cout << std::hex << "Hash: " << engine.GetCurrentPosition().Hash.Hash << std::dec << std::endl;
 		}
 		else if (command == "isready")
 		{
@@ -44,12 +46,12 @@ int main(int argc, const char** argv)
 			size_t isFen = args.find("fen ");
 			if (isFen != std::string_view::npos)
 			{
-				engine.SetPosition(Boxfish::CreatePositionFromFEN(std::string(args.substr(isFen + 4))));
+				engine.SetPosition(CreatePositionFromFEN(std::string(args.substr(isFen + 4))));
 			}
 			size_t startPos = args.find("startpos");
 			if (startPos != std::string_view::npos)
 			{
-				engine.SetPosition(Boxfish::CreateStartingPosition());
+				engine.SetPosition(CreateStartingPosition());
 			}
 			size_t moves = args.find("moves ");
 			if (moves != std::string_view::npos)
@@ -63,11 +65,19 @@ int main(int argc, const char** argv)
 					{
 						std::string from = std::string(move.substr(0, 2));
 						std::string to = std::string(move.substr(2));
-						Boxfish::Square fromSquare = Boxfish::SquareFromString(from);
-						Boxfish::Square toSquare = Boxfish::SquareFromString(to);
-						Boxfish::Position position = engine.GetCurrentPosition();
-						Boxfish::ApplyMove(position, Boxfish::CreateMove(position, fromSquare, toSquare));
-						engine.SetPosition(position);
+						Square fromSquare = SquareFromString(from);
+						Square toSquare = SquareFromString(to);
+						Position position = engine.GetCurrentPosition();
+						Move move = CreateMove(position, fromSquare, toSquare);
+						if (SanityCheckMove(position, move))
+						{
+							ApplyMove(position, move);
+							engine.SetPosition(position);
+						}
+						else
+						{
+							std::cout << "Move is not valid." << std::endl;
+						}
 					}
 					else
 					{
@@ -81,24 +91,37 @@ int main(int argc, const char** argv)
 				}
 			}
 		}
+		else if (command == "go")
+		{
+			size_t depthString = args.find("depth ");
+			if (depthString != std::string_view::npos)
+			{
+				size_t space = args.find_first_of(' ', depthString + 6);
+				int depth = std::stoi(std::string(args.substr(depthString + 6, space - depthString - 6)));
+				Search search;
+				search.SetCurrentPosition(engine.GetCurrentPosition());
+				search.Go(depth);
+				std::cout << "bestmove " << FormatMove(search.GetBestMove(), false) << " " << search.GetBestScore() << std::endl;
+			}
+		}
 		else if (command == "eval")
 		{
-			std::cout << Boxfish::Evaluate(engine.GetCurrentPosition(), Boxfish::TEAM_WHITE) << std::endl;
+			std::cout << Evaluate(engine.GetCurrentPosition(), TEAM_WHITE) << std::endl;
 		}
 		else if (command == "moves")
 		{
-			Boxfish::MoveGenerator generator(engine.GetCurrentPosition());
-			const std::vector<Boxfish::Move>& moves = generator.GetLegalMoves();
+			MoveGenerator generator(engine.GetCurrentPosition());
+			const std::vector<Move>& moves = generator.GetLegalMoves();
 			if (moves.size() > 0)
 			{
-				for (const Boxfish::Move& move : moves)
+				for (const Move& move : moves)
 				{
-					std::cout << Boxfish::FormatMove(move) << std::endl;
+					std::cout << FormatMove(move) << std::endl;
 				}
 			}
 			else
 			{
-				std::cout << Boxfish::FormatNullMove() << std::endl;
+				std::cout << FormatNullMove() << std::endl;
 			}
 		}
 		else
