@@ -13,8 +13,11 @@ namespace Boxfish
 	{
 	public:
 		Centipawns Material[TEAM_MAX] = { 0 };
+		Centipawns BishopPairs[TEAM_MAX] = { 0 };
+		Centipawns Attacks[TEAM_MAX] = { 0 };
 		bool Checkmate[TEAM_MAX] = { false };
 		bool Stalemate = false;
+		float GameStage;
 
 	public:
 		inline Centipawns GetTotal(Team team) const
@@ -25,7 +28,8 @@ namespace Boxfish
 				return -INF;
 			if (Stalemate)
 				return 0;
-			return Material[team] - Material[OtherTeam(team)];
+			Team other = OtherTeam(team);
+			return (Material[team] - Material[other]) + (BishopPairs[team] - BishopPairs[other]) + (Attacks[team] - Attacks[other]);
 		}
 	};
 
@@ -33,5 +37,7 @@ namespace Boxfish
 
 	EvaluationResult EvaluateDetailed(const Position& position);
 	Centipawns Evaluate(const Position& position, Team team);
+
+	Centipawns GetPieceValue(const Position& position, Piece piece);
 
 }

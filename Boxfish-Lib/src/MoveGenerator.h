@@ -6,17 +6,22 @@
 namespace Boxfish
 {
 
-	class BOX_API MoveGenerator
+	constexpr int MAX_MOVES = 218;
+
+	class BOX_API MoveList
 	{
 	public:
-		static constexpr size_t MAX_MOVES = 256;
+		uint8_t MoveCount = 0;
+		Move Moves[MAX_MOVES];
 
+	public:
+		inline bool Empty() const { return MoveCount <= 0; }
+	};
+
+	class BOX_API MoveGenerator
+	{
 	private:
 		Position m_Position;
-		bool m_PseudoLegalValid;
-		bool m_LegalValid;
-		std::vector<Move> m_PseudoLegalMoves;
-		std::vector<Move> m_LegalMoves;
 
 	public:
 		MoveGenerator();
@@ -26,33 +31,32 @@ namespace Boxfish
 		void SetPosition(const Position& position);
 		void SetPosition(Position&& position);
 
-		const std::vector<Move>& GetPseudoLegalMoves();
-		const std::vector<Move>& GetLegalMoves();
+		MoveList GetPseudoLegalMoves();
+		MoveList GetLegalMoves(const MoveList& pseudoLegalMoves);
+		void FilterLegalMoves(MoveList& pseudoLegalMoves);
 
 		bool HasAtLeastOneLegalMove();
 
 	private:
-		void Reset();
-
-		void GeneratePseudoLegalMoves();
-		void GenerateLegalMoves(const std::vector<Move>& pseudoLegalMoves);
+		void GeneratePseudoLegalMoves(MoveList& moveList);
+		void GenerateLegalMoves(MoveList& moveList, const MoveList& pseudoLegalMoves);
 		bool IsMoveLegal(const Move& move, const BitBoard& checkers, bool multipleCheckers) const;
 
-		void GenerateMoves(Team team, Piece pieceType, const Position& position);
+		void GenerateMoves(MoveList& moveList, Team team, Piece pieceType, const Position& position);
 
-		void GeneratePawnPromotions(SquareIndex fromSquare, SquareIndex toSquare, MoveFlag flags, Piece capturedPiece);
-		void GeneratePawnSinglePushes(Team team, const Position& position);
-		void GeneratePawnDoublePushes(Team team, const Position& position);
-		void GeneratePawnLeftAttacks(Team team, const Position& position);
-		void GeneratePawnRightAttacks(Team team, const Position& position);
+		void GeneratePawnPromotions(MoveList& moveList, SquareIndex fromSquare, SquareIndex toSquare, MoveFlag flags, Piece capturedPiece);
+		void GeneratePawnSinglePushes(MoveList& moveList, Team team, const Position& position);
+		void GeneratePawnDoublePushes(MoveList& moveList, Team team, const Position& position);
+		void GeneratePawnLeftAttacks(MoveList& moveList, Team team, const Position& position);
+		void GeneratePawnRightAttacks(MoveList& moveList, Team team, const Position& position);
 
-		void GenerateKnightMoves(Team team, const Position& position);
-		void GenerateBishopMoves(Team team, const Position& position);
-		void GenerateRookMoves(Team team, const Position& position);
-		void GenerateQueenMoves(Team team, const Position& position);
-		void GenerateKingMoves(Team team, const Position& position);
+		void GenerateKnightMoves(MoveList& moveList, Team team, const Position& position);
+		void GenerateBishopMoves(MoveList& moveList, Team team, const Position& position);
+		void GenerateRookMoves(MoveList& moveList, Team team, const Position& position);
+		void GenerateQueenMoves(MoveList& moveList, Team team, const Position& position);
+		void GenerateKingMoves(MoveList& moveList, Team team, const Position& position);
 
-		void AddMoves(const Position& position, Team team, SquareIndex fromSquare, Piece pieceType, const BitBoard& moves, const BitBoard& attackablePieces);
+		void AddMoves(MoveList& moveList, const Position& position, Team team, SquareIndex fromSquare, Piece pieceType, const BitBoard& moves, const BitBoard& attackablePieces);
 	};
 
 }

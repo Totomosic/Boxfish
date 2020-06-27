@@ -5,15 +5,13 @@ namespace Boxfish
 {
 
 	MoveGenerator::MoveGenerator()
-		: m_Position(), m_PseudoLegalValid(false), m_LegalValid(false), m_PseudoLegalMoves(), m_LegalMoves()
+		: m_Position()
 	{
-		Reset();
 	}
 
 	MoveGenerator::MoveGenerator(const Position& position)
-		: m_Position(position), m_PseudoLegalValid(false), m_LegalValid(false), m_PseudoLegalMoves(), m_LegalMoves()
+		: m_Position(position)
 	{
-		Reset();
 	}
 
 	const Position& MoveGenerator::GetPosition() const
@@ -24,113 +22,121 @@ namespace Boxfish
 	void MoveGenerator::SetPosition(const Position& position)
 	{
 		m_Position = position;
-		Reset();
 	}
 
 	void MoveGenerator::SetPosition(Position&& position)
 	{
 		m_Position = std::move(position);
-		Reset();
 	}
 
-	const std::vector<Move>& MoveGenerator::GetPseudoLegalMoves()
+	MoveList MoveGenerator::GetPseudoLegalMoves()
 	{
-		if (!m_PseudoLegalValid)
-		{
-			GeneratePseudoLegalMoves();
-			m_PseudoLegalValid = true;
-		}
-		return m_PseudoLegalMoves;
+		MoveList moveList;
+		GeneratePseudoLegalMoves(moveList);
+		return moveList;
 	}
 
-	const std::vector<Move>& MoveGenerator::GetLegalMoves()
+	MoveList MoveGenerator::GetLegalMoves(const MoveList& pseudoLegalMoves)
 	{
-		if (!m_LegalValid)
-		{			
-			GenerateLegalMoves(GetPseudoLegalMoves());
-			m_LegalValid = true;
-		}
-		return m_LegalMoves;
+		MoveList moveList;
+		GenerateLegalMoves(moveList, pseudoLegalMoves);
+		return moveList;
 	}
 
-	bool MoveGenerator::HasAtLeastOneLegalMove()
-	{
-		if (m_LegalMoves.size() > 0)
-			return true;
-		Team team = m_Position.TeamToPlay;
-		GenerateKingMoves(team, m_Position);
-		GenerateLegalMoves(m_PseudoLegalMoves);
-		if (m_LegalMoves.size() > 0)
-			return true;
-		GenerateQueenMoves(team, m_Position);
-		GenerateLegalMoves(m_PseudoLegalMoves);
-		if (m_LegalMoves.size() > 0)
-			return true;
-		GenerateKnightMoves(team, m_Position);
-		GenerateLegalMoves(m_PseudoLegalMoves);
-		if (m_LegalMoves.size() > 0)
-			return true;
-		GenerateBishopMoves(team, m_Position);
-		GenerateLegalMoves(m_PseudoLegalMoves);
-		if (m_LegalMoves.size() > 0)
-			return true;
-		GeneratePawnLeftAttacks(team, m_Position);
-		GenerateLegalMoves(m_PseudoLegalMoves);
-		if (m_LegalMoves.size() > 0)
-			return true;
-		GeneratePawnRightAttacks(team, m_Position);
-		GenerateLegalMoves(m_PseudoLegalMoves);
-		if (m_LegalMoves.size() > 0)
-			return true;
-		GeneratePawnSinglePushes(team, m_Position);
-		GenerateLegalMoves(m_PseudoLegalMoves);
-		if (m_LegalMoves.size() > 0)
-			return true;
-		GeneratePawnDoublePushes(team, m_Position);
-		GenerateLegalMoves(m_PseudoLegalMoves);
-		if (m_LegalMoves.size() > 0)
-			return true;
-		GenerateRookMoves(team, m_Position);
-		GenerateLegalMoves(m_PseudoLegalMoves);
-		if (m_LegalMoves.size() > 0)
-			return true;
-		return false;
-	}
-
-	void MoveGenerator::Reset()
-	{
-		m_PseudoLegalValid = false;
-		m_LegalValid = false;
-		m_LegalMoves.clear();
-		m_LegalMoves.reserve(MAX_MOVES);
-		m_PseudoLegalMoves.clear();
-		m_PseudoLegalMoves.reserve(MAX_MOVES);
-	}
-
-	void MoveGenerator::GeneratePseudoLegalMoves()
-	{
-		for (Piece piece = PIECE_PAWN; piece < PIECE_MAX; piece++)
-		{
-			GenerateMoves(m_Position.TeamToPlay, piece, m_Position);
-		}
-	}
-
-	void MoveGenerator::GenerateLegalMoves(const std::vector<Move>& pseudoLegalMoves)
+	void MoveGenerator::FilterLegalMoves(MoveList& pseudoLegalMoves)
 	{
 		SquareIndex kingSquare = BackwardBitScan(m_Position.Teams[m_Position.TeamToPlay].Pieces[PIECE_KING]);
 		BitBoard checkers = GetAttackers(m_Position, OtherTeam(m_Position.TeamToPlay), kingSquare, m_Position.GetAllPieces());
 		bool multipleCheckers = MoreThanOne(checkers);
-		for (const Move& move : pseudoLegalMoves)
+
+		int index = 0;
+		for (int i = 0; i < pseudoLegalMoves.MoveCount; i++)
 		{
-			/*Position position = m_Position;
-			ApplyMove(position, move);
-			if (!IsInCheck(position, OtherTeam(position.TeamToPlay)))
+			if (IsMoveLegal(pseudoLegalMoves.Moves[i], checkers, multipleCheckers))
 			{
-				m_LegalMoves.push_back(move);
-			}*/
+				if (index != i)
+				{
+					std::swap(pseudoLegalMoves.Moves[i], pseudoLegalMoves.Moves[index]);
+				}
+				index++;
+			}
+		}
+		pseudoLegalMoves.MoveCount = index;
+	}
+
+	bool MoveGenerator::HasAtLeastOneLegalMove()
+	{
+		MoveList pseudoMoveList;
+		MoveList moveList;
+		if (moveList.MoveCount > 0)
+			return true;
+		Team team = m_Position.TeamToPlay;
+		GenerateKingMoves(pseudoMoveList, team, m_Position);
+		GenerateLegalMoves(moveList, pseudoMoveList);
+		if (moveList.MoveCount > 0)
+			return true;
+		pseudoMoveList.MoveCount = 0;
+		GenerateQueenMoves(pseudoMoveList, team, m_Position);
+		GenerateLegalMoves(moveList, pseudoMoveList);
+		if (moveList.MoveCount > 0)
+			return true;
+		pseudoMoveList.MoveCount = 0;
+		GenerateKnightMoves(pseudoMoveList, team, m_Position);
+		GenerateLegalMoves(moveList, pseudoMoveList);
+		if (moveList.MoveCount > 0)
+			return true;
+		pseudoMoveList.MoveCount = 0;
+		GenerateBishopMoves(pseudoMoveList, team, m_Position);
+		GenerateLegalMoves(moveList, pseudoMoveList);
+		if (moveList.MoveCount > 0)
+			return true;
+		pseudoMoveList.MoveCount = 0;
+		GeneratePawnLeftAttacks(pseudoMoveList, team, m_Position);
+		GenerateLegalMoves(moveList, pseudoMoveList);
+		if (moveList.MoveCount > 0)
+			return true;
+		pseudoMoveList.MoveCount = 0;
+		GeneratePawnRightAttacks(pseudoMoveList, team, m_Position);
+		GenerateLegalMoves(moveList, pseudoMoveList);
+		if (moveList.MoveCount > 0)
+			return true;
+		pseudoMoveList.MoveCount = 0;
+		GeneratePawnSinglePushes(pseudoMoveList, team, m_Position);
+		GenerateLegalMoves(moveList, pseudoMoveList);
+		if (moveList.MoveCount > 0)
+			return true;
+		pseudoMoveList.MoveCount = 0;
+		GeneratePawnDoublePushes(pseudoMoveList, team, m_Position);
+		GenerateLegalMoves(moveList, pseudoMoveList);
+		if (moveList.MoveCount > 0)
+			return true;
+		pseudoMoveList.MoveCount = 0;
+		GenerateRookMoves(pseudoMoveList, team, m_Position);
+		GenerateLegalMoves(moveList, pseudoMoveList);
+		if (moveList.MoveCount > 0)
+			return true;
+		return false;
+	}
+
+	void MoveGenerator::GeneratePseudoLegalMoves(MoveList& moves)
+	{
+		for (Piece piece = PIECE_PAWN; piece < PIECE_MAX; piece++)
+		{
+			GenerateMoves(moves, m_Position.TeamToPlay, piece, m_Position);
+		}
+	}
+
+	void MoveGenerator::GenerateLegalMoves(MoveList& moveList, const MoveList& pseudoLegalMoves)
+	{
+		SquareIndex kingSquare = BackwardBitScan(m_Position.Teams[m_Position.TeamToPlay].Pieces[PIECE_KING]);
+		BitBoard checkers = GetAttackers(m_Position, OtherTeam(m_Position.TeamToPlay), kingSquare, m_Position.GetAllPieces());
+		bool multipleCheckers = MoreThanOne(checkers);
+		for (int i = 0; i < pseudoLegalMoves.MoveCount; i++)
+		{
+			const Move& move = pseudoLegalMoves.Moves[i];
 			if (IsMoveLegal(move, checkers, multipleCheckers))
 			{
-				m_LegalMoves.push_back(move);
+				moveList.Moves[moveList.MoveCount++] = move;
 			}
 		}
 	}
@@ -171,37 +177,37 @@ namespace Boxfish
 					|| IsAligned(move.GetFromSquareIndex(), move.GetToSquareIndex(), kingSquare);
 	}
 
-	void MoveGenerator::GenerateMoves(Team team, Piece pieceType, const Position& position)
+	void MoveGenerator::GenerateMoves(MoveList& moveList, Team team, Piece pieceType, const Position& position)
 	{
 		switch (pieceType)
 		{
 		case PIECE_PAWN:
 		{
-			GeneratePawnSinglePushes(team, position);
-			GeneratePawnDoublePushes(team, position);
-			GeneratePawnLeftAttacks(team, position);
-			GeneratePawnRightAttacks(team, position);
+			GeneratePawnSinglePushes(moveList, team, position);
+			GeneratePawnDoublePushes(moveList, team, position);
+			GeneratePawnLeftAttacks(moveList, team, position);
+			GeneratePawnRightAttacks(moveList, team, position);
 			break;
 		}
 		case PIECE_KNIGHT:
-			GenerateKnightMoves(team, position);
+			GenerateKnightMoves(moveList, team, position);
 			break;
 		case PIECE_BISHOP:
-			GenerateBishopMoves(team, position);
+			GenerateBishopMoves(moveList, team, position);
 			break;
 		case PIECE_ROOK:
-			GenerateRookMoves(team, position);
+			GenerateRookMoves(moveList, team, position);
 			break;
 		case PIECE_QUEEN:
-			GenerateQueenMoves(team, position);
+			GenerateQueenMoves(moveList, team, position);
 			break;
 		case PIECE_KING:
-			GenerateKingMoves(team, position);
+			GenerateKingMoves(moveList, team, position);
 			break;
 		}
 	}
 
-	void MoveGenerator::GeneratePawnPromotions(SquareIndex fromSquare, SquareIndex toSquare, MoveFlag flags, Piece capturedPiece)
+	void MoveGenerator::GeneratePawnPromotions(MoveList& moveList, SquareIndex fromSquare, SquareIndex toSquare, MoveFlag flags, Piece capturedPiece)
 	{
 		Move promotion({ fromSquare, toSquare, PIECE_PAWN, flags | MOVE_PROMOTION });
 		if (flags & MOVE_CAPTURE)
@@ -210,22 +216,22 @@ namespace Boxfish
 		}
 		Move queenPromotion = promotion;
 		queenPromotion.SetPromotionPiece(PIECE_QUEEN);
-		m_PseudoLegalMoves.push_back(queenPromotion);
+		moveList.Moves[moveList.MoveCount++] = queenPromotion;
 
 		Move knightPromotion = promotion;
 		knightPromotion.SetPromotionPiece(PIECE_KNIGHT);
-		m_PseudoLegalMoves.push_back(knightPromotion);
+		moveList.Moves[moveList.MoveCount++] = knightPromotion;
 
 		Move rookPromotion = promotion;
 		rookPromotion.SetPromotionPiece(PIECE_ROOK);
-		m_PseudoLegalMoves.push_back(rookPromotion);
+		moveList.Moves[moveList.MoveCount++] = rookPromotion;
 
 		Move bishopPromotion = promotion;
 		bishopPromotion.SetPromotionPiece(PIECE_BISHOP);
-		m_PseudoLegalMoves.push_back(bishopPromotion);
+		moveList.Moves[moveList.MoveCount++] = bishopPromotion;
 	}
 
-	void MoveGenerator::GeneratePawnSinglePushes(Team team, const Position& position)
+	void MoveGenerator::GeneratePawnSinglePushes(MoveList& moveList, Team team, const Position& position)
 	{
 		BitBoard pawns = position.Teams[team].Pieces[PIECE_PAWN];
 		BitBoard movedPawns = ((team == TEAM_WHITE) ? (pawns << GetForwardShift(team)) : (pawns >> -GetForwardShift(team))) & position.GetNotOccupied();
@@ -235,16 +241,16 @@ namespace Boxfish
 		while (movedPawns)
 		{
 			SquareIndex index = PopLeastSignificantBit(movedPawns);
-			m_PseudoLegalMoves.push_back(Move({ (SquareIndex)(index - GetForwardShift(team)), index, PIECE_PAWN }));
+			moveList.Moves[moveList.MoveCount++] = Move({ (SquareIndex)(index - GetForwardShift(team)), index, PIECE_PAWN });
 		}
 		while (promotions)
 		{
 			SquareIndex index = PopLeastSignificantBit(promotions);
-			GeneratePawnPromotions((SquareIndex)(index - GetForwardShift(team)), index, (MoveFlag)0, PIECE_MAX);
+			GeneratePawnPromotions(moveList, (SquareIndex)(index - GetForwardShift(team)), index, (MoveFlag)0, PIECE_MAX);
 		}
 	}
 
-	void MoveGenerator::GeneratePawnDoublePushes(Team team, const Position& position)
+	void MoveGenerator::GeneratePawnDoublePushes(MoveList& moveList, Team team, const Position& position)
 	{
 		BitBoard pawns = position.Teams[team].Pieces[PIECE_PAWN];
 		BitBoard originalPawns = pawns & ((team == TEAM_WHITE) ? RANK_2_MASK : RANK_7_MASK);
@@ -253,11 +259,11 @@ namespace Boxfish
 		while (movedPawns)
 		{
 			SquareIndex index = PopLeastSignificantBit(movedPawns);
-			m_PseudoLegalMoves.push_back(Move({ (SquareIndex)(index - 2 * GetForwardShift(team)), index, PIECE_PAWN, MOVE_DOUBLE_PAWN_PUSH }));
+			moveList.Moves[moveList.MoveCount++] = Move({ (SquareIndex)(index - 2 * GetForwardShift(team)), index, PIECE_PAWN, MOVE_DOUBLE_PAWN_PUSH });
 		}
 	}
 
-	void MoveGenerator::GeneratePawnLeftAttacks(Team team, const Position& position)
+	void MoveGenerator::GeneratePawnLeftAttacks(MoveList& moveList, Team team, const Position& position)
 	{
 		BitBoard pawns = position.Teams[team].Pieces[PIECE_PAWN];
 		BitBoard fileMask = (team == TEAM_WHITE) ? (~FILE_H_MASK) : (~FILE_A_MASK);
@@ -268,7 +274,7 @@ namespace Boxfish
 			if (enPassant)
 			{
 				SquareIndex index = PopLeastSignificantBit(enPassant);
-				m_PseudoLegalMoves.push_back(Move({ (SquareIndex)(index - ((team == TEAM_WHITE) ? 7 : -7)), index, PIECE_PAWN, MOVE_EN_PASSANT }));
+				moveList.Moves[moveList.MoveCount++] = Move({ (SquareIndex)(index - ((team == TEAM_WHITE) ? 7 : -7)), index, PIECE_PAWN, MOVE_EN_PASSANT });
 			}
 		}
 		movedPawns &= fileMask & position.GetTeamPieces(OtherTeam(team));
@@ -280,16 +286,16 @@ namespace Boxfish
 			SquareIndex index = PopLeastSignificantBit(movedPawns);
 			Move move({ (SquareIndex)(index - ((team == TEAM_WHITE) ? 7 : -7)), index, PIECE_PAWN, MOVE_CAPTURE });
 			move.SetCapturedPiece(GetPieceAtSquare(position, OtherTeam(team), index));
-			m_PseudoLegalMoves.push_back(move);
+			moveList.Moves[moveList.MoveCount++] = move;
 		}
 		while (promotions)
 		{
 			SquareIndex index = PopLeastSignificantBit(promotions);
-			GeneratePawnPromotions((SquareIndex)(index - ((team == TEAM_WHITE) ? 7 : -7)), index, MOVE_CAPTURE, GetPieceAtSquare(position, OtherTeam(team), index));
+			GeneratePawnPromotions(moveList, (SquareIndex)(index - ((team == TEAM_WHITE) ? 7 : -7)), index, MOVE_CAPTURE, GetPieceAtSquare(position, OtherTeam(team), index));
 		}
 	}
 
-	void MoveGenerator::GeneratePawnRightAttacks(Team team, const Position& position)
+	void MoveGenerator::GeneratePawnRightAttacks(MoveList& moveList, Team team, const Position& position)
 	{
 		BitBoard pawns = position.Teams[team].Pieces[PIECE_PAWN];
 		BitBoard fileMask = (team == TEAM_WHITE) ? (~FILE_A_MASK) : (~FILE_H_MASK);
@@ -300,7 +306,7 @@ namespace Boxfish
 			if (enPassant)
 			{
 				SquareIndex index = PopLeastSignificantBit(enPassant);
-				m_PseudoLegalMoves.push_back(Move({ (SquareIndex)(index - ((team == TEAM_WHITE) ? 9 : -9)), index, PIECE_PAWN, MOVE_EN_PASSANT }));
+				moveList.Moves[moveList.MoveCount++] = Move({ (SquareIndex)(index - ((team == TEAM_WHITE) ? 9 : -9)), index, PIECE_PAWN, MOVE_EN_PASSANT });
 			}
 		}
 		movedPawns &= fileMask & position.GetTeamPieces(OtherTeam(team));
@@ -312,67 +318,67 @@ namespace Boxfish
 			SquareIndex index = PopLeastSignificantBit(movedPawns);
 			Move move({ (SquareIndex)(index - ((team == TEAM_WHITE) ? 9 : -9)), index, PIECE_PAWN, MOVE_CAPTURE });
 			move.SetCapturedPiece(GetPieceAtSquare(position, OtherTeam(team), index));
-			m_PseudoLegalMoves.push_back(move);
+			moveList.Moves[moveList.MoveCount++] = move;
 		}
 		while (promotions)
 		{
 			SquareIndex index = PopLeastSignificantBit(promotions);
-			GeneratePawnPromotions((SquareIndex)(index - ((team == TEAM_WHITE) ? 9 : -9)), index, MOVE_CAPTURE, GetPieceAtSquare(position, OtherTeam(team), index));
+			GeneratePawnPromotions(moveList, (SquareIndex)(index - ((team == TEAM_WHITE) ? 9 : -9)), index, MOVE_CAPTURE, GetPieceAtSquare(position, OtherTeam(team), index));
 		}
 	}
 
-	void MoveGenerator::GenerateKnightMoves(Team team, const Position& position)
+	void MoveGenerator::GenerateKnightMoves(MoveList& moveList, Team team, const Position& position)
 	{
 		BitBoard knights = position.Teams[team].Pieces[PIECE_KNIGHT];
 		while (knights)
 		{
 			SquareIndex index = PopLeastSignificantBit(knights);
 			BitBoard moves = GetNonSlidingAttacks(PIECE_KNIGHT, BitBoard::BitIndexToSquare(index), team) & ~position.GetTeamPieces(team);
-			AddMoves(position, team, index, PIECE_KNIGHT, moves, position.GetTeamPieces(OtherTeam(team)));
+			AddMoves(moveList, position, team, index, PIECE_KNIGHT, moves, position.GetTeamPieces(OtherTeam(team)));
 		}
 	}
 
-	void MoveGenerator::GenerateBishopMoves(Team team, const Position& position)
+	void MoveGenerator::GenerateBishopMoves(MoveList& moveList, Team team, const Position& position)
 	{
 		BitBoard bishops = position.Teams[team].Pieces[PIECE_BISHOP];
 		while (bishops)
 		{
 			SquareIndex index = PopLeastSignificantBit(bishops);
 			BitBoard moves = GetSlidingAttacks(PIECE_BISHOP, BitBoard::BitIndexToSquare(index), position.GetAllPieces()) & ~position.GetTeamPieces(team);
-			AddMoves(position, team, index, PIECE_BISHOP, moves, position.GetTeamPieces(OtherTeam(team)));
+			AddMoves(moveList, position, team, index, PIECE_BISHOP, moves, position.GetTeamPieces(OtherTeam(team)));
 		}
 	}
 
-	void MoveGenerator::GenerateRookMoves(Team team, const Position& position)
+	void MoveGenerator::GenerateRookMoves(MoveList& moveList, Team team, const Position& position)
 	{
 		BitBoard rooks = position.Teams[team].Pieces[PIECE_ROOK];
 		while (rooks)
 		{
 			SquareIndex index = PopLeastSignificantBit(rooks);
 			BitBoard moves = GetSlidingAttacks(PIECE_ROOK, BitBoard::BitIndexToSquare(index), position.GetAllPieces()) & ~position.GetTeamPieces(team);
-			AddMoves(position, team, index, PIECE_ROOK, moves, position.GetTeamPieces(OtherTeam(team)));
+			AddMoves(moveList, position, team, index, PIECE_ROOK, moves, position.GetTeamPieces(OtherTeam(team)));
 		}
 	}
 
-	void MoveGenerator::GenerateQueenMoves(Team team, const Position& position)
+	void MoveGenerator::GenerateQueenMoves(MoveList& moveList, Team team, const Position& position)
 	{
 		BitBoard queens = position.Teams[team].Pieces[PIECE_QUEEN];
 		while (queens)
 		{
 			SquareIndex index = PopLeastSignificantBit(queens);
 			BitBoard moves = GetSlidingAttacks(PIECE_QUEEN, BitBoard::BitIndexToSquare(index), position.GetAllPieces()) & ~position.GetTeamPieces(team);
-			AddMoves(position, team, index, PIECE_QUEEN, moves, position.GetTeamPieces(OtherTeam(team)));
+			AddMoves(moveList, position, team, index, PIECE_QUEEN, moves, position.GetTeamPieces(OtherTeam(team)));
 		}
 	}
 
-	void MoveGenerator::GenerateKingMoves(Team team, const Position& position)
+	void MoveGenerator::GenerateKingMoves(MoveList& moveList, Team team, const Position& position)
 	{
 		BitBoard kings = position.Teams[team].Pieces[PIECE_KING];
 		while (kings)
 		{
 			SquareIndex index = PopLeastSignificantBit(kings);
 			BitBoard moves = GetNonSlidingAttacks(PIECE_KING, BitBoard::BitIndexToSquare(index), team) & ~position.GetTeamPieces(team);
-			AddMoves(position, team, index, PIECE_KING, moves, position.GetTeamPieces(OtherTeam(team)));
+			AddMoves(moveList, position, team, index, PIECE_KING, moves, position.GetTeamPieces(OtherTeam(team)));
 		}
 		BitBoard occupied = position.GetAllPieces();
 		if (team == TEAM_WHITE)
@@ -384,7 +390,7 @@ namespace Boxfish
 				bool underAttack = IsSquareUnderAttack(position, OtherTeam(team), f1) | IsSquareUnderAttack(position, OtherTeam(team), g1) | IsInCheck(position, team);
 				if (!squaresOccupied && !underAttack)
 				{
-					m_PseudoLegalMoves.push_back(Move({ e1, g1, PIECE_KING, MOVE_KINGSIDE_CASTLE }));
+					moveList.Moves[moveList.MoveCount++] = Move({ e1, g1, PIECE_KING, MOVE_KINGSIDE_CASTLE });
 				}
 			}
 			if (position.Teams[TEAM_WHITE].CastleQueenSide)
@@ -394,7 +400,7 @@ namespace Boxfish
 				bool underAttack = IsSquareUnderAttack(position, OtherTeam(team), b1) | IsSquareUnderAttack(position, OtherTeam(team), c1) | IsSquareUnderAttack(position, OtherTeam(team), d1) | IsInCheck(position, team);
 				if (!squaresOccupied && !underAttack)
 				{
-					m_PseudoLegalMoves.push_back(Move({ e1, c1, PIECE_KING, MOVE_QUEENSIDE_CASTLE }));
+					moveList.Moves[moveList.MoveCount++] = Move({ e1, c1, PIECE_KING, MOVE_QUEENSIDE_CASTLE });
 				}
 			}
 		}
@@ -407,7 +413,7 @@ namespace Boxfish
 				bool underAttack = IsSquareUnderAttack(position, OtherTeam(team), f8) | IsSquareUnderAttack(position, OtherTeam(team), g8) | IsInCheck(position, team);
 				if (!squaresOccupied && !underAttack)
 				{
-					m_PseudoLegalMoves.push_back(Move({ e8, g8, PIECE_KING, MOVE_KINGSIDE_CASTLE }));
+					moveList.Moves[moveList.MoveCount++] = Move({ e8, g8, PIECE_KING, MOVE_KINGSIDE_CASTLE });
 				}
 			}
 			if (position.Teams[TEAM_BLACK].CastleQueenSide)
@@ -417,19 +423,19 @@ namespace Boxfish
 				bool underAttack = IsSquareUnderAttack(position, OtherTeam(team), b8) | IsSquareUnderAttack(position, OtherTeam(team), c8) | IsSquareUnderAttack(position, OtherTeam(team), d8) | IsInCheck(position, team);
 				if (!squaresOccupied && !underAttack)
 				{
-					m_PseudoLegalMoves.push_back(Move({ e8, c8, PIECE_KING, MOVE_QUEENSIDE_CASTLE }));
+					moveList.Moves[moveList.MoveCount++] = Move({ e8, c8, PIECE_KING, MOVE_QUEENSIDE_CASTLE });
 				}
 			}
 		}
 	}
 
-	void MoveGenerator::AddMoves(const Position& position, Team team, SquareIndex fromSquare, Piece pieceType, const BitBoard& moves, const BitBoard& attackablePieces)
+	void MoveGenerator::AddMoves(MoveList& moveList, const Position& position, Team team, SquareIndex fromSquare, Piece pieceType, const BitBoard& moves, const BitBoard& attackablePieces)
 	{
 		BitBoard nonAttacks = moves & ~attackablePieces;
 		while (nonAttacks)
 		{
 			SquareIndex toIndex = PopLeastSignificantBit(nonAttacks);
-			m_PseudoLegalMoves.push_back(Move({ fromSquare, toIndex, pieceType }));
+			moveList.Moves[moveList.MoveCount++] = Move({ fromSquare, toIndex, pieceType });
 		}
 		BitBoard attacks = moves & attackablePieces;
 		Team otherTeam = OtherTeam(team);
@@ -438,7 +444,7 @@ namespace Boxfish
 			SquareIndex toIndex = PopLeastSignificantBit(attacks);
 			Move move({ fromSquare, toIndex, pieceType, MOVE_CAPTURE });
 			move.SetCapturedPiece(GetPieceAtSquare(position, otherTeam, toIndex));
-			m_PseudoLegalMoves.push_back(std::move(move));
+			moveList.Moves[moveList.MoveCount++] = std::move(move);
 		}
 	}
 

@@ -38,16 +38,18 @@ namespace Boxfish
 	public:
 		const BitBoard& GetTeamPieces(Team team) const;
 		const BitBoard& GetAllPieces() const;
-		BitBoard GetNotOccupied() const;
+		inline BitBoard GetNotOccupied() const { return ~GetAllPieces(); }
 
-		BitBoard GetTeamPieces(Team team, Piece piece) const;
-		BitBoard GetTeamPieces(Team team, Piece piece, Piece piece2) const;
-		BitBoard GetTeamPieces(Team team, Piece piece, Piece piece2, Piece piece3) const;
-		BitBoard GetPieces(Piece piece) const;
-		BitBoard GetPieces(Piece piece, Piece piece2) const;
-		BitBoard GetPieces(Piece piece, Piece piece2, Piece piece3) const;
+		inline SquareIndex GetKingSquare(Team team) const { return ForwardBitScan(Teams[team].Pieces[PIECE_KING]); }
 
-		int GetTotalHalfMoves() const;
+		inline BitBoard GetTeamPieces(Team team, Piece piece) const { return Teams[team].Pieces[piece]; }
+		inline BitBoard GetTeamPieces(Team team, Piece piece, Piece piece2) const { return GetTeamPieces(team, piece) | GetTeamPieces(team, piece2); }
+		inline BitBoard GetTeamPieces(Team team, Piece piece, Piece piece2, Piece piece3) const { return GetTeamPieces(team, piece, piece2) | GetTeamPieces(team, piece3); }
+		inline BitBoard GetPieces(Piece piece) const { return Teams[TEAM_WHITE].Pieces[piece] | Teams[TEAM_BLACK].Pieces[piece]; }
+		inline BitBoard GetPieces(Piece piece, Piece piece2) const { return GetPieces(piece) | GetPieces(piece2); }
+		inline BitBoard GetPieces(Piece piece, Piece piece2, Piece piece3) const { return GetPieces(piece, piece2) | GetPieces(piece3); }
+
+		inline int GetTotalHalfMoves() const { return 2 * TotalTurns + ((TeamToPlay == TEAM_BLACK) ? 1 : 0); }
 
 		void InvalidateTeam(Team team);
 		void InvalidateAll();

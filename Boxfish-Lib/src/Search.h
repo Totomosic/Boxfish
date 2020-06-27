@@ -8,6 +8,15 @@
 namespace Boxfish
 {
 
+	struct BOX_API Line
+	{
+	public:
+		size_t CurrentIndex = 0;
+		Move Moves[50];
+	};
+
+	std::string FormatLine(const Line& line, bool includeSymbols = true);
+
 	class BOX_API Search
 	{
 	private:
@@ -16,6 +25,7 @@ namespace Boxfish
 
 		Move m_BestMove;
 		Centipawns m_BestScore;
+		Line m_PV;
 
 		size_t m_Nodes;
 
@@ -26,6 +36,7 @@ namespace Boxfish
 
 		const Move& GetBestMove() const;
 		Centipawns GetBestScore() const;
+		const Line& GetPV() const;
 
 		void SetCurrentPosition(const Position& position);
 		void SetCurrentPosition(Position&& position);
@@ -34,7 +45,8 @@ namespace Boxfish
 
 	private:
 		void SearchRoot(const Position& position, int depth);
-		Centipawns Negamax(const Position& position, int depth, int alpha, int beta);
+		Centipawns Negamax(const Position& position, int depth, int alpha, int beta, Line& line);
+		Centipawns QuiescenceSearch(const Position& position, int alpha, int beta);
 	};
 
 }

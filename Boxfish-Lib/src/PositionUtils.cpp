@@ -361,6 +361,11 @@ namespace Boxfish
 		return PIECE_INVALID;
 	}
 
+	bool IsPieceOnSquare(const Position& position, Team team, Piece piece, SquareIndex square)
+	{
+		return position.GetTeamPieces(team, piece) & BitBoard { square };
+	}
+
 	bool IsInCheck(const Position& position, Team team)
 	{
 		BitBoard king = position.Teams[team].Pieces[PIECE_KING];

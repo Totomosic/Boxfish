@@ -2,6 +2,56 @@
 
 using namespace Boxfish;
 
+uint64_t Perft(const Position& position, int depth)
+{
+	if (depth <= 0)
+		return 1;
+	if (depth == 1)
+	{
+		MoveGenerator movegen(position);
+		MoveList moves = movegen.GetPseudoLegalMoves();
+		movegen.FilterLegalMoves(moves);
+		return moves.MoveCount;
+	}
+
+	MoveGenerator movegen(position);
+	uint64_t nodes = 0;
+	MoveList legalMoves = movegen.GetPseudoLegalMoves();
+	movegen.FilterLegalMoves(legalMoves);
+	for (int i = 0; i < legalMoves.MoveCount; i++)
+	{
+		Position movedPosition = position;
+		ApplyMove(movedPosition, legalMoves.Moves[i]);
+		nodes += Perft(movedPosition, depth - 1);
+	}
+	return nodes;
+}
+
+uint64_t PerftRoot(const Position& position, int depth)
+{
+	uint64_t total = 0;
+	MoveGenerator movegen(position);
+	MoveList moves = movegen.GetPseudoLegalMoves();
+	movegen.FilterLegalMoves(moves);
+
+	auto startTime = std::chrono::high_resolution_clock::now();
+	for (int i = 0; i < moves.MoveCount; i++)
+	{
+		Position movedPosition = position;
+		ApplyMove(movedPosition, moves.Moves[i]);
+		uint64_t perft = Perft(movedPosition, depth - 1);
+		total += perft;
+
+		std::cout << FormatMove(moves.Moves[i], false) << ": " << perft << std::endl;
+	}
+	auto endTime = std::chrono::high_resolution_clock::now();
+	auto elapsed = endTime - startTime;
+	std::cout << "Total Time: " << std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count() << "ms" << std::endl;
+	std::cout << "Total Nodes: " << total << std::endl;
+	std::cout << "Nodes per Second: " << (size_t)(total / (double)std::chrono::duration_cast<std::chrono::nanoseconds>(elapsed).count() * 1e9) << std::endl;
+	return total;
+}
+
 int main(int argc, const char** argv)
 {
 	::Boxfish::Boxfish engine;
@@ -11,9 +61,6 @@ int main(int argc, const char** argv)
 	std::string version = __TIMESTAMP__;
 
 	std::cout << "Boxfish " << version << " by J. Morrison" << std::endl;
-
-	// DEBUG FEN: 1B2k2r/1P1n3p/5pp1/1Q6/3Pp3/4P3/7P/4KNq1 b k - 0 37
-	// Can't move because in check
 
 	char buffer[4096];
 	while (true)
@@ -104,22 +151,29 @@ int main(int argc, const char** argv)
 				Search& search = engine.GetSearch();
 				search.SetCurrentPosition(engine.GetCurrentPosition());
 				search.Go(depth);
-				std::cout << "bestmove " << FormatMove(search.GetBestMove(), false) << " " << search.GetBestScore() << std::endl;
+				std::cout << "bestmove " << FormatMove(search.GetBestMove(), false) << " " << search.GetBestScore() << " pv " << FormatLine(search.GetPV()) << std::endl;
 			}
 		}
 		else if (command == "eval")
 		{
-			std::cout << Evaluate(engine.GetCurrentPosition(), TEAM_WHITE) << std::endl;
+			EvaluationResult result = EvaluateDetailed(engine.GetCurrentPosition());
+			std::cout << result.Material[TEAM_BLACK] << " " << result.Material[TEAM_WHITE] << std::endl;
+			std::cout << result.GetTotal(engine.GetCurrentPosition().TeamToPlay) << " GameStage: " << result.GameStage << std::endl;
+		}
+		else if (command == "perft")
+		{
+			int depth = std::stoi(std::string(args));
+			PerftRoot(engine.GetCurrentPosition(), depth);
 		}
 		else if (command == "moves")
 		{
 			MoveGenerator generator(engine.GetCurrentPosition());
-			const std::vector<Move>& moves = generator.GetLegalMoves();
-			if (moves.size() > 0)
+			MoveList moves = generator.GetLegalMoves(generator.GetPseudoLegalMoves());
+			if (!moves.Empty())
 			{
-				for (const Move& move : moves)
+				for (int i = 0; i < moves.MoveCount; i++)
 				{
-					std::cout << FormatMove(move) << std::endl;
+					std::cout << FormatMove(moves.Moves[i]) << std::endl;
 				}
 			}
 			else

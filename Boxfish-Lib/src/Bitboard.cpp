@@ -8,18 +8,17 @@ namespace Boxfish
 		return (Board & BOX_BIT((uint64_t)SquareToBitIndex(square))) != 0;
 	}
 
+#ifdef BOX_PLATFORM_WINDOWS
 	int BitBoard::GetCount() const
 	{
-		// TODO: Use popcount
 		return (int)__popcnt64(Board);
-		/*int count = 0;
-		for (int i = 0; i < RANK_MAX * FILE_MAX; i++)
-		{
-			if (Board & BOX_BIT(i))
-				count++;
-		}
-		return count;*/
 	}
+#else
+	int BitBoard::GetCount() const
+	{
+		return (int)__builtin_popcountll(Board);
+	}
+#endif
 
 	std::vector<Square> BitBoard::GetSquares() const
 	{
@@ -35,16 +34,6 @@ namespace Boxfish
 	void BitBoard::SetAt(const Square& square)
 	{
 		Board |= BOX_BIT(SquareToBitIndex(square));
-	}
-
-	void BitBoard::Flip(const Square& square)
-	{
-		Board ^= BOX_BIT(SquareToBitIndex(square));
-	}
-
-	void BitBoard::Invert()
-	{
-		Board = ~Board;
 	}
 
 	void BitBoard::Reset()
@@ -73,74 +62,6 @@ namespace Boxfish
 		return (File)(index % FILE_MAX);
 	}
 
-	BitBoard::operator bool() const
-	{
-		return Board != 0;
-	}
-
-	BitBoard operator&(const BitBoard& left, const BitBoard& right)
-	{
-		return left.Board & right.Board;
-	}
-
-	BitBoard operator|(const BitBoard& left, const BitBoard& right)
-	{
-		return left.Board | right.Board;
-	}
-
-	BitBoard operator^(const BitBoard& left, const BitBoard& right)
-	{
-		return left.Board ^ right.Board;
-	}
-
-	BitBoard operator&(const BitBoard& left, uint64_t right)
-	{
-		return left.Board & right;
-	}
-
-	BitBoard operator|(const BitBoard& left, uint64_t right)
-	{
-		return left.Board | right;
-	}
-
-	BitBoard operator^(const BitBoard& left, uint64_t right)
-	{
-		return left.Board ^ right;
-	}
-
-	BitBoard operator~(const BitBoard& board)
-	{
-		return ~board.Board;
-	}
-
-	BitBoard& operator&=(BitBoard& left, const BitBoard& right)
-	{
-		left.Board &= right.Board;
-		return left;
-	}
-
-	BitBoard& operator|=(BitBoard& left, const BitBoard& right)
-	{
-		left.Board |= right.Board;
-		return left;
-	}
-
-	BitBoard& operator^=(BitBoard& left, const BitBoard& right)
-	{
-		left.Board ^= right.Board;
-		return left;
-	}
-
-	BitBoard operator<<(const BitBoard& left, int right)
-	{
-		return BitBoard{ left.Board << right };
-	}
-
-	BitBoard operator>>(const BitBoard& left, int right)
-	{
-		return BitBoard{ left.Board >> right };
-	}
-
 	std::ostream& operator<<(std::ostream& stream, const BitBoard& board)
 	{
 		stream << "   | A B C D E F G H" << std::endl;
@@ -165,33 +86,46 @@ namespace Boxfish
 		return ForwardBitScan(board) != BackwardBitScan(board);
 	}
 
+#ifdef BOX_PLATFORM_WINDOWS
 	SquareIndex ForwardBitScan(const BitBoard& board)
 	{
 		unsigned long lsb;
-		unsigned char success = _BitScanForward64(&lsb, board.Board);
-		if (success == 0)
-			return (SquareIndex)-1;
+		_BitScanForward64(&lsb, board.Board);
 		return (SquareIndex)lsb;
 	}
 
 	SquareIndex BackwardBitScan(const BitBoard& board)
 	{
 		unsigned long msb;
-		unsigned char success = _BitScanReverse64(&msb, board.Board);
-		if (success == 0)
-			return (SquareIndex)-1;
+		_BitScanReverse64(&msb, board.Board);
 		return (SquareIndex)msb;
 	}
 
 	SquareIndex PopLeastSignificantBit(BitBoard& board)
 	{
 		unsigned long lsb;
-		unsigned char success = _BitScanForward64(&lsb, board.Board);
-		if (success == 0)
-			return (SquareIndex)-1;
+		_BitScanForward64(&lsb, board.Board);
 		board &= board.Board - 1;
 		return (SquareIndex)lsb;
 	}
+#else
+	SquareIndex ForwardBitScan(const BitBoard& board)
+	{
+		return (SquareIndex)(__builtin_ffsll(board.Board) - 1);
+	}
+
+	SquareIndex BackwardBitScan(const BitBoard& board)
+	{
+		return (SquareIndex)(63 - __builtin_clzll(board.Board));
+	}
+
+	SquareIndex PopLeastSignificantBit(BitBoard& board)
+	{
+		int lsbIndex = __builtin_ffsll(board.Board) - 1;
+		board.Board &= board.Board - 1;
+		return (SquareIndex)lsbIndex;
+	}
+#endif
 
 	BitBoard ShiftEast(const BitBoard& board, int count)
 	{

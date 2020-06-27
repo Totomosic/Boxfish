@@ -2,7 +2,6 @@
 #include "Logging.h"
 #include "Types.h"
 #include <vector>
-#include <bit>
 
 namespace Boxfish
 {
@@ -32,24 +31,22 @@ namespace Boxfish
 		int GetCount() const;
 		std::vector<Square> GetSquares() const;
 		void SetAt(const Square& square);
-		void Flip(const Square& square);
-		void Invert();
 
 		void Reset();
 
-		operator bool() const;
-		friend BitBoard operator&(const BitBoard& left, const BitBoard& right);
-		friend BitBoard operator|(const BitBoard& left, const BitBoard& right);
-		friend BitBoard operator^(const BitBoard& left, const BitBoard& right);
-		friend BitBoard operator&(const BitBoard& left, uint64_t right);
-		friend BitBoard operator|(const BitBoard& left, uint64_t right);
-		friend BitBoard operator^(const BitBoard& left, uint64_t right);
-		friend BitBoard operator~(const BitBoard& board);
-		friend BitBoard& operator&=(BitBoard& left, const BitBoard& right);
-		friend BitBoard& operator|=(BitBoard& left, const BitBoard& right);
-		friend BitBoard& operator^=(BitBoard& left, const BitBoard& right);
-		friend BitBoard operator<<(const BitBoard& left, int right);
-		friend BitBoard operator>>(const BitBoard& left, int right);
+		inline operator bool() const { return Board != 0; }
+		inline friend BitBoard operator&(const BitBoard& left, const BitBoard& right) { return left.Board & right.Board; }
+		inline friend BitBoard operator|(const BitBoard& left, const BitBoard& right) { return left.Board | right.Board; }
+		inline friend BitBoard operator^(const BitBoard& left, const BitBoard& right) { return left.Board ^ right.Board; }
+		inline friend BitBoard operator&(const BitBoard& left, uint64_t right) { return left.Board & right; }
+		inline friend BitBoard operator|(const BitBoard& left, uint64_t right) { return left.Board | right; }
+		inline friend BitBoard operator^(const BitBoard& left, uint64_t right) { return left.Board ^ right; }
+		inline friend BitBoard operator~(const BitBoard& board) { return ~board.Board; }
+		inline friend BitBoard& operator&=(BitBoard& left, const BitBoard& right) { left.Board &= right.Board; return left; }
+		inline friend BitBoard& operator|=(BitBoard& left, const BitBoard& right) { left.Board |= right.Board; return left; }
+		inline friend BitBoard& operator^=(BitBoard& left, const BitBoard& right) { left.Board ^= right.Board; return left; }
+		inline friend BitBoard operator<<(const BitBoard& left, int right) { return left.Board << right; }
+		inline friend BitBoard operator>>(const BitBoard& left, int right) { return left.Board >> right; }
 		friend std::ostream& operator<<(std::ostream& stream, const BitBoard& board);
 
 	public:
