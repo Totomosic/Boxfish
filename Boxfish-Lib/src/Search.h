@@ -3,7 +3,7 @@
 #include "Evaluation.h"
 #include "PositionUtils.h"
 #include "TranspositionTable.h"
-#include "MoveOrdering.h"
+#include "MoveSelector.h"
 
 namespace Boxfish
 {
@@ -33,7 +33,7 @@ namespace Boxfish
 		void Reset();
 
 	private:
-		void StartSearch(const Position& position, int depth);
+		void SearchRoot(const Position& position, int depth);
 		Centipawns Negamax(const Position& position, int depth, int alpha, int beta);
 	};
 

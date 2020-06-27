@@ -12,6 +12,9 @@ int main(int argc, const char** argv)
 
 	std::cout << "Boxfish " << version << " by J. Morrison" << std::endl;
 
+	// DEBUG FEN: 1B2k2r/1P1n3p/5pp1/1Q6/3Pp3/4P3/7P/4KNq1 b k - 0 37
+	// Can't move because in check
+
 	char buffer[4096];
 	while (true)
 	{
@@ -98,7 +101,7 @@ int main(int argc, const char** argv)
 			{
 				size_t space = args.find_first_of(' ', depthString + 6);
 				int depth = std::stoi(std::string(args.substr(depthString + 6, space - depthString - 6)));
-				Search search;
+				Search& search = engine.GetSearch();
 				search.SetCurrentPosition(engine.GetCurrentPosition());
 				search.Go(depth);
 				std::cout << "bestmove " << FormatMove(search.GetBestMove(), false) << " " << search.GetBestScore() << std::endl;

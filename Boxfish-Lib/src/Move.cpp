@@ -8,6 +8,7 @@ namespace Boxfish
 	Move::Move()
 		: m_Move(0)
 	{
+		SetFlags(MOVE_NULL);
 	}
 
 	Move::Move(const MoveDefinition& definition)

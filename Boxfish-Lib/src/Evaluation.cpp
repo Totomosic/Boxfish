@@ -89,8 +89,7 @@ namespace Boxfish
 	void EvaluateCheckmate(EvaluationResult& result, const Position& position, float stage)
 	{
 		MoveGenerator generator(position);
-		const std::vector<Move>& legalMoves = generator.GetLegalMoves();
-		if (legalMoves.empty())
+		if (!generator.HasAtLeastOneLegalMove())
 		{
 			if (IsInCheck(position, position.TeamToPlay))
 			{

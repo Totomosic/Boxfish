@@ -29,11 +29,14 @@ namespace Boxfish
 		const std::vector<Move>& GetPseudoLegalMoves();
 		const std::vector<Move>& GetLegalMoves();
 
+		bool HasAtLeastOneLegalMove();
+
 	private:
 		void Reset();
 
 		void GeneratePseudoLegalMoves();
 		void GenerateLegalMoves(const std::vector<Move>& pseudoLegalMoves);
+		bool IsMoveLegal(const Move& move, const BitBoard& checkers, bool multipleCheckers) const;
 
 		void GenerateMoves(Team team, Piece pieceType, const Position& position);
 

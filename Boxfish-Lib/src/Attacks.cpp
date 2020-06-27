@@ -242,6 +242,23 @@ namespace Boxfish
         return s_RookTable[squareIndex][(blockers.Board * s_RookMagics[squareIndex].Board) >> (64 - s_RookIndexBits[squareIndex])];
     }
 
+    static BitBoard s_Lines[FILE_MAX * RANK_MAX][FILE_MAX * RANK_MAX];
+
+    void InitLines()
+    {
+        for (SquareIndex s1 = a1; s1 < FILE_MAX * RANK_MAX; s1++)
+        {
+            for (SquareIndex s2 = a1; s2 < FILE_MAX * RANK_MAX; s2++)
+            {
+                for (Piece piece : { PIECE_BISHOP, PIECE_ROOK })
+                {
+                    if (GetSlidingAttacks(piece, s1, 0ULL) & BitBoard { s2 })
+                        s_Lines[s1][s2] = (GetSlidingAttacks(piece, s1, 0ULL) & GetSlidingAttacks(piece, s2, 0ULL)) | BitBoard{ s1 } | BitBoard{ s2 };
+                }
+            }
+        }
+    }
+
     void InitAttacks()
     {
         if (!s_Initialized)
@@ -253,6 +270,7 @@ namespace Boxfish
             InitBishopMasks();
             InitRookMagicTable();
             InitBishopMagicTable();
+            InitLines();
             s_Initialized = true;
         }
     }
@@ -286,6 +304,22 @@ namespace Boxfish
             BOX_ASSERT(false, "Not a sliding piece");
         }
         return BitBoard();
+    }
+
+    BitBoard GetBitBoardBetween(SquareIndex a, SquareIndex b)
+    {
+        BitBoard result = s_Lines[a][b] & ((ALL_SQUARES_BB << a) ^ (ALL_SQUARES_BB << b));
+        return result.Board & (result.Board - 1); // Remove LSB
+    }
+
+    BitBoard GetLineBetween(SquareIndex a, SquareIndex b)
+    {
+        return s_Lines[a][b];
+    }
+
+    bool IsAligned(SquareIndex a, SquareIndex b, SquareIndex c)
+    {
+        return GetLineBetween(a, b) & BitBoard { c };
     }
 
 }

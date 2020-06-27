@@ -53,6 +53,50 @@ namespace Boxfish
 		return m_LegalMoves;
 	}
 
+	bool MoveGenerator::HasAtLeastOneLegalMove()
+	{
+		if (m_LegalMoves.size() > 0)
+			return true;
+		Team team = m_Position.TeamToPlay;
+		GenerateKingMoves(team, m_Position);
+		GenerateLegalMoves(m_PseudoLegalMoves);
+		if (m_LegalMoves.size() > 0)
+			return true;
+		GenerateQueenMoves(team, m_Position);
+		GenerateLegalMoves(m_PseudoLegalMoves);
+		if (m_LegalMoves.size() > 0)
+			return true;
+		GenerateKnightMoves(team, m_Position);
+		GenerateLegalMoves(m_PseudoLegalMoves);
+		if (m_LegalMoves.size() > 0)
+			return true;
+		GenerateBishopMoves(team, m_Position);
+		GenerateLegalMoves(m_PseudoLegalMoves);
+		if (m_LegalMoves.size() > 0)
+			return true;
+		GeneratePawnLeftAttacks(team, m_Position);
+		GenerateLegalMoves(m_PseudoLegalMoves);
+		if (m_LegalMoves.size() > 0)
+			return true;
+		GeneratePawnRightAttacks(team, m_Position);
+		GenerateLegalMoves(m_PseudoLegalMoves);
+		if (m_LegalMoves.size() > 0)
+			return true;
+		GeneratePawnSinglePushes(team, m_Position);
+		GenerateLegalMoves(m_PseudoLegalMoves);
+		if (m_LegalMoves.size() > 0)
+			return true;
+		GeneratePawnDoublePushes(team, m_Position);
+		GenerateLegalMoves(m_PseudoLegalMoves);
+		if (m_LegalMoves.size() > 0)
+			return true;
+		GenerateRookMoves(team, m_Position);
+		GenerateLegalMoves(m_PseudoLegalMoves);
+		if (m_LegalMoves.size() > 0)
+			return true;
+		return false;
+	}
+
 	void MoveGenerator::Reset()
 	{
 		m_PseudoLegalValid = false;
@@ -73,15 +117,58 @@ namespace Boxfish
 
 	void MoveGenerator::GenerateLegalMoves(const std::vector<Move>& pseudoLegalMoves)
 	{
+		SquareIndex kingSquare = BackwardBitScan(m_Position.Teams[m_Position.TeamToPlay].Pieces[PIECE_KING]);
+		BitBoard checkers = GetAttackers(m_Position, OtherTeam(m_Position.TeamToPlay), kingSquare, m_Position.GetAllPieces());
+		bool multipleCheckers = MoreThanOne(checkers);
 		for (const Move& move : pseudoLegalMoves)
 		{
-			Position position = m_Position;
+			/*Position position = m_Position;
 			ApplyMove(position, move);
 			if (!IsInCheck(position, OtherTeam(position.TeamToPlay)))
 			{
 				m_LegalMoves.push_back(move);
+			}*/
+			if (IsMoveLegal(move, checkers, multipleCheckers))
+			{
+				m_LegalMoves.push_back(move);
 			}
 		}
+	}
+
+	bool MoveGenerator::IsMoveLegal(const Move& move, const BitBoard& checkers, bool multipleCheckers) const
+	{
+		SquareIndex kingSquare = BackwardBitScan(m_Position.Teams[m_Position.TeamToPlay].Pieces[PIECE_KING]);
+		if (move.GetFlags() & MOVE_EN_PASSANT)
+		{
+			SquareIndex captureSquare = (SquareIndex)(move.GetToSquareIndex() - GetForwardShift(m_Position.TeamToPlay));
+			BitBoard occupied = (m_Position.GetAllPieces() ^ BitBoard { move.GetFromSquareIndex() } ^ BitBoard{ captureSquare }) | BitBoard{ move.GetToSquareIndex() };
+			return !(GetSlidingAttacks(PIECE_ROOK, kingSquare, occupied) & m_Position.GetTeamPieces(OtherTeam(m_Position.TeamToPlay), PIECE_QUEEN, PIECE_ROOK))
+				&& !(GetSlidingAttacks(PIECE_BISHOP, kingSquare, occupied) & m_Position.GetTeamPieces(OtherTeam(m_Position.TeamToPlay), PIECE_QUEEN, PIECE_BISHOP));
+		}
+		if (checkers)
+		{
+			if (move.GetMovingPiece() != PIECE_KING)
+			{
+				if (multipleCheckers)
+					return false;
+				SquareIndex checkingSquare = BackwardBitScan(checkers);
+				// Move must block the checker or capture the blocker
+				if (!((GetBitBoardBetween(checkingSquare, kingSquare) | checkers) & BitBoard { move.GetToSquareIndex() }))
+				{
+					return false;
+				}
+			}
+			else if (GetAttackers(m_Position, OtherTeam(m_Position.TeamToPlay), move.GetToSquareIndex(), m_Position.GetAllPieces() ^ BitBoard { move.GetFromSquareIndex() }))
+			{
+				return false;
+			}
+		}
+		if (move.GetMovingPiece() == PIECE_KING)
+		{
+			return !IsSquareUnderAttack(m_Position, OtherTeam(m_Position.TeamToPlay), move.GetToSquareIndex());
+		}
+		return !(m_Position.InfoCache.BlockersForKing[m_Position.TeamToPlay] & BitBoard { move.GetFromSquareIndex() })
+					|| IsAligned(move.GetFromSquareIndex(), move.GetToSquareIndex(), kingSquare);
 	}
 
 	void MoveGenerator::GenerateMoves(Team team, Piece pieceType, const Position& position)
@@ -161,7 +248,8 @@ namespace Boxfish
 	{
 		BitBoard pawns = position.Teams[team].Pieces[PIECE_PAWN];
 		BitBoard originalPawns = pawns & ((team == TEAM_WHITE) ? RANK_2_MASK : RANK_7_MASK);
-		BitBoard movedPawns = ((team == TEAM_WHITE) ? (originalPawns << 2 * GetForwardShift(team)) : (originalPawns >>  2 * -GetForwardShift(team))) & position.GetNotOccupied();
+		BitBoard movedPawns = ((team == TEAM_WHITE) ? (originalPawns << GetForwardShift(team)) : (originalPawns >> -GetForwardShift(team))) & position.GetNotOccupied();
+		movedPawns = ((team == TEAM_WHITE) ? (originalPawns << GetForwardShift(team)) : (originalPawns >> -GetForwardShift(team))) & position.GetNotOccupied();
 		while (movedPawns)
 		{
 			SquareIndex index = PopLeastSignificantBit(movedPawns);

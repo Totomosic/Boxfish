@@ -5,6 +5,16 @@
 namespace Boxfish
 {
 
+	struct PositionInfo
+	{
+	public:
+		BitBoard TeamPieces[TEAM_MAX];
+		BitBoard AllPieces;
+
+		BitBoard BlockersForKing[TEAM_MAX];
+		BitBoard Pinners[TEAM_MAX];
+	};
+
 	struct BOX_API Position
 	{
 	public:
@@ -15,11 +25,6 @@ namespace Boxfish
 			bool CastleKingSide = true;
 			bool CastleQueenSide = true;
 		};
-	private:
-		mutable bool m_IsValid[TEAM_MAX] = { false, false };
-		mutable BitBoard m_TeamPieces[TEAM_MAX];
-		mutable BitBoard m_AllPieces;
-
 	public:
 		TeamPosition Teams[TEAM_MAX];
 		Team TeamToPlay = TEAM_WHITE;
@@ -28,10 +33,19 @@ namespace Boxfish
 		Square EnpassantSquare = INVALID_SQUARE;
 		ZobristHash Hash;
 
+		PositionInfo InfoCache;
+
 	public:
 		const BitBoard& GetTeamPieces(Team team) const;
 		const BitBoard& GetAllPieces() const;
 		BitBoard GetNotOccupied() const;
+
+		BitBoard GetTeamPieces(Team team, Piece piece) const;
+		BitBoard GetTeamPieces(Team team, Piece piece, Piece piece2) const;
+		BitBoard GetTeamPieces(Team team, Piece piece, Piece piece2, Piece piece3) const;
+		BitBoard GetPieces(Piece piece) const;
+		BitBoard GetPieces(Piece piece, Piece piece2) const;
+		BitBoard GetPieces(Piece piece, Piece piece2, Piece piece3) const;
 
 		int GetTotalHalfMoves() const;
 

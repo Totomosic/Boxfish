@@ -13,9 +13,20 @@ namespace Boxfish
 		uint64_t Board;
 
 	public:
-		BitBoard();
-		BitBoard(uint64_t board);
-		BitBoard(SquareIndex index);
+		constexpr BitBoard()
+			: Board(0)
+		{
+		}
+
+		constexpr BitBoard(uint64_t board)
+			: Board(board)
+		{
+		}
+
+		constexpr BitBoard(SquareIndex index)
+			: Board(1ULL << (int)index)
+		{
+		}
 
 		bool GetAt(const Square& square) const;
 		int GetCount() const;
@@ -48,6 +59,9 @@ namespace Boxfish
 		static File FileOfIndex(int index);
 	};
 
+	constexpr BitBoard ALL_SQUARES_BB = 0xFFFFFFFFFFFFFFFF;
+
+	bool MoreThanOne(const BitBoard& board);
 	SquareIndex ForwardBitScan(const BitBoard& board);
 	SquareIndex BackwardBitScan(const BitBoard& board);
 	SquareIndex PopLeastSignificantBit(BitBoard& board);

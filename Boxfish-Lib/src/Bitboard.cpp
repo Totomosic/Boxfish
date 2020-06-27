@@ -3,21 +3,6 @@
 namespace Boxfish
 {
 
-	BitBoard::BitBoard()
-		: Board(0)
-	{
-	}
-
-	BitBoard::BitBoard(uint64_t board)
-		: Board(board)
-	{
-	}
-
-	BitBoard::BitBoard(SquareIndex index)
-		: Board(1ULL << (int)index)
-	{
-	}
-
 	bool BitBoard::GetAt(const Square& square) const
 	{
 		return (Board & BOX_BIT((uint64_t)SquareToBitIndex(square))) != 0;
@@ -171,6 +156,13 @@ namespace Boxfish
 				stream << std::endl;
 		}
 		return stream;
+	}
+
+	bool MoreThanOne(const BitBoard& board)
+	{
+		if (!board)
+			return false;
+		return ForwardBitScan(board) != BackwardBitScan(board);
 	}
 
 	SquareIndex ForwardBitScan(const BitBoard& board)
