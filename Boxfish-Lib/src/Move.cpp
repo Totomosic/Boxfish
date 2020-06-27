@@ -84,6 +84,16 @@ namespace Boxfish
 		m_Move = (m_Move & ~mask) | ((piece << 3) & mask);
 	}
 
+	bool operator==(const Move& left, const Move& right)
+	{
+		return left.m_Move == right.m_Move;
+	}
+
+	bool operator!=(const Move& left, const Move& right)
+	{
+		return left.m_Move != right.m_Move;
+	}
+
 	std::string FormatMove(const Move& move, bool includeSymbols)
 	{
 		std::string result = SquareToString(move.GetFromSquare()) + SquareToString(move.GetToSquare());
