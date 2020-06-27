@@ -4,20 +4,52 @@
 namespace Boxfish
 {
 
-	MoveSelector::MoveSelector(MoveList& legalMoves)
-		: m_LegalMoves(legalMoves), m_CurrentIndex(0)
+	std::string FormatLine(const Line& line, bool includeSymbols)
+	{
+		std::string result = "";
+		for (size_t i = 0; i < line.CurrentIndex; i++)
+		{
+			result += FormatMove(line.Moves[i], includeSymbols) + " ";
+		}
+		return result;
+	}
+
+	MoveSelector::MoveSelector(const MoveOrderingInfo* info, MoveList* legalMoves)
+		: m_OrderingInfo(info), m_LegalMoves(legalMoves), m_CurrentIndex(0)
 	{
 	}
 
 	bool MoveSelector::Empty() const
 	{
-		return m_CurrentIndex >= m_LegalMoves.MoveCount;
+		return m_CurrentIndex >= m_LegalMoves->MoveCount;
 	}
 
 	Move MoveSelector::GetNextMove()
 	{
 		BOX_ASSERT(!Empty(), "Move list is empty");
-		return m_LegalMoves.Moves[m_CurrentIndex++];
+		int bestIndex = m_CurrentIndex;
+		Centipawns bestScore = -INF;
+		for (int index = m_CurrentIndex; index < m_LegalMoves->MoveCount; index++)
+		{
+			Centipawns score = 0;
+			const Move& move = m_LegalMoves->Moves[index];
+			if (m_OrderingInfo->PVMove && ((*m_OrderingInfo->PVMove) == move))
+			{
+				score = INF;
+			}
+			if (score > bestScore)
+			{
+				bestIndex = index;
+				bestScore = score;
+				if (bestScore == INF)
+					break;
+			}
+		}
+		if (m_CurrentIndex != bestIndex)
+		{
+			std::swap(m_LegalMoves->Moves[m_CurrentIndex], m_LegalMoves->Moves[bestIndex]);
+		}
+		return m_LegalMoves->Moves[m_CurrentIndex++];
 	}
 
 	void ScoreMoves(const Position& position, MoveList& moves, int* moveScores)

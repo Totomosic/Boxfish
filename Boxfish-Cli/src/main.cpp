@@ -151,7 +151,7 @@ int main(int argc, const char** argv)
 				Search& search = engine.GetSearch();
 				search.SetCurrentPosition(engine.GetCurrentPosition());
 				search.Go(depth);
-				std::cout << "bestmove " << FormatMove(search.GetBestMove(), false) << " " << search.GetBestScore() << " pv " << FormatLine(search.GetPV()) << std::endl;
+				std::cout << "bestmove " << FormatMove(search.GetBestMove(), false) << std::endl;
 			}
 		}
 		else if (command == "eval")
@@ -168,7 +168,8 @@ int main(int argc, const char** argv)
 		else if (command == "moves")
 		{
 			MoveGenerator generator(engine.GetCurrentPosition());
-			MoveList moves = generator.GetLegalMoves(generator.GetPseudoLegalMoves());
+			MoveList moves = generator.GetPseudoLegalMoves();
+			generator.FilterLegalMoves(moves);
 			if (!moves.Empty())
 			{
 				for (int i = 0; i < moves.MoveCount; i++)

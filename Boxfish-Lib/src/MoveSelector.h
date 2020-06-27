@@ -5,14 +5,30 @@
 namespace Boxfish
 {
 
+	struct BOX_API Line
+	{
+	public:
+		size_t CurrentIndex = 0;
+		Move Moves[50];
+	};
+
+	std::string FormatLine(const Line& line, bool includeSymbols = true);
+
+	struct BOX_API MoveOrderingInfo
+	{
+	public:
+		const Move* PVMove = nullptr;
+	};
+
 	class BOX_API MoveSelector
 	{
 	private:
-		MoveList& m_LegalMoves;
+		const MoveOrderingInfo* m_OrderingInfo;
+		MoveList* m_LegalMoves;
 		int m_CurrentIndex;
 
 	public:
-		MoveSelector(MoveList& legalMoves);
+		MoveSelector(const MoveOrderingInfo* info, MoveList* legalMoves);
 		
 		bool Empty() const;
 		Move GetNextMove();

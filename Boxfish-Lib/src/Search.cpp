@@ -26,16 +26,35 @@ namespace Boxfish
 	void Search::SetCurrentPosition(const Position& position)
 	{
 		m_CurrentPosition = position;
+		m_PV = Line();
 	}
 
 	void Search::SetCurrentPosition(Position&& position)
 	{
 		m_CurrentPosition = std::move(position);
+		m_PV = Line();
 	}
 
 	void Search::Go(int depth)
 	{
-		SearchRoot(m_CurrentPosition, depth);
+		for (int i = 1; i <= depth; i++)
+		{
+			SearchRoot(m_CurrentPosition, i);
+			if (m_Log)
+			{
+				std::cout << "info depth " << i << " score ";
+				if (m_BestScore != INF && m_BestScore != -INF)
+				{
+					std::cout << "cp " << m_BestScore;
+				}
+				else
+				{
+					std::cout << "mate";
+				}
+				std::cout << " nodes " << m_Nodes;
+				std::cout << " pv " << FormatLine(m_PV) << std::endl;
+			}
+		}
 	}
 
 	void Search::Reset()
@@ -53,7 +72,14 @@ namespace Boxfish
 		MoveGenerator generator(position);
 		MoveList legalMoves = generator.GetPseudoLegalMoves();
 		generator.FilterLegalMoves(legalMoves);
-		MoveSelector selector(legalMoves);
+
+		MoveOrderingInfo ordering;
+		if (m_PV.CurrentIndex > 0)
+		{
+			ordering.PVMove = &m_PV.Moves[0];
+		}
+
+		MoveSelector selector(&ordering, &legalMoves);
 		Centipawns currentScore = -INF;
 		while (!selector.Empty())
 		{
@@ -62,7 +88,7 @@ namespace Boxfish
 			line.Moves[line.CurrentIndex++] = move;
 			Position p = position;
 			ApplyMove(p, move);
-			Centipawns score = -Negamax(p, depth - 1, -beta, -alpha, line);
+			Centipawns score = -Negamax(p, depth - 1, -beta, -alpha, 1, line);
 			if (score > currentScore)
 			{
 				m_BestMove = move;
@@ -81,10 +107,9 @@ namespace Boxfish
 		entry.Age = m_CurrentPosition.GetTotalHalfMoves();
 		entry.Score = m_BestScore;
 		m_TranspositionTable.AddEntry(entry);
-		std::cout << "Nodes: " << m_Nodes << std::endl;
 	}
 
-	Centipawns Search::Negamax(const Position& position, int depth, int alpha, int beta, Line& line)
+	Centipawns Search::Negamax(const Position& position, int depth, int alpha, int beta, int searchIndex, Line& line)
 	{
 		m_Nodes++;
 		if (depth <= 0)
@@ -132,7 +157,14 @@ namespace Boxfish
 			return Evaluate(position, position.TeamToPlay);
 		}
 		Move defaultMove = moves.Moves[0];
-		MoveSelector selector(moves);
+
+		MoveOrderingInfo ordering;
+		if (m_PV.CurrentIndex > searchIndex)
+		{
+			ordering.PVMove = &m_PV.Moves[searchIndex];
+		}
+
+		MoveSelector selector(&ordering, &moves);
 		while (!selector.Empty())
 		{
 			Move move = selector.GetNextMove();
@@ -140,7 +172,7 @@ namespace Boxfish
 			thisLine.Moves[thisLine.CurrentIndex++] = move;
 			Position movedPosition = position;
 			ApplyMove(movedPosition, move);
-			Centipawns v = -Negamax(movedPosition, depth - 1, -beta, -alpha, thisLine);
+			Centipawns v = -Negamax(movedPosition, depth - 1, -beta, -alpha, searchIndex + 1, thisLine);
 
 			// Beta cuttoff
 			if (v >= beta)
@@ -217,16 +249,6 @@ namespace Boxfish
 				alpha = score;
 		}
 		return alpha;
-	}
-
-	std::string FormatLine(const Line& line, bool includeSymbols)
-	{
-		std::string result = "";
-		for (size_t i = 0; i < line.CurrentIndex; i++)
-		{
-			result += FormatMove(line.Moves[i], includeSymbols) + " ";
-		}
-		return result;
 	}
 
 }

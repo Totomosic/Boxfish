@@ -397,7 +397,7 @@ namespace Boxfish
 			{
 				BitBoard passThrough = BitBoard(b1) | BitBoard(c1) | BitBoard(d1);
 				bool squaresOccupied = passThrough & occupied;
-				bool underAttack = IsSquareUnderAttack(position, OtherTeam(team), b1) | IsSquareUnderAttack(position, OtherTeam(team), c1) | IsSquareUnderAttack(position, OtherTeam(team), d1) | IsInCheck(position, team);
+				bool underAttack = IsSquareUnderAttack(position, OtherTeam(team), c1) | IsSquareUnderAttack(position, OtherTeam(team), d1) | IsInCheck(position, team);
 				if (!squaresOccupied && !underAttack)
 				{
 					moveList.Moves[moveList.MoveCount++] = Move({ e1, c1, PIECE_KING, MOVE_QUEENSIDE_CASTLE });
@@ -420,7 +420,7 @@ namespace Boxfish
 			{
 				BitBoard passThrough = BitBoard(b8) | BitBoard(c8) | BitBoard(d8);
 				bool squaresOccupied = passThrough & occupied;
-				bool underAttack = IsSquareUnderAttack(position, OtherTeam(team), b8) | IsSquareUnderAttack(position, OtherTeam(team), c8) | IsSquareUnderAttack(position, OtherTeam(team), d8) | IsInCheck(position, team);
+				bool underAttack = IsSquareUnderAttack(position, OtherTeam(team), c8) | IsSquareUnderAttack(position, OtherTeam(team), d8) | IsInCheck(position, team);
 				if (!squaresOccupied && !underAttack)
 				{
 					moveList.Moves[moveList.MoveCount++] = Move({ e8, c8, PIECE_KING, MOVE_QUEENSIDE_CASTLE });
