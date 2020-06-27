@@ -1,4 +1,5 @@
 #include "Rays.h"
+#include "Attacks.h"
 
 namespace Boxfish
 {

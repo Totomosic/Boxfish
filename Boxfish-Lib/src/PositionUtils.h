@@ -14,6 +14,14 @@ namespace Boxfish
 	BitBoard GetTeamPiecesBitBoard(const Position& position, Team team);
 	BitBoard GetOverallPiecesBitBoard(const Position& position);
 
+	BitBoard GetAttackers(const Position& position, Team team, const Square& square, const BitBoard& blockers);
+	BitBoard GetAttackers(const Position& position, Team team, SquareIndex square, const BitBoard& blockers);
+	// Returns a bitboard containing all the pieces that are pinned by sliders to the square
+	// 'sliders' is a bitboard containing a superset of all sliding pieces to check against
+	BitBoard GetSliderBlockers(const Position& position, const BitBoard& sliders, SquareIndex square, BitBoard* pinners);
+	Team GetTeamAt(const Position& position, SquareIndex square);
+	void CalculateKingBlockers(Position& position, Team team);
+
 	bool IsSquareOccupied(const Position& position, Team team, const Square& square);
 	bool IsSquareOccupied(const Position& position, Team team, SquareIndex square);
 	Piece GetPieceAtSquare(const Position& position, Team team, const Square& square);

@@ -4,13 +4,18 @@ namespace Boxfish
 {
 
 	Boxfish::Boxfish()
-		: m_CurrentPosition()
+		: m_CurrentPosition(), m_Search()
 	{
 		Logger::Init();
 		InitZobristHash();
 		InitRays();
 		InitAttacks();
 		InitEvaluation();
+	}
+
+	Search& Boxfish::GetSearch()
+	{
+		return m_Search;
 	}
 
 	const Position& Boxfish::GetCurrentPosition() const

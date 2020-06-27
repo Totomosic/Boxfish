@@ -1,31 +1,52 @@
 #include "Position.h"
+#include <cstdarg>
 
 namespace Boxfish
 {
 
 	const BitBoard& Position::GetTeamPieces(Team team) const
 	{
-		if (!m_IsValid[team])
-		{
-			m_TeamPieces[team] = 0;
-			for (Piece piece = PIECE_PAWN; piece < PIECE_MAX; piece++)
-				m_TeamPieces[team] |= Teams[team].Pieces[piece];
-		}
-		return m_TeamPieces[team];
+		return InfoCache.TeamPieces[team];
 	}
 
 	const BitBoard& Position::GetAllPieces() const
 	{
-		if (!m_IsValid[TEAM_WHITE] || !m_IsValid[TEAM_BLACK])
-		{
-			m_AllPieces = GetTeamPieces(TEAM_WHITE) | GetTeamPieces(TEAM_BLACK);
-		}
-		return m_AllPieces;
+		return InfoCache.AllPieces;
 	}
 
 	BitBoard Position::GetNotOccupied() const
 	{
 		return ~GetAllPieces();
+	}
+
+	BitBoard Position::GetTeamPieces(Team team, Piece piece) const
+	{
+		return Teams[team].Pieces[piece];
+	}
+
+	BitBoard Position::GetTeamPieces(Team team, Piece piece, Piece piece2) const
+	{
+		return GetTeamPieces(team, piece) | GetTeamPieces(team, piece2);
+	}
+
+	BitBoard Position::GetTeamPieces(Team team, Piece piece, Piece piece2, Piece piece3) const
+	{
+		return GetTeamPieces(team, piece, piece2) | GetTeamPieces(team, piece3);
+	}
+
+	BitBoard Position::GetPieces(Piece piece) const
+	{
+		return Teams[TEAM_WHITE].Pieces[piece] | Teams[TEAM_BLACK].Pieces[piece];
+	}
+
+	BitBoard Position::GetPieces(Piece piece, Piece piece2) const
+	{
+		return GetPieces(piece) | GetPieces(piece2);
+	}
+
+	BitBoard Position::GetPieces(Piece piece, Piece piece2, Piece piece3) const
+	{
+		return GetPieces(piece, piece2) | GetPieces(piece3);
 	}
 
 	int Position::GetTotalHalfMoves() const
@@ -35,13 +56,14 @@ namespace Boxfish
 
 	void Position::InvalidateTeam(Team team)
 	{
-		m_IsValid[team] = false;
+		InfoCache.TeamPieces[team] = 0;
+		for (Piece piece = PIECE_PAWN; piece < PIECE_MAX; piece++)
+			InfoCache.TeamPieces[team] |= Teams[team].Pieces[piece];
 	}
 
 	void Position::InvalidateAll()
 	{
-		m_IsValid[TEAM_WHITE] = false;
-		m_IsValid[TEAM_BLACK] = false;
+		InfoCache.AllPieces = GetTeamPieces(TEAM_WHITE) | GetTeamPieces(TEAM_BLACK);
 	}
 
 }

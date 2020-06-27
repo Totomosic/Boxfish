@@ -66,7 +66,8 @@ namespace Boxfish
 		PIECE_ROOK,
 		PIECE_QUEEN,
 		PIECE_KING,
-		PIECE_MAX
+		PIECE_MAX,
+		PIECE_INVALID
 	};
 
 	inline bool IsSlidingPiece(Piece piece)
