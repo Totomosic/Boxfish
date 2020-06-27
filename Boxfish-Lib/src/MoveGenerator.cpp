@@ -249,7 +249,7 @@ namespace Boxfish
 		BitBoard pawns = position.Teams[team].Pieces[PIECE_PAWN];
 		BitBoard originalPawns = pawns & ((team == TEAM_WHITE) ? RANK_2_MASK : RANK_7_MASK);
 		BitBoard movedPawns = ((team == TEAM_WHITE) ? (originalPawns << GetForwardShift(team)) : (originalPawns >> -GetForwardShift(team))) & position.GetNotOccupied();
-		movedPawns = ((team == TEAM_WHITE) ? (originalPawns << GetForwardShift(team)) : (originalPawns >> -GetForwardShift(team))) & position.GetNotOccupied();
+		movedPawns = ((team == TEAM_WHITE) ? (movedPawns << GetForwardShift(team)) : (movedPawns >> -GetForwardShift(team))) & position.GetNotOccupied();
 		while (movedPawns)
 		{
 			SquareIndex index = PopLeastSignificantBit(movedPawns);
