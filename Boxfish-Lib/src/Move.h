@@ -55,6 +55,12 @@ namespace Boxfish
 
 		friend bool operator==(const Move& left, const Move& right);
 		friend bool operator!=(const Move& left, const Move& right);
+
+		inline static Move Null() { 
+			Move mv;
+			mv.SetFlags(MOVE_NULL);
+			return mv;
+		}
 	};
 
 	std::string FormatMove(const Move& move, bool includeSymbols = true);

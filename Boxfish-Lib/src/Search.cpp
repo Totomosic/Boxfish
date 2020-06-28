@@ -4,7 +4,7 @@ namespace Boxfish
 {
 
 	Search::Search(bool log)
-		: m_TranspositionTable(), m_CurrentPosition(), m_BestMove(), m_BestScore(), m_Log(log)
+		: m_TranspositionTable(), m_CurrentPosition(), m_BestMove(Move::Null()), m_BestScore(), m_Log(log)
 	{
 	}
 
@@ -49,7 +49,7 @@ namespace Boxfish
 				}
 				else
 				{
-					std::cout << "mate";
+					std::cout << "mate " << m_PV.CurrentIndex;
 				}
 				std::cout << " nodes " << m_Nodes;
 				std::cout << " pv " << FormatLine(m_PV) << std::endl;
@@ -60,7 +60,7 @@ namespace Boxfish
 	void Search::Reset()
 	{
 		m_TranspositionTable.Clear();
-		m_BestMove = Move();
+		m_BestMove = Move::Null();
 		m_BestScore = -INF;
 	}
 
@@ -220,13 +220,12 @@ namespace Boxfish
 
 	Centipawns Search::QuiescenceSearch(const Position& position, int alpha, int beta)
 	{
+		m_Nodes++;
 		Centipawns evaluation = Evaluate(position, position.TeamToPlay);
 		if (evaluation >= beta)
 			return beta;
 		if (alpha < evaluation)
 			alpha = evaluation;
-
-		m_Nodes++;
 
 		MoveGenerator movegen(position);
 		MoveList legalMoves = movegen.GetPseudoLegalMoves();

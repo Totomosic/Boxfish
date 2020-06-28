@@ -5,15 +5,14 @@
 namespace Boxfish
 {
 
+	// Don't Initialize
 	Move::Move()
-		: m_Move(0)
 	{
 	}
 
 	Move::Move(const MoveDefinition& definition)
-		: m_Move(0)
+		: m_Move(((definition.Flags & 0x7f) << 21) | ((definition.ToSquare & 0x3f) << 15) | ((definition.FromSquare & 0x3f) << 9) | (definition.MovingPiece & 0x7))
 	{
-		m_Move = ((definition.Flags & 0x7f) << 21) | ((definition.ToSquare & 0x3f) << 15) | ((definition.FromSquare & 0x3f) << 9) | (definition.MovingPiece & 0x7);
 	}
 
 	MoveDefinition Move::GetDefinition() const
