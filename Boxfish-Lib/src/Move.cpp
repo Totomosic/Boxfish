@@ -94,6 +94,8 @@ namespace Boxfish
 
 	std::string FormatMove(const Move& move, bool includeSymbols)
 	{
+		if (move.GetFlags() & MOVE_NULL)
+			return FormatNullMove();
 		std::string result = SquareToString(move.GetFromSquare()) + SquareToString(move.GetToSquare());
 		if (includeSymbols)
 		{
@@ -116,7 +118,7 @@ namespace Boxfish
 					break;
 				}
 			}
-			if (move.GetFlags() & MOVE_CAPTURE)
+			if (move.GetFlags() & (MOVE_CAPTURE | MOVE_EN_PASSANT))
 			{
 				result += 'x';
 			}

@@ -601,7 +601,7 @@ namespace Boxfish
 		if (definition.MovingPiece == PIECE_KING && from.File == FILE_E && to.File == FILE_G)
 			move.SetFlags(MOVE_KINGSIDE_CASTLE);
 		
-		if (to == position.EnpassantSquare)
+		if (to == position.EnpassantSquare && move.GetMovingPiece() == PIECE_PAWN)
 			move.SetFlags(MOVE_EN_PASSANT);
 		return move;
 	}

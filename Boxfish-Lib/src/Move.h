@@ -6,7 +6,7 @@ namespace Boxfish
 
 	enum MoveFlag : int
 	{
-		MOVE_NULL = 0,
+		MOVE_NULL = 1 << 0,
 		MOVE_CAPTURE = 1 << 1,
 		MOVE_DOUBLE_PAWN_PUSH = 1 << 2,
 		MOVE_KINGSIDE_CASTLE = 1 << 3,

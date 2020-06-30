@@ -1,6 +1,7 @@
 #pragma once
 #include "Move.h"
 #include "MoveGenerator.h"
+#include "Evaluation.h"
 
 namespace Boxfish
 {
@@ -17,18 +18,20 @@ namespace Boxfish
 	struct BOX_API MoveOrderingInfo
 	{
 	public:
+		const Position* CurrentPosition = nullptr;
 		const Move* PVMove = nullptr;
+		std::function<Centipawns(const Position&, const Move&)> MoveEvaluator;
 	};
 
 	class BOX_API MoveSelector
 	{
 	private:
-		const MoveOrderingInfo* m_OrderingInfo;
+		const MoveOrderingInfo m_OrderingInfo;
 		MoveList* m_LegalMoves;
 		int m_CurrentIndex;
 
 	public:
-		MoveSelector(const MoveOrderingInfo* info, MoveList* legalMoves);
+		MoveSelector(const MoveOrderingInfo& info, MoveList* legalMoves);
 		
 		bool Empty() const;
 		Move GetNextMove();

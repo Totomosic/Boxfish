@@ -7,6 +7,7 @@ namespace Boxfish
 		: m_CurrentPosition(), m_Search()
 	{
 		Logger::Init();
+		Random::Init();
 		InitZobristHash();
 		InitRays();
 		InitAttacks();

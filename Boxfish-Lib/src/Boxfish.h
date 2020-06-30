@@ -6,6 +6,7 @@
 #include "Rays.h"
 #include "ZobristHash.h"
 #include "TranspositionTable.h"
+#include "Random.h"
 
 #include "Attacks.h"
 #include "MoveGenerator.h"

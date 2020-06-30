@@ -66,53 +66,42 @@ namespace Boxfish
 
 	bool MoveGenerator::HasAtLeastOneLegalMove()
 	{
-		MoveList pseudoMoveList;
 		MoveList moveList;
-		if (moveList.MoveCount > 0)
-			return true;
 		Team team = m_Position.TeamToPlay;
-		GenerateKingMoves(pseudoMoveList, team, m_Position);
-		GenerateLegalMoves(moveList, pseudoMoveList);
+		GenerateKingMoves(moveList, team, m_Position);
+		FilterLegalMoves(moveList);
 		if (moveList.MoveCount > 0)
 			return true;
-		pseudoMoveList.MoveCount = 0;
-		GenerateQueenMoves(pseudoMoveList, team, m_Position);
-		GenerateLegalMoves(moveList, pseudoMoveList);
+		GenerateQueenMoves(moveList, team, m_Position);
+		FilterLegalMoves(moveList);
 		if (moveList.MoveCount > 0)
 			return true;
-		pseudoMoveList.MoveCount = 0;
-		GenerateKnightMoves(pseudoMoveList, team, m_Position);
-		GenerateLegalMoves(moveList, pseudoMoveList);
+		GenerateKnightMoves(moveList, team, m_Position);
+		FilterLegalMoves(moveList);
 		if (moveList.MoveCount > 0)
 			return true;
-		pseudoMoveList.MoveCount = 0;
-		GenerateBishopMoves(pseudoMoveList, team, m_Position);
-		GenerateLegalMoves(moveList, pseudoMoveList);
+		GenerateBishopMoves(moveList, team, m_Position);
+		FilterLegalMoves(moveList);
 		if (moveList.MoveCount > 0)
 			return true;
-		pseudoMoveList.MoveCount = 0;
-		GeneratePawnLeftAttacks(pseudoMoveList, team, m_Position);
-		GenerateLegalMoves(moveList, pseudoMoveList);
+		GeneratePawnLeftAttacks(moveList, team, m_Position);
+		FilterLegalMoves(moveList);
 		if (moveList.MoveCount > 0)
 			return true;
-		pseudoMoveList.MoveCount = 0;
-		GeneratePawnRightAttacks(pseudoMoveList, team, m_Position);
-		GenerateLegalMoves(moveList, pseudoMoveList);
+		GeneratePawnRightAttacks(moveList, team, m_Position);
+		FilterLegalMoves(moveList);
 		if (moveList.MoveCount > 0)
 			return true;
-		pseudoMoveList.MoveCount = 0;
-		GeneratePawnSinglePushes(pseudoMoveList, team, m_Position);
-		GenerateLegalMoves(moveList, pseudoMoveList);
+		GeneratePawnSinglePushes(moveList, team, m_Position);
+		FilterLegalMoves(moveList);
 		if (moveList.MoveCount > 0)
 			return true;
-		pseudoMoveList.MoveCount = 0;
-		GeneratePawnDoublePushes(pseudoMoveList, team, m_Position);
-		GenerateLegalMoves(moveList, pseudoMoveList);
+		GeneratePawnDoublePushes(moveList, team, m_Position);
+		FilterLegalMoves(moveList);
 		if (moveList.MoveCount > 0)
 			return true;
-		pseudoMoveList.MoveCount = 0;
-		GenerateRookMoves(pseudoMoveList, team, m_Position);
-		GenerateLegalMoves(moveList, pseudoMoveList);
+		GenerateRookMoves(moveList, team, m_Position);
+		FilterLegalMoves(moveList);
 		if (moveList.MoveCount > 0)
 			return true;
 		return false;

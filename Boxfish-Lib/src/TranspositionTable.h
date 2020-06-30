@@ -29,7 +29,7 @@ namespace Boxfish
 	{
 	public:
 		// 50MB table
-		static constexpr uint64_t TABLE_SIZE = 1638400;
+		static constexpr uint64_t TABLE_SIZE = 32768 * 256;
 
 	private:
 		std::unique_ptr<TranspositionTableEntry[]> m_Entries;

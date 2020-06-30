@@ -106,6 +106,9 @@ int main(int argc, const char** argv)
 			size_t moves = args.find("moves ");
 			if (moves != std::string_view::npos)
 			{
+				PositionHistory& history = engine.GetSearch().GetHistory();
+				history.Clear();
+				history.Push(engine.GetCurrentPosition());
 				size_t begin = moves + 6;
 				while (begin != std::string_view::npos && begin < args.size())
 				{
@@ -123,6 +126,7 @@ int main(int argc, const char** argv)
 						{
 							ApplyMove(position, move);
 							engine.SetPosition(position);
+							history.Push(position);
 						}
 						else
 						{
@@ -140,6 +144,10 @@ int main(int argc, const char** argv)
 						begin = end;
 				}
 			}
+			else
+			{
+				engine.GetSearch().GetHistory().Push(engine.GetCurrentPosition());
+			}
 		}
 		else if (command == "go")
 		{
@@ -150,8 +158,9 @@ int main(int argc, const char** argv)
 				int depth = std::stoi(std::string(args.substr(depthString + 6, space - depthString - 6)));
 				Search& search = engine.GetSearch();
 				search.SetCurrentPosition(engine.GetCurrentPosition());
-				search.Go(depth);
-				std::cout << "bestmove " << FormatMove(search.GetBestMove(), false) << std::endl;
+
+				Move move = search.Go(depth);
+				std::cout << "bestmove " << FormatMove(move, false) << std::endl;
 			}
 		}
 		else if (command == "eval")
