@@ -82,12 +82,12 @@ namespace Boxfish
 		m_ShouldStop = false;
 		m_StartTime = std::chrono::high_resolution_clock::now();
 
-		Line currentPV;
+		SearchStats searchStats;
 
 		for (int i = 1; i <= depth; i++)
 		{
 			m_SearchRootStartTime = std::chrono::high_resolution_clock::now();
-			SearchRoot(m_CurrentPosition, i, currentPV);
+			SearchRoot(m_CurrentPosition, i, searchStats);
 			std::chrono::time_point<std::chrono::high_resolution_clock> endTime = std::chrono::high_resolution_clock::now();
 			auto elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(endTime - m_SearchRootStartTime);
 			if (m_Log && !m_WasStopped)
@@ -107,9 +107,11 @@ namespace Boxfish
 				std::cout << " time " << (size_t)(elapsed.count() / 1e6f);
 				std::cout << " pv " << FormatLine(pv) << std::endl;
 
-				currentPV = pv;
+				searchStats.PV = pv;
 			}
 		}
+		std::cout << "Table Hits: " << searchStats.TableHits << std::endl;
+		std::cout << "Table Misses: " << searchStats.TableMisses << std::endl;
 		return m_BestMove;
 	}
 
@@ -137,7 +139,7 @@ namespace Boxfish
 		return pv;
 	}
 
-	void Search::SearchRoot(const Position& position, int depth, const Line& pv)
+	void Search::SearchRoot(const Position& position, int depth, SearchStats& stats)
 	{
 		m_Nodes = 0;
 		int alpha = -INF;
@@ -157,9 +159,9 @@ namespace Boxfish
 		MoveOrderingInfo ordering;
 		ordering.CurrentPosition = &m_CurrentPosition;
 		ordering.MoveEvaluator = std::bind(&Search::GetMoveScoreBonus, this, std::placeholders::_1, std::placeholders::_2);
-		if (pv.CurrentIndex > 0)
+		if (stats.PV.CurrentIndex > 0)
 		{
-			ordering.PVMove = &pv.Moves[0];
+			ordering.PVMove = &stats.PV.Moves[0];
 		}
 
 		if (legalMoves.Empty())
@@ -178,19 +180,26 @@ namespace Boxfish
 			ApplyMove(p, move);
 			Centipawns rootMoveBonus = GetMoveScoreBonus(position, move);
 
+			SearchData childData;
+			childData.Depth = depth - 1;
+			childData.Ply = 1;
+			childData.Alpha = rootMoveBonus - beta;
+			childData.Beta = rootMoveBonus - alpha;
+			childData.IsPV = move == stats.PV.Moves[0];
+
 			Centipawns score;
 			if (fullWindow)
 			{
-				score = rootMoveBonus - Negamax(p, depth - 1, rootMoveBonus - beta, rootMoveBonus - alpha, 1, pv);
+				score = rootMoveBonus - Negamax(p, childData, stats);
 			}
 			else
 			{
-				score = rootMoveBonus - Negamax(p, depth - 1, rootMoveBonus - beta, rootMoveBonus - alpha, 1, pv);
+				score = rootMoveBonus - Negamax(p, childData, stats);
 				if (score > alpha)
 				{
-					alpha = -INF;
-					beta = INF;
-					score = rootMoveBonus - Negamax(p, depth - 1, rootMoveBonus - beta, rootMoveBonus - alpha, 1, pv);
+					childData.Alpha = -beta;
+					childData.Beta = -alpha;
+					score = rootMoveBonus - Negamax(p, childData, stats);
 					fullWindow = true;
 				}
 			}
@@ -224,7 +233,7 @@ namespace Boxfish
 		m_TranspositionTable.AddEntry(entry);
 	}
 
-	Centipawns Search::Negamax(const Position& position, int depth, int alpha, int beta, int searchIndex, const Line& pv)
+	Centipawns Search::Negamax(const Position& position, SearchData data, SearchStats& stats)
 	{
 		if (CheckLimits())
 		{
@@ -239,37 +248,39 @@ namespace Boxfish
 		{
 			return 0;
 		}
-		if (m_PositionHistory.Contains(position, searchIndex))
+		if (m_PositionHistory.Contains(position, data.Ply))
 		{
 			return 0;
 		}
 
-		if (depth <= 0)
+		if (data.Depth <= 0)
 		{
-			return QuiescenceSearch(position, alpha, beta, searchIndex);
+			return QuiescenceSearch(position, data.Alpha, data.Beta, data.Ply);
 		}
 		// Find hash move
 		const TranspositionTableEntry* entry = m_TranspositionTable.GetEntry(position.Hash);
-		if (entry && entry->Depth >= depth)
+		if (entry && entry->Depth >= data.Depth)
 		{
 			if (entry->Hash == position.Hash)
 			{
+				stats.TableHits++;
 				switch (entry->Flag)
 				{
 				case EXACT:
 					return entry->Score;
 				case UPPER_BOUND:
-					beta = std::min(beta, entry->Score);
+					data.Beta = std::min(data.Beta, entry->Score);
 					break;
 				case LOWER_BOUND:
-					alpha = std::max(alpha, entry->Score);
+					data.Alpha = std::max(data.Alpha, entry->Score);
 					break;
 				}
-				if (alpha >= beta)
+				if (data.Alpha >= data.Beta)
 				{
 					return entry->Score;
 				}
 			}
+			stats.TableMisses++;
 		}
 
 		Move bestMove = Move::Null();
@@ -284,9 +295,9 @@ namespace Boxfish
 
 		MoveOrderingInfo ordering;
 		ordering.CurrentPosition = &position;
-		if (pv.CurrentIndex > searchIndex)
+		if (data.IsPV && stats.PV.CurrentIndex > data.Ply)
 		{
-			ordering.PVMove = &pv.Moves[searchIndex];
+			ordering.PVMove = &stats.PV.Moves[data.Ply];
 		}
 
 		MoveSelector selector(ordering, &moves);
@@ -296,7 +307,14 @@ namespace Boxfish
 			Position movedPosition = position;
 			ApplyMove(movedPosition, move);
 
-			Centipawns value = -Negamax(movedPosition, depth - 1, -beta, -alpha, searchIndex + 1, pv);
+			SearchData childData;
+			childData.Depth = data.Depth - 1;
+			childData.Ply = data.Ply + 1;
+			childData.Alpha = -data.Beta;
+			childData.Beta = -data.Alpha;
+			childData.IsPV = data.IsPV && move == stats.PV.Moves[data.Ply];
+
+			Centipawns value = -Negamax(movedPosition, childData, stats);
 
 			if (CheckLimits())
 			{
@@ -305,21 +323,21 @@ namespace Boxfish
 			}
 
 			// Beta cuttoff - Fail high
-			if (value >= beta)
+			if (value >= data.Beta)
 			{
 				TranspositionTableEntry failHighEntry;
 				failHighEntry.Score = value;
-				failHighEntry.Depth = depth;
+				failHighEntry.Depth = data.Depth;
 				failHighEntry.Flag = LOWER_BOUND;
 				failHighEntry.Hash = position.Hash;
 				failHighEntry.BestMove = move;
 				failHighEntry.Age = position.GetTotalHalfMoves();
 				m_TranspositionTable.AddEntry(failHighEntry);
-				return beta;
+				return data.Beta;
 			}
-			if (value > alpha)
+			if (value > data.Alpha)
 			{
-				alpha = value;
+				data.Alpha = value;
 				bestMove = move;
 			}
 		}
@@ -329,13 +347,13 @@ namespace Boxfish
 		}
 		TranspositionTableEntry newEntry;
 		newEntry.Age = position.GetTotalHalfMoves();
-		newEntry.Depth = depth;
+		newEntry.Depth = data.Depth;
 		newEntry.BestMove = bestMove;
 		newEntry.Flag = EXACT;
-		newEntry.Score = alpha;
+		newEntry.Score = data.Alpha;
 		newEntry.Hash = position.Hash;
 		m_TranspositionTable.AddEntry(newEntry);
-		return alpha;
+		return data.Alpha;
 	}
 
 	Centipawns Search::QuiescenceSearch(const Position& position, int alpha, int beta, int searchIndex)

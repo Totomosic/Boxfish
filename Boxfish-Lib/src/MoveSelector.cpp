@@ -37,15 +37,15 @@ namespace Boxfish
 			{
 				score = INF;
 			}
-			else if (move.GetFlags() & MOVE_CAPTURE && m_OrderingInfo.CurrentPosition)
+			else if (move.GetFlags() & MOVE_CAPTURE)
 			{
-				score = 10 + GetPieceValue(*m_OrderingInfo.CurrentPosition, move.GetCapturedPiece()) - GetPieceValue(*m_OrderingInfo.CurrentPosition, move.GetMovingPiece());
+				score = 20 + GetPieceValue(move.GetCapturedPiece()) - GetPieceValue(move.GetMovingPiece());
 			}
-			else if (move.GetFlags() & MOVE_PROMOTION && m_OrderingInfo.CurrentPosition)
+			else if (move.GetFlags() & MOVE_PROMOTION)
 			{
-				score = 20 + GetPieceValue(*m_OrderingInfo.CurrentPosition, move.GetPromotionPiece());
+				score = 50 + GetPieceValue(move.GetPromotionPiece());
 			}
-			else if (m_OrderingInfo.MoveEvaluator)
+			else if (m_OrderingInfo.MoveEvaluator && m_OrderingInfo.CurrentPosition)
 			{
 				score = m_OrderingInfo.MoveEvaluator(*m_OrderingInfo.CurrentPosition, move);
 			}
@@ -71,11 +71,11 @@ namespace Boxfish
 			Move& move = moves.Moves[i];
 			if (move.GetFlags() & MOVE_CAPTURE)
 			{
-				moveScores[i] = 20 + GetPieceValue(position, move.GetCapturedPiece()) - GetPieceValue(position, move.GetMovingPiece());
+				moveScores[i] = 20 + GetPieceValue(move.GetCapturedPiece()) - GetPieceValue(move.GetMovingPiece());
 			}
 			else if (move.GetFlags() & MOVE_PROMOTION)
 			{
-				moveScores[i] = 50 + GetPieceValue(position, move.GetPromotionPiece());
+				moveScores[i] = 50 + GetPieceValue(move.GetPromotionPiece());
 			}
 		}
 	}
@@ -86,7 +86,7 @@ namespace Boxfish
 		ScoreMovesQuiescence(position, legalMoves, m_MoveScores);
 		for (int i = 0; i < m_LegalMoves.MoveCount; i++)
 		{
-			Move& m = m_LegalMoves.Moves[i];
+			const Move& m = m_LegalMoves.Moves[i];
 			if (m.GetFlags() & MOVE_CAPTURE)
 				m_NumberOfCaptures++;
 		}

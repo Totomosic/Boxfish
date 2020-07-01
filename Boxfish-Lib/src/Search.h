@@ -31,8 +31,27 @@ namespace Boxfish
 		void Clear();
 	};
 
+	struct BOX_API SearchStats
+	{
+	public:
+		Line PV;
+		size_t TableHits = 0;
+		size_t TableMisses = 0;
+	};
+
 	class BOX_API Search
 	{
+	private:
+		struct BOX_API SearchData
+		{
+		public:
+			int Depth;
+			int Ply;
+			int Alpha;
+			int Beta;
+			bool IsPV;
+		};
+
 	private:
 		TranspositionTable m_TranspositionTable;
 		Position m_CurrentPosition;
@@ -71,8 +90,8 @@ namespace Boxfish
 	private:
 		Line GetPV(int depth) const;
 
-		void SearchRoot(const Position& position, int depth, const Line& pv);
-		Centipawns Negamax(const Position& position, int depth, int alpha, int beta, int searchIndex, const Line& pv);
+		void SearchRoot(const Position& position, int depth, SearchStats& stats);
+		Centipawns Negamax(const Position& position, SearchData data, SearchStats& stats);
 		Centipawns QuiescenceSearch(const Position& position, int alpha, int beta, int searchIndex);
 
 		bool CheckLimits() const;

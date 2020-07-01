@@ -39,5 +39,6 @@ namespace Boxfish
 	Centipawns Evaluate(const Position& position, Team team);
 
 	Centipawns GetPieceValue(const Position& position, Piece piece);
+	Centipawns GetPieceValue(Piece piece);
 
 }

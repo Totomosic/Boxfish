@@ -203,4 +203,9 @@ namespace Boxfish
 		return InterpolateGameStage(gameStage, mg, eg);
 	}
 
+	Centipawns GetPieceValue(Piece piece)
+	{
+		return s_MaterialValues[MIDGAME][piece];
+	}
+
 }
