@@ -77,6 +77,7 @@ namespace Boxfish
 
 	Move Search::Go(int depth)
 	{
+		m_TranspositionTable.Clear();
 		m_SearchDepth = depth;
 		m_WasStopped = false;
 		m_ShouldStop = false;
@@ -161,7 +162,7 @@ namespace Boxfish
 		ordering.MoveEvaluator = std::bind(&Search::GetMoveScoreBonus, this, std::placeholders::_1, std::placeholders::_2);
 		if (stats.PV.CurrentIndex > 0)
 		{
-			ordering.PVMove = &stats.PV.Moves[0];
+			ordering.PVMove = stats.PV.Moves[0];
 		}
 
 		if (legalMoves.Empty())
@@ -257,6 +258,9 @@ namespace Boxfish
 		{
 			return QuiescenceSearch(position, data.Alpha, data.Beta, data.Ply);
 		}
+
+		int originalAlpha = data.Alpha;
+
 		// Find hash move
 		const TranspositionTableEntry* entry = m_TranspositionTable.GetEntry(position.Hash);
 		if (entry && entry->Depth >= data.Depth)
@@ -297,18 +301,27 @@ namespace Boxfish
 		ordering.CurrentPosition = &position;
 		if (data.IsPV && stats.PV.CurrentIndex > data.Ply)
 		{
-			ordering.PVMove = &stats.PV.Moves[data.Ply];
+			ordering.PVMove = stats.PV.Moves[data.Ply];
 		}
-
 		MoveSelector selector(ordering, &moves);
+
+		int moveIndex = 0;
+		int movesSinceBetaCutoff = 0;
+		int depthExtension = 0;
+
 		while (!selector.Empty())
 		{
 			Move move = selector.GetNextMove();
 			Position movedPosition = position;
 			ApplyMove(movedPosition, move);
 
+			if (move.GetFlags() & (MOVE_CAPTURE | MOVE_PROMOTION) && depthExtension < 0)
+			{
+				depthExtension = 0;
+			}
+
 			SearchData childData;
-			childData.Depth = data.Depth - 1;
+			childData.Depth = data.Depth - 1 + depthExtension;
 			childData.Ply = data.Ply + 1;
 			childData.Alpha = -data.Beta;
 			childData.Beta = -data.Alpha;
@@ -325,6 +338,8 @@ namespace Boxfish
 			// Beta cuttoff - Fail high
 			if (value >= data.Beta)
 			{
+				movesSinceBetaCutoff = 0;
+				depthExtension = 0;
 				TranspositionTableEntry failHighEntry;
 				failHighEntry.Score = value;
 				failHighEntry.Depth = data.Depth;
@@ -335,10 +350,28 @@ namespace Boxfish
 				m_TranspositionTable.AddEntry(failHighEntry);
 				return data.Beta;
 			}
+			if (value > data.Alpha && depthExtension < 0)
+			{
+				// Re search
+				childData.Depth = data.Depth - 1;
+				value = -Negamax(movedPosition, childData, stats);
+			}
 			if (value > data.Alpha)
 			{
 				data.Alpha = value;
 				bestMove = move;
+			}
+			movesSinceBetaCutoff++;
+			if (data.Depth > 3)
+			{
+				if (movesSinceBetaCutoff > 10)
+				{
+					depthExtension = -data.Depth / 3;
+				}
+				else if (movesSinceBetaCutoff > 3)
+				{
+					depthExtension = -1;
+				}
 			}
 		}
 		if (bestMove.GetFlags() & MOVE_NULL)
@@ -349,7 +382,7 @@ namespace Boxfish
 		newEntry.Age = position.GetTotalHalfMoves();
 		newEntry.Depth = data.Depth;
 		newEntry.BestMove = bestMove;
-		newEntry.Flag = EXACT;
+		newEntry.Flag = (data.Alpha > originalAlpha) ? EXACT : UPPER_BOUND;
 		newEntry.Score = data.Alpha;
 		newEntry.Hash = position.Hash;
 		m_TranspositionTable.AddEntry(newEntry);
@@ -388,7 +421,6 @@ namespace Boxfish
 		while (!selector.Empty())
 		{
 			Move move = selector.GetNextMove();
-			BOX_ASSERT(move.GetFlags() & (MOVE_CAPTURE | MOVE_PROMOTION), "Invalid QMove");
 			Position movedPosition = position;
 			ApplyMove(movedPosition, move);
 			Centipawns score = -QuiescenceSearch(movedPosition, -beta, -alpha, searchIndex + 1);
@@ -426,13 +458,6 @@ namespace Boxfish
 
 	Centipawns Search::GetMoveScoreBonus(const Position& position, const Move& move) const
 	{
-		if (move.GetMovingPiece() == PIECE_PAWN)
-		{
-			if (move.GetFromSquareIndex() == e2 && move.GetToSquareIndex() == e4)
-				return 10;
-			if (move.GetFromSquareIndex() == d7 && move.GetToSquareIndex() == d5)
-				return 10;
-		}
 		return 0;
 	}
 

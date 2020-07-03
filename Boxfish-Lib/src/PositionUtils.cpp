@@ -476,63 +476,66 @@ namespace Boxfish
 		
 		MoveFlag flags = move.GetFlags();
 		Team currentTeam = position.TeamToPlay;
-		if (!flags)
+		if (!(flags & MOVE_NULL))
 		{
-			MovePiece(position, currentTeam, move.GetMovingPiece(), move.GetFromSquareIndex(), move.GetToSquareIndex());
-		}
-		else if ((flags & MOVE_CAPTURE) && (flags & MOVE_PROMOTION))
-		{
-			Piece capturedPiece = move.GetCapturedPiece();
-			RemovePiece(position, OtherTeam(currentTeam), capturedPiece, move.GetToSquareIndex());
-			RemovePiece(position, currentTeam, move.GetMovingPiece(), move.GetFromSquareIndex());
-			Piece promotionPiece = move.GetPromotionPiece();
-			AddPiece(position, currentTeam, promotionPiece, move.GetToSquareIndex());
-		}
-		else if (flags & MOVE_CAPTURE)
-		{
-			Piece capturedPiece = move.GetCapturedPiece();
-			RemovePiece(position, OtherTeam(currentTeam), capturedPiece, move.GetToSquareIndex());
-			MovePiece(position, currentTeam, move.GetMovingPiece(), move.GetFromSquareIndex(), move.GetToSquareIndex());
-		}
-		else if (flags & MOVE_KINGSIDE_CASTLE)
-		{
-			MovePiece(position, currentTeam, move.GetMovingPiece(), move.GetFromSquareIndex(), move.GetToSquareIndex());
-			if (currentTeam == TEAM_WHITE)
-				MovePiece(position, currentTeam, PIECE_ROOK, h1, f1);
-			else
-				MovePiece(position, currentTeam, PIECE_ROOK, h8, f8);
-		}
-		else if (flags & MOVE_QUEENSIDE_CASTLE)
-		{
-			MovePiece(position, currentTeam, move.GetMovingPiece(), move.GetFromSquareIndex(), move.GetToSquareIndex());
-			if (currentTeam == TEAM_WHITE)
-				MovePiece(position, currentTeam, PIECE_ROOK, a1, d1);
-			else
-				MovePiece(position, currentTeam, PIECE_ROOK, a8, d8);
-		}
-		else if (flags & MOVE_PROMOTION)
-		{
-			RemovePiece(position, currentTeam, move.GetMovingPiece(), move.GetFromSquareIndex());
-			AddPiece(position, currentTeam, move.GetPromotionPiece(), move.GetToSquareIndex());
-		}
-		else if (flags & MOVE_DOUBLE_PAWN_PUSH)
-		{
-			MovePiece(position, currentTeam, move.GetMovingPiece(), move.GetFromSquareIndex(), move.GetToSquareIndex());
-			SquareIndex enPassantSquare = (SquareIndex)(move.GetToSquareIndex() - GetForwardShift(currentTeam));
-			position.EnpassantSquare = BitBoard::BitIndexToSquare(enPassantSquare);
-			position.Hash.AddEnPassant(position.EnpassantSquare.File);
-		}
-		else if (flags & MOVE_EN_PASSANT)
-		{
-			RemovePiece(position, OtherTeam(currentTeam), PIECE_PAWN, (SquareIndex)(move.GetToSquareIndex() - GetForwardShift(currentTeam)));
-			MovePiece(position, currentTeam, move.GetMovingPiece(), move.GetFromSquareIndex(), move.GetToSquareIndex());
-		}
+			if (!flags)
+			{
+				MovePiece(position, currentTeam, move.GetMovingPiece(), move.GetFromSquareIndex(), move.GetToSquareIndex());
+			}
+			else if ((flags & MOVE_CAPTURE) && (flags & MOVE_PROMOTION))
+			{
+				Piece capturedPiece = move.GetCapturedPiece();
+				RemovePiece(position, OtherTeam(currentTeam), capturedPiece, move.GetToSquareIndex());
+				RemovePiece(position, currentTeam, move.GetMovingPiece(), move.GetFromSquareIndex());
+				Piece promotionPiece = move.GetPromotionPiece();
+				AddPiece(position, currentTeam, promotionPiece, move.GetToSquareIndex());
+			}
+			else if (flags & MOVE_CAPTURE)
+			{
+				Piece capturedPiece = move.GetCapturedPiece();
+				RemovePiece(position, OtherTeam(currentTeam), capturedPiece, move.GetToSquareIndex());
+				MovePiece(position, currentTeam, move.GetMovingPiece(), move.GetFromSquareIndex(), move.GetToSquareIndex());
+			}
+			else if (flags & MOVE_KINGSIDE_CASTLE)
+			{
+				MovePiece(position, currentTeam, move.GetMovingPiece(), move.GetFromSquareIndex(), move.GetToSquareIndex());
+				if (currentTeam == TEAM_WHITE)
+					MovePiece(position, currentTeam, PIECE_ROOK, h1, f1);
+				else
+					MovePiece(position, currentTeam, PIECE_ROOK, h8, f8);
+			}
+			else if (flags & MOVE_QUEENSIDE_CASTLE)
+			{
+				MovePiece(position, currentTeam, move.GetMovingPiece(), move.GetFromSquareIndex(), move.GetToSquareIndex());
+				if (currentTeam == TEAM_WHITE)
+					MovePiece(position, currentTeam, PIECE_ROOK, a1, d1);
+				else
+					MovePiece(position, currentTeam, PIECE_ROOK, a8, d8);
+			}
+			else if (flags & MOVE_PROMOTION)
+			{
+				RemovePiece(position, currentTeam, move.GetMovingPiece(), move.GetFromSquareIndex());
+				AddPiece(position, currentTeam, move.GetPromotionPiece(), move.GetToSquareIndex());
+			}
+			else if (flags & MOVE_DOUBLE_PAWN_PUSH)
+			{
+				MovePiece(position, currentTeam, move.GetMovingPiece(), move.GetFromSquareIndex(), move.GetToSquareIndex());
+				SquareIndex enPassantSquare = (SquareIndex)(move.GetToSquareIndex() - GetForwardShift(currentTeam));
+				position.EnpassantSquare = BitBoard::BitIndexToSquare(enPassantSquare);
+				position.Hash.AddEnPassant(position.EnpassantSquare.File);
+			}
+			else if (flags & MOVE_EN_PASSANT)
+			{
+				RemovePiece(position, OtherTeam(currentTeam), PIECE_PAWN, (SquareIndex)(move.GetToSquareIndex() - GetForwardShift(currentTeam)));
+				MovePiece(position, currentTeam, move.GetMovingPiece(), move.GetFromSquareIndex(), move.GetToSquareIndex());
+			}
 
-		if (position.Teams[currentTeam].CastleKingSide || position.Teams[currentTeam].CastleQueenSide)
-			UpdateCastleInfoFromMove(position, currentTeam, move);
+			if (position.Teams[currentTeam].CastleKingSide || position.Teams[currentTeam].CastleQueenSide)
+				UpdateCastleInfoFromMove(position, currentTeam, move);
 
-		CalculateKingBlockers(position, TEAM_WHITE);
-		CalculateKingBlockers(position, TEAM_BLACK);
+			CalculateKingBlockers(position, TEAM_WHITE);
+			CalculateKingBlockers(position, TEAM_BLACK);
+		}
 
 		if (move.GetMovingPiece() == PIECE_PAWN || (flags & MOVE_CAPTURE))
 			position.HalfTurnsSinceCaptureOrPush = 0;

@@ -19,7 +19,7 @@ namespace Boxfish
 	{
 	public:
 		const Position* CurrentPosition = nullptr;
-		const Move* PVMove = nullptr;
+		Move PVMove;
 		std::function<Centipawns(const Position&, const Move&)> MoveEvaluator;
 	};
 

@@ -28,7 +28,7 @@ namespace Boxfish
 		{
 			TranspositionTableEntry& existingEntry = m_Entries[index];
 			// Decide whether to replace the entry
-			if (existingEntry.Depth <= entry.Depth)
+			if (existingEntry.Depth < entry.Depth)
 			{
 				existingEntry = entry;
 			}

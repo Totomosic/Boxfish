@@ -57,6 +57,7 @@ int main(int argc, const char** argv)
 	::Boxfish::Boxfish engine;
 	Position position = CreateStartingPosition();
 	engine.SetPosition(position);
+	engine.SetPosition(CreatePositionFromFEN("r3kb1r/ppp1pp2/n4n1p/1NqpQ1p1/6b1/BP1BP3/P1PP1PPP/R3K1NR b KQkq - 2 9"));
 
 	std::string version = __TIMESTAMP__;
 

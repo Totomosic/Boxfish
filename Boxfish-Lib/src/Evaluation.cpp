@@ -149,8 +149,8 @@ namespace Boxfish
 		}
 
 		int count = attacks.GetCount();
-		Centipawns mg = count * 3;
-		Centipawns eg = count * 5;
+		Centipawns mg = count * 1;
+		Centipawns eg = count * 2;
 		result.Attacks[team] = InterpolateGameStage(stage, mg, eg);
 	}
 

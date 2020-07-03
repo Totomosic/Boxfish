@@ -33,7 +33,7 @@ namespace Boxfish
 		{
 			Centipawns score = 0;
 			const Move& move = m_LegalMoves->Moves[index];
-			if (m_OrderingInfo.PVMove && ((*m_OrderingInfo.PVMove) == move))
+			if (m_OrderingInfo.PVMove == move)
 			{
 				score = INF;
 			}
