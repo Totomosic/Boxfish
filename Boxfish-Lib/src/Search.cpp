@@ -110,6 +110,8 @@ namespace Boxfish
 
 				searchStats.PV = pv;
 			}
+			if (std::abs(m_BestScore) == INF)
+				break;
 		}
 		std::cout << "Table Hits: " << searchStats.TableHits << std::endl;
 		std::cout << "Table Misses: " << searchStats.TableMisses << std::endl;
@@ -146,7 +148,7 @@ namespace Boxfish
 		int alpha = -INF;
 		int beta = INF;
 		bool fullWindow = true;
-		if (depth >= 3)
+		if (depth >= 3 && false)
 		{
 			fullWindow = false;
 			alpha = m_BestScore - 50;
@@ -165,12 +167,18 @@ namespace Boxfish
 			ordering.PVMove = stats.PV.Moves[0];
 		}
 
-		if (legalMoves.Empty())
-		{
-			m_BestMove = Move::Null();
-		}
+		Move currentBestMove = Move::Null();
 
 		MoveSelector selector(m_OrderingInfo, &legalMoves);
+
+		if (selector.Empty())
+		{
+			m_BestMove = currentBestMove;
+			return;
+		}
+
+		Move defaultMove = legalMoves.Moves[0];
+
 		Centipawns currentScore = -INF;
 		while (!selector.Empty())
 		{
@@ -198,10 +206,9 @@ namespace Boxfish
 				score = rootMoveBonus - Negamax(p, childData, stats);
 				if (score > alpha)
 				{
-					childData.Alpha = -beta;
-					childData.Beta = -alpha;
+					childData.Alpha = rootMoveBonus - beta;
+					childData.Beta = rootMoveBonus - alpha;
 					score = rootMoveBonus - Negamax(p, childData, stats);
-					fullWindow = true;
 				}
 			}
 
@@ -211,9 +218,9 @@ namespace Boxfish
 				return;
 			}
 
-			if (score > currentScore || currentScore == -INF)
+			if (score > currentScore)
 			{
-				m_BestMove = move;
+				currentBestMove = move;
 				currentScore = score;
 				if (score == INF)
 					break;
@@ -223,15 +230,22 @@ namespace Boxfish
 				}
 			}
 		}
+
+		if (currentBestMove.GetFlags() & MOVE_NULL)
+		{
+			currentBestMove = defaultMove;
+		}
+
 		m_BestScore = currentScore;
 		TranspositionTableEntry entry;
 		entry.Hash = m_CurrentPosition.Hash;
-		entry.BestMove = m_BestMove;
+		entry.BestMove = currentBestMove;
 		entry.Flag = EXACT;
 		entry.Depth = depth;
 		entry.Age = m_CurrentPosition.GetTotalHalfMoves();
 		entry.Score = m_BestScore;
 		m_TranspositionTable.AddEntry(entry);
+		m_BestMove = currentBestMove;
 	}
 
 	Centipawns Search::Negamax(const Position& position, SearchData data, SearchStats& stats)
@@ -315,7 +329,7 @@ namespace Boxfish
 			Position movedPosition = position;
 			ApplyMove(movedPosition, move);
 
-			if (move.GetFlags() & (MOVE_CAPTURE | MOVE_PROMOTION) && depthExtension < 0)
+			if ((move.GetFlags() & (MOVE_CAPTURE | MOVE_PROMOTION)) && depthExtension < 0)
 			{
 				depthExtension = 0;
 			}
@@ -360,6 +374,8 @@ namespace Boxfish
 			{
 				data.Alpha = value;
 				bestMove = move;
+				if (value >= INF)
+					break;
 			}
 			movesSinceBetaCutoff++;
 			if (data.Depth > 3)

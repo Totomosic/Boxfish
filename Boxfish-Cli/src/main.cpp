@@ -1,5 +1,7 @@
 #include "Boxfish.h"
 
+// position fen rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 moves d2d4 d7d5 a2a3 a7a6 e2e3 e7e6 b1c3 b8c6 g1f3 g8f6 f1d3 f8d6 e3e4 d5e4 c3e4 e6e5 e4d6 c7d6 d4e5 d6e5
+
 using namespace Boxfish;
 
 uint64_t Perft(const Position& position, int depth)
@@ -163,11 +165,28 @@ int main(int argc, const char** argv)
 				Move move = search.Go(depth);
 				std::cout << "bestmove " << FormatMove(move, false) << std::endl;
 			}
+			else
+			{
+				size_t timeString = args.find("time ");
+				if (timeString != std::string_view::npos)
+				{
+					size_t space = args.find_first_of(' ', depthString + 5);
+					int time = std::stoi(std::string(args.substr(timeString + 5, space - timeString - 5)));
+					SearchLimits limits;
+					limits.Milliseconds = time;
+					Search& search = engine.GetSearch();
+					search.SetLimits(limits);
+					search.SetCurrentPosition(engine.GetCurrentPosition());
+
+					Move move = search.Go(50);
+					std::cout << "bestmove " << FormatMove(move, false) << std::endl;
+				}
+			}
 		}
 		else if (command == "eval")
 		{
 			EvaluationResult result = EvaluateDetailed(engine.GetCurrentPosition());
-			std::cout << result.Material[TEAM_BLACK] << " " << result.Material[TEAM_WHITE] << std::endl;
+			std::cout << result.PieceSquares[TEAM_WHITE] << " " << result.Material[TEAM_BLACK] << std::endl;
 			std::cout << result.GetTotal(engine.GetCurrentPosition().TeamToPlay) << " GameStage: " << result.GameStage << std::endl;
 		}
 		else if (command == "perft")

@@ -436,22 +436,22 @@ namespace Boxfish
 	{
 		if (move.GetMovingPiece() == PIECE_ROOK)
 		{
-			if (team == TEAM_WHITE && move.GetFromSquareIndex() == a1)
+			if (team == TEAM_WHITE && move.GetFromSquareIndex() == a1 && position.Teams[team].CastleQueenSide)
 			{
 				position.Teams[team].CastleQueenSide = false;
 				position.Hash.RemoveCastleQueenside(team);
 			}
-			else if (team == TEAM_WHITE && move.GetFromSquareIndex() == h1)
+			else if (team == TEAM_WHITE && move.GetFromSquareIndex() == h1 && position.Teams[team].CastleKingSide)
 			{
 				position.Teams[team].CastleKingSide = false;
 				position.Hash.RemoveCastleKingside(team);
 			}
-			if (team == TEAM_BLACK && move.GetFromSquareIndex() == a8)
+			if (team == TEAM_BLACK && move.GetFromSquareIndex() == a8 && position.Teams[team].CastleQueenSide)
 			{
 				position.Teams[team].CastleQueenSide = false;
 				position.Hash.RemoveCastleQueenside(team);
 			}
-			else if (team == TEAM_BLACK && move.GetFromSquareIndex() == h8)
+			else if (team == TEAM_BLACK && move.GetFromSquareIndex() == h8 && position.Teams[team].CastleKingSide)
 			{
 				position.Teams[team].CastleKingSide = false;
 				position.Hash.RemoveCastleKingside(team);
@@ -459,10 +459,31 @@ namespace Boxfish
 		}
 		else if (move.GetMovingPiece() == PIECE_KING)
 		{
-			position.Teams[team].CastleKingSide = false;
-			position.Teams[team].CastleQueenSide = false;
-			position.Hash.RemoveCastleKingside(team);
-			position.Hash.RemoveCastleQueenside(team);
+			if (position.Teams[team].CastleKingSide)
+			{
+				position.Teams[team].CastleKingSide = false;
+				position.Hash.RemoveCastleKingside(team);
+			}
+			if (position.Teams[team].CastleQueenSide)
+			{
+				position.Teams[team].CastleQueenSide = false;
+				position.Hash.RemoveCastleQueenside(team);
+			}
+		}
+		if ((move.GetFlags() & MOVE_CAPTURE) && move.GetCapturedPiece() == PIECE_ROOK)
+		{
+			Team otherTeam = OtherTeam(team);
+			Square capturedSquare = move.GetToSquare();
+			if (capturedSquare.File == FILE_A && position.Teams[otherTeam].CastleQueenSide)
+			{
+				position.Teams[otherTeam].CastleQueenSide = false;
+				position.Hash.RemoveCastleQueenside(otherTeam);
+			}
+			if (capturedSquare.File == FILE_H && position.Teams[otherTeam].CastleKingSide)
+			{
+				position.Teams[otherTeam].CastleKingSide = false;
+				position.Hash.RemoveCastleKingside(otherTeam);
+			}
 		}
 	}
 

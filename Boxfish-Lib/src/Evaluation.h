@@ -15,11 +15,14 @@ namespace Boxfish
 		Centipawns Material[TEAM_MAX] = { 0 };
 		Centipawns BishopPairs[TEAM_MAX] = { 0 };
 		Centipawns Attacks[TEAM_MAX] = { 0 };
+		Centipawns PieceSquares[TEAM_MAX] = { 0 };
 		bool Checkmate[TEAM_MAX] = { false };
 		bool Stalemate = false;
 		float GameStage;
 
 	public:
+		inline bool IsCheckmate() const { return Checkmate[TEAM_WHITE] || Checkmate[TEAM_BLACK]; }
+
 		inline Centipawns GetTotal(Team team) const
 		{
 			if (Checkmate[team])
@@ -29,7 +32,7 @@ namespace Boxfish
 			if (Stalemate)
 				return 0;
 			Team other = OtherTeam(team);
-			return (Material[team] - Material[other]) + (BishopPairs[team] - BishopPairs[other]) + (Attacks[team] - Attacks[other]);
+			return (Material[team] - Material[other]) + (BishopPairs[team] - BishopPairs[other]) + (Attacks[team] - Attacks[other]) + (PieceSquares[team] - PieceSquares[other]);
 		}
 	};
 
