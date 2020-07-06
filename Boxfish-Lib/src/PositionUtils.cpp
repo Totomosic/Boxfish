@@ -68,8 +68,12 @@ namespace Boxfish
 		result.InvalidateTeam(TEAM_WHITE);
 		result.InvalidateTeam(TEAM_BLACK);
 		result.InvalidateAll();
+		CalculateKingSquare(result, TEAM_WHITE);
+		CalculateKingSquare(result, TEAM_BLACK);
 		CalculateKingBlockers(result, TEAM_WHITE);
 		CalculateKingBlockers(result, TEAM_BLACK);
+		CalculateCheckers(result, TEAM_WHITE);
+		CalculateCheckers(result, TEAM_BLACK);
 		result.Hash.SetFromPosition(result);
 		return result;
 	}
@@ -183,8 +187,12 @@ namespace Boxfish
 		position.InvalidateTeam(TEAM_WHITE);
 		position.InvalidateTeam(TEAM_BLACK);
 		position.InvalidateAll();
+		CalculateKingSquare(position, TEAM_WHITE);
+		CalculateKingSquare(position, TEAM_BLACK);
 		CalculateKingBlockers(position, TEAM_WHITE);
 		CalculateKingBlockers(position, TEAM_BLACK);
+		CalculateCheckers(position, TEAM_WHITE);
+		CalculateCheckers(position, TEAM_BLACK);
 		position.Hash.SetFromPosition(position);
 		return position;
 	}
@@ -328,6 +336,16 @@ namespace Boxfish
 		position.InfoCache.BlockersForKing[team] = GetSliderBlockers(position, position.GetTeamPieces(OtherTeam(team)), BackwardBitScan(position.Teams[team].Pieces[PIECE_KING]), &position.InfoCache.Pinners[OtherTeam(team)]);
 	}
 
+	void CalculateCheckers(Position& position, Team team)
+	{
+		position.InfoCache.CheckedBy[team] = GetAttackers(position, OtherTeam(team), position.InfoCache.KingSquare[team], position.InfoCache.AllPieces);
+	}
+
+	void CalculateKingSquare(Position& position, Team team)
+	{
+		position.InfoCache.KingSquare[team] = BackwardBitScan(position.Teams[team].Pieces[PIECE_KING]);
+	}
+
 	bool IsSquareOccupied(const Position& position, Team team, const Square& square)
 	{
 		return IsSquareOccupied(position, team, BitBoard::SquareToBitIndex(square));
@@ -368,14 +386,7 @@ namespace Boxfish
 
 	bool IsInCheck(const Position& position, Team team)
 	{
-		BitBoard king = position.Teams[team].Pieces[PIECE_KING];
-		while (king)
-		{
-			SquareIndex index = PopLeastSignificantBit(king);
-			if (IsSquareUnderAttack(position, OtherTeam(team), index))
-				return true;
-		}
-		return false;
+		return position.InfoCache.CheckedBy[team];
 	}
 
 	bool IsSquareUnderAttack(const Position& position, Team byTeam, const Square& square)
@@ -487,8 +498,17 @@ namespace Boxfish
 		}
 	}
 
-	void ApplyMove(Position& position, const Move& move)
+	void ApplyMove(Position& position, const Move& move, UndoInfo* outUndoInfo)
 	{
+		if (outUndoInfo)
+		{
+			outUndoInfo->EnpassantSquare = position.EnpassantSquare;
+			outUndoInfo->HalfTurnsSinceCaptureOrPush = position.HalfTurnsSinceCaptureOrPush;
+			outUndoInfo->CastleKingSide[TEAM_WHITE] = position.Teams[TEAM_WHITE].CastleKingSide;
+			outUndoInfo->CastleKingSide[TEAM_BLACK] = position.Teams[TEAM_BLACK].CastleKingSide;
+			outUndoInfo->CastleQueenSide[TEAM_WHITE] = position.Teams[TEAM_WHITE].CastleQueenSide;
+			outUndoInfo->CastleQueenSide[TEAM_BLACK] = position.Teams[TEAM_BLACK].CastleQueenSide;
+		}
 		if (position.EnpassantSquare != INVALID_SQUARE)
 		{
 			position.Hash.RemoveEnPassant(position.EnpassantSquare.File);
@@ -551,11 +571,16 @@ namespace Boxfish
 				MovePiece(position, currentTeam, move.GetMovingPiece(), move.GetFromSquareIndex(), move.GetToSquareIndex());
 			}
 
-			if (position.Teams[currentTeam].CastleKingSide || position.Teams[currentTeam].CastleQueenSide)
+			if (position.Teams[currentTeam].CastleKingSide || position.Teams[currentTeam].CastleQueenSide || ((flags & MOVE_CAPTURE) && move.GetCapturedPiece() == PIECE_ROOK))
 				UpdateCastleInfoFromMove(position, currentTeam, move);
+
+			if (move.GetMovingPiece() == PIECE_KING)
+				CalculateKingSquare(position, currentTeam);
 
 			CalculateKingBlockers(position, TEAM_WHITE);
 			CalculateKingBlockers(position, TEAM_BLACK);
+			CalculateCheckers(position, TEAM_WHITE);
+			CalculateCheckers(position, TEAM_BLACK);
 		}
 
 		if (move.GetMovingPiece() == PIECE_PAWN || (flags & MOVE_CAPTURE))
@@ -567,6 +592,105 @@ namespace Boxfish
 			position.TotalTurns++;
 		position.TeamToPlay = OtherTeam(position.TeamToPlay);
 		position.Hash.FlipTeamToPlay();
+	}
+
+	void UndoMove(Position& position, const Move& move, const UndoInfo& undo)
+	{
+		if (position.TeamToPlay == TEAM_WHITE)
+			position.TotalTurns--;
+		position.TeamToPlay = OtherTeam(position.TeamToPlay);
+		position.Hash.FlipTeamToPlay();
+
+		MoveFlag flags = move.GetFlags();
+		position.HalfTurnsSinceCaptureOrPush = undo.HalfTurnsSinceCaptureOrPush;
+
+		Team currentTeam = position.TeamToPlay;
+		if (!(flags & MOVE_NULL))
+		{
+			if (!flags)
+			{
+				MovePiece(position, currentTeam, move.GetMovingPiece(), move.GetToSquareIndex(), move.GetFromSquareIndex());
+			}
+			else if ((flags & MOVE_CAPTURE) && (flags & MOVE_PROMOTION))
+			{
+				Piece promotionPiece = move.GetPromotionPiece();
+				RemovePiece(position, currentTeam, promotionPiece, move.GetToSquareIndex());
+				Piece capturedPiece = move.GetCapturedPiece();
+				AddPiece(position, currentTeam, move.GetMovingPiece(), move.GetFromSquareIndex());
+				AddPiece(position, OtherTeam(currentTeam), capturedPiece, move.GetToSquareIndex());
+			}
+			else if (flags & MOVE_CAPTURE)
+			{
+				Piece capturedPiece = move.GetCapturedPiece();
+				MovePiece(position, currentTeam, move.GetMovingPiece(), move.GetToSquareIndex(), move.GetFromSquareIndex());
+				AddPiece(position, OtherTeam(currentTeam), capturedPiece, move.GetToSquareIndex());
+			}
+			else if (flags & MOVE_KINGSIDE_CASTLE)
+			{
+				if (currentTeam == TEAM_WHITE)
+					MovePiece(position, currentTeam, PIECE_ROOK, f1, h1);
+				else
+					MovePiece(position, currentTeam, PIECE_ROOK, f8, h8);
+				MovePiece(position, currentTeam, move.GetMovingPiece(), move.GetToSquareIndex(), move.GetFromSquareIndex());
+			}
+			else if (flags & MOVE_QUEENSIDE_CASTLE)
+			{
+				if (currentTeam == TEAM_WHITE)
+					MovePiece(position, currentTeam, PIECE_ROOK, d1, a1);
+				else
+					MovePiece(position, currentTeam, PIECE_ROOK, d8, a8);
+				MovePiece(position, currentTeam, move.GetMovingPiece(), move.GetToSquareIndex(), move.GetFromSquareIndex());
+			}
+			else if (flags & MOVE_PROMOTION)
+			{
+				RemovePiece(position, currentTeam, move.GetPromotionPiece(), move.GetToSquareIndex());
+				AddPiece(position, currentTeam, move.GetMovingPiece(), move.GetFromSquareIndex());
+			}
+			else if (flags & MOVE_DOUBLE_PAWN_PUSH)
+			{
+				position.Hash.RemoveEnPassant(position.EnpassantSquare.File);
+				position.EnpassantSquare = INVALID_SQUARE;
+				MovePiece(position, currentTeam, move.GetMovingPiece(), move.GetToSquareIndex(), move.GetFromSquareIndex());
+			}
+			else if (flags & MOVE_EN_PASSANT)
+			{
+				MovePiece(position, currentTeam, move.GetMovingPiece(), move.GetToSquareIndex(), move.GetFromSquareIndex());
+				AddPiece(position, OtherTeam(currentTeam), PIECE_PAWN, (SquareIndex)(move.GetToSquareIndex() - GetForwardShift(currentTeam)));
+			}
+
+			if (position.Teams[TEAM_WHITE].CastleKingSide != undo.CastleKingSide[TEAM_WHITE])
+			{
+				position.Teams[TEAM_WHITE].CastleKingSide = undo.CastleKingSide[TEAM_WHITE];
+				position.Hash.AddCastleKingside(TEAM_WHITE);
+			}
+			if (position.Teams[TEAM_BLACK].CastleKingSide != undo.CastleKingSide[TEAM_BLACK])
+			{
+				position.Teams[TEAM_BLACK].CastleKingSide = undo.CastleKingSide[TEAM_BLACK];
+				position.Hash.AddCastleKingside(TEAM_BLACK);
+			}
+			if (position.Teams[TEAM_WHITE].CastleQueenSide != undo.CastleQueenSide[TEAM_WHITE])
+			{
+				position.Teams[TEAM_WHITE].CastleQueenSide = undo.CastleQueenSide[TEAM_WHITE];
+				position.Hash.AddCastleQueenside(TEAM_WHITE);
+			}
+			if (position.Teams[TEAM_BLACK].CastleQueenSide != undo.CastleQueenSide[TEAM_BLACK])
+			{
+				position.Teams[TEAM_BLACK].CastleQueenSide = undo.CastleQueenSide[TEAM_BLACK];
+				position.Hash.AddCastleQueenside(TEAM_BLACK);
+			}
+
+			if (move.GetMovingPiece() == PIECE_KING)
+				CalculateKingSquare(position, currentTeam);
+			CalculateKingBlockers(position, TEAM_WHITE);
+			CalculateKingBlockers(position, TEAM_BLACK);
+			CalculateCheckers(position, TEAM_WHITE);
+			CalculateCheckers(position, TEAM_BLACK);
+		}
+		if (undo.EnpassantSquare != INVALID_SQUARE)
+		{
+			position.EnpassantSquare = undo.EnpassantSquare;
+			position.Hash.AddEnPassant(undo.EnpassantSquare.File);
+		}
 	}
 
 	bool SanityCheckMove(const Position& position, const Move& move)

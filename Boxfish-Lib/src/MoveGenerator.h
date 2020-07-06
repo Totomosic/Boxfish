@@ -35,7 +35,7 @@ namespace Boxfish
 		MoveList GetLegalMoves(const MoveList& pseudoLegalMoves);
 		void FilterLegalMoves(MoveList& pseudoLegalMoves);
 
-		bool HasAtLeastOneLegalMove();
+		bool HasAtLeastOneLegalMove(MoveList& list);
 
 	private:
 		void GeneratePseudoLegalMoves(MoveList& moveList);

@@ -45,8 +45,7 @@ namespace Boxfish
 
 	void MoveGenerator::FilterLegalMoves(MoveList& pseudoLegalMoves)
 	{
-		SquareIndex kingSquare = BackwardBitScan(m_Position.Teams[m_Position.TeamToPlay].Pieces[PIECE_KING]);
-		BitBoard checkers = GetAttackers(m_Position, OtherTeam(m_Position.TeamToPlay), kingSquare, m_Position.GetAllPieces());
+		const BitBoard& checkers = m_Position.InfoCache.CheckedBy[m_Position.TeamToPlay];
 		bool multipleCheckers = MoreThanOne(checkers);
 
 		int index = 0;
@@ -64,9 +63,9 @@ namespace Boxfish
 		pseudoLegalMoves.MoveCount = index;
 	}
 
-	bool MoveGenerator::HasAtLeastOneLegalMove()
+	bool MoveGenerator::HasAtLeastOneLegalMove(MoveList& moveList)
 	{
-		MoveList moveList;
+		moveList.MoveCount = 0;
 		Team team = m_Position.TeamToPlay;
 		GenerateKingMoves(moveList, team, m_Position);
 		FilterLegalMoves(moveList);
@@ -117,8 +116,7 @@ namespace Boxfish
 
 	void MoveGenerator::GenerateLegalMoves(MoveList& moveList, const MoveList& pseudoLegalMoves)
 	{
-		SquareIndex kingSquare = BackwardBitScan(m_Position.Teams[m_Position.TeamToPlay].Pieces[PIECE_KING]);
-		BitBoard checkers = GetAttackers(m_Position, OtherTeam(m_Position.TeamToPlay), kingSquare, m_Position.GetAllPieces());
+		const BitBoard& checkers = m_Position.InfoCache.CheckedBy[m_Position.TeamToPlay];
 		bool multipleCheckers = MoreThanOne(checkers);
 		for (int i = 0; i < pseudoLegalMoves.MoveCount; i++)
 		{
@@ -132,7 +130,7 @@ namespace Boxfish
 
 	bool MoveGenerator::IsMoveLegal(const Move& move, const BitBoard& checkers, bool multipleCheckers) const
 	{
-		SquareIndex kingSquare = BackwardBitScan(m_Position.Teams[m_Position.TeamToPlay].Pieces[PIECE_KING]);
+		SquareIndex kingSquare = m_Position.InfoCache.KingSquare[m_Position.TeamToPlay];
 		if (move.GetFlags() & MOVE_EN_PASSANT)
 		{
 			SquareIndex captureSquare = (SquareIndex)(move.GetToSquareIndex() - GetForwardShift(m_Position.TeamToPlay));

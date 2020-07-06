@@ -7,13 +7,12 @@ namespace Boxfish
 {
 
 	using Centipawns = int;
-	constexpr Centipawns INF = 100000;
+	constexpr Centipawns SCORE_MATE = 200000;
 
 	struct BOX_API EvaluationResult
 	{
 	public:
 		Centipawns Material[TEAM_MAX] = { 0 };
-		Centipawns BishopPairs[TEAM_MAX] = { 0 };
 		Centipawns Attacks[TEAM_MAX] = { 0 };
 		Centipawns PieceSquares[TEAM_MAX] = { 0 };
 		bool Checkmate[TEAM_MAX] = { false };
@@ -26,13 +25,13 @@ namespace Boxfish
 		inline Centipawns GetTotal(Team team) const
 		{
 			if (Checkmate[team])
-				return INF;
+				return SCORE_MATE;
 			if (Checkmate[OtherTeam(team)])
-				return -INF;
+				return -SCORE_MATE;
 			if (Stalemate)
 				return 0;
 			Team other = OtherTeam(team);
-			return (Material[team] - Material[other]) + (BishopPairs[team] - BishopPairs[other]) + (Attacks[team] - Attacks[other]) + (PieceSquares[team] - PieceSquares[other]);
+			return (Material[team] - Material[other]) + (Attacks[team] - Attacks[other]) + (PieceSquares[team] - PieceSquares[other]);
 		}
 	};
 

@@ -7,6 +7,8 @@ namespace Boxfish
 
 	static bool s_Initialized = false;
 
+	static MoveList s_MoveList;
+
 	int s_PhaseWeights[PIECE_MAX];
 	int s_MaxPhaseValue = 0;
 
@@ -34,14 +36,14 @@ namespace Boxfish
 		s_MaterialValues[MIDGAME][PIECE_BISHOP] = 330;
 		s_MaterialValues[MIDGAME][PIECE_ROOK] = 500;
 		s_MaterialValues[MIDGAME][PIECE_QUEEN] = 900;
-		s_MaterialValues[MIDGAME][PIECE_KING] = 0;
+		s_MaterialValues[MIDGAME][PIECE_KING] = 20000;
 
 		s_MaterialValues[ENDGAME][PIECE_PAWN] = 140;
 		s_MaterialValues[ENDGAME][PIECE_KNIGHT] = 320;
 		s_MaterialValues[ENDGAME][PIECE_BISHOP] = 330;
 		s_MaterialValues[ENDGAME][PIECE_ROOK] = 500;
 		s_MaterialValues[ENDGAME][PIECE_QUEEN] = 900;
-		s_MaterialValues[ENDGAME][PIECE_KING] = 0;
+		s_MaterialValues[ENDGAME][PIECE_KING] = 20000;
 	}
 
 	void MirrorTable(Centipawns* dest, Centipawns* src)
@@ -198,7 +200,7 @@ namespace Boxfish
 		return ((phase * 256 + (s_MaxPhaseValue / 2)) / s_MaxPhaseValue) / 256.0f;
 	}
 
-	Centipawns InterpolateGameStage(float stage, Centipawns midgame, Centipawns endgame)
+	inline Centipawns InterpolateGameStage(float stage, Centipawns midgame, Centipawns endgame)
 	{
 		return (Centipawns)(midgame + (endgame - midgame) * stage);
 	}
@@ -232,8 +234,16 @@ namespace Boxfish
 			{
 				SquareIndex square = PopLeastSignificantBit(pieces);
 				Centipawns mg = s_PieceSquareTables[MIDGAME][team][piece][square];
-				Centipawns eg = s_PieceSquareTables[ENDGAME][team][piece][square];
-				score += InterpolateGameStage(stage, mg, eg);
+				// Only the king changes throughout the game
+				if (piece == PIECE_KING)
+				{
+					Centipawns eg = s_PieceSquareTables[ENDGAME][team][piece][square];
+					score += InterpolateGameStage(stage, mg, eg);
+				}
+				else
+				{
+					score += mg;
+				}
 			}
 		}
 		result.PieceSquares[team] = score;
@@ -248,16 +258,6 @@ namespace Boxfish
 	void EvaluateMobility(EvaluationResult& result, const Position& position, float stage)
 	{
 		
-	}
-
-	void EvaluateBishopPairs(EvaluationResult& result, const Position& position, float stage)
-	{
-		constexpr Centipawns mg = 10;
-		constexpr Centipawns eg = 20;
-		if (position.Teams[TEAM_WHITE].Pieces[PIECE_BISHOP].GetCount() >= 2)
-			result.BishopPairs[TEAM_WHITE] = InterpolateGameStage(stage, mg, eg);
-		if (position.Teams[TEAM_BLACK].Pieces[PIECE_BISHOP].GetCount() >= 2)
-			result.BishopPairs[TEAM_BLACK] = InterpolateGameStage(stage, mg, eg);
 	}
 
 	void EvaluateAttacks(EvaluationResult& result, const Position& position, float stage, Team team)
@@ -300,7 +300,7 @@ namespace Boxfish
 	void EvaluateCheckmate(EvaluationResult& result, const Position& position, float stage)
 	{
 		MoveGenerator movegen(position);
-		if (!movegen.HasAtLeastOneLegalMove())
+		if (!movegen.HasAtLeastOneLegalMove(s_MoveList))
 		{
 			if (IsInCheck(position, position.TeamToPlay))
 			{
@@ -322,7 +322,6 @@ namespace Boxfish
 		if (!result.IsCheckmate() && !result.Stalemate)
 		{
 			EvaluateMaterial(result, position, gameStage);
-			EvaluateBishopPairs(result, position, gameStage);
 			EvaluateMobility(result, position, gameStage);
 			EvaluateAttacks(result, position, gameStage);
 			EvaluatePieceSquareTables(result, position, gameStage);

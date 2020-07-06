@@ -11,6 +11,9 @@ namespace Boxfish
 		BitBoard TeamPieces[TEAM_MAX];
 		BitBoard AllPieces;
 
+		SquareIndex KingSquare[TEAM_MAX];
+		BitBoard CheckedBy[TEAM_MAX];
+
 		BitBoard BlockersForKing[TEAM_MAX];
 		BitBoard Pinners[TEAM_MAX];
 	};

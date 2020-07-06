@@ -28,14 +28,14 @@ namespace Boxfish
 	{
 		BOX_ASSERT(!Empty(), "Move list is empty");
 		int bestIndex = m_CurrentIndex;
-		Centipawns bestScore = -INF;
+		Centipawns bestScore = -SCORE_MATE;
 		for (int index = m_CurrentIndex; index < m_LegalMoves->MoveCount; index++)
 		{
 			Centipawns score = 0;
 			const Move& move = m_LegalMoves->Moves[index];
 			if (m_OrderingInfo.PVMove == move)
 			{
-				score = INF;
+				score = SCORE_MATE;
 			}
 			else if (move.GetFlags() & MOVE_CAPTURE)
 			{
@@ -53,7 +53,7 @@ namespace Boxfish
 			{
 				bestIndex = index;
 				bestScore = score;
-				if (bestScore == INF)
+				if (bestScore == SCORE_MATE)
 					break;
 			}
 		}
@@ -101,7 +101,7 @@ namespace Boxfish
 	{
 		BOX_ASSERT(!Empty(), "Move list is empty");
 		size_t bestIndex = 0;
-		Centipawns bestScore = -INF;
+		Centipawns bestScore = -SCORE_MATE;
 		for (int index = m_CurrentIndex; index < m_LegalMoves.MoveCount; index++)
 		{
 			const Move& move = m_LegalMoves.Moves[index];

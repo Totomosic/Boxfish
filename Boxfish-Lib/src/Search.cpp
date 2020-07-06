@@ -91,30 +91,30 @@ namespace Boxfish
 			SearchRoot(m_CurrentPosition, i, searchStats);
 			std::chrono::time_point<std::chrono::high_resolution_clock> endTime = std::chrono::high_resolution_clock::now();
 			auto elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(endTime - m_SearchRootStartTime);
-			if (m_Log && !m_WasStopped)
+			if (!m_WasStopped)
 			{
 				Line pv = GetPV(i);
-				std::cout << "info depth " << i << " score ";
-				if (m_BestScore != INF && m_BestScore != -INF)
+				if (m_Log)
 				{
-					std::cout << "cp " << m_BestScore;
+					std::cout << "info depth " << i << " score ";
+					if (m_BestScore != SCORE_MATE && m_BestScore != -SCORE_MATE)
+					{
+						std::cout << "cp " << m_BestScore;
+					}
+					else
+					{
+						std::cout << "mate " << (pv.CurrentIndex / 2) * ((m_BestScore == SCORE_MATE) ? 1 : -1);
+					}
+					std::cout << " nodes " << m_Nodes;
+					std::cout << " nps " << (size_t)(m_Nodes / (elapsed.count() / 1e9f));
+					std::cout << " time " << (size_t)(elapsed.count() / 1e6f);
+					std::cout << " pv " << FormatLine(pv) << std::endl;
 				}
-				else
-				{
-					std::cout << "mate " << pv.CurrentIndex;
-				}
-				std::cout << " nodes " << m_Nodes;
-				std::cout << " nps " << (size_t)(m_Nodes / (elapsed.count() / 1e9f));
-				std::cout << " time " << (size_t)(elapsed.count() / 1e6f);
-				std::cout << " pv " << FormatLine(pv) << std::endl;
-
 				searchStats.PV = pv;
 			}
-			if (std::abs(m_BestScore) == INF)
+			if (m_BestScore == SCORE_MATE)
 				break;
 		}
-		std::cout << "Table Hits: " << searchStats.TableHits << std::endl;
-		std::cout << "Table Misses: " << searchStats.TableMisses << std::endl;
 		return m_BestMove;
 	}
 
@@ -122,7 +122,7 @@ namespace Boxfish
 	{
 		m_TranspositionTable.Clear();
 		m_BestMove = Move::Null();
-		m_BestScore = -INF;
+		m_BestScore = -SCORE_MATE;
 		m_PositionHistory.Clear();
 	}
 
@@ -145,8 +145,8 @@ namespace Boxfish
 	void Search::SearchRoot(const Position& position, int depth, SearchStats& stats)
 	{
 		m_Nodes = 0;
-		int alpha = -INF;
-		int beta = INF;
+		int alpha = -SCORE_MATE;
+		int beta = SCORE_MATE;
 		bool fullWindow = true;
 		if (depth >= 3 && false)
 		{
@@ -179,7 +179,7 @@ namespace Boxfish
 
 		Move defaultMove = legalMoves.Moves[0];
 
-		Centipawns currentScore = -INF;
+		Centipawns currentScore = -SCORE_MATE;
 		while (!selector.Empty())
 		{
 			Move move = selector.GetNextMove();
@@ -222,7 +222,7 @@ namespace Boxfish
 			{
 				currentBestMove = move;
 				currentScore = score;
-				if (score == INF)
+				if (score == SCORE_MATE)
 					break;
 				if (score > alpha)
 				{
@@ -374,7 +374,7 @@ namespace Boxfish
 			{
 				data.Alpha = value;
 				bestMove = move;
-				if (value >= INF)
+				if (value >= SCORE_MATE)
 					break;
 			}
 			movesSinceBetaCutoff++;

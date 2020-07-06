@@ -1,10 +1,8 @@
 #include "Boxfish.h"
 
-// position fen rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 moves d2d4 d7d5 a2a3 a7a6 e2e3 e7e6 b1c3 b8c6 g1f3 g8f6 f1d3 f8d6 e3e4 d5e4 c3e4 e6e5 e4d6 c7d6 d4e5 d6e5
-
 using namespace Boxfish;
 
-uint64_t Perft(const Position& position, int depth)
+uint64_t Perft(Position& position, int depth)
 {
 	if (depth <= 0)
 		return 1;
@@ -29,7 +27,7 @@ uint64_t Perft(const Position& position, int depth)
 	return nodes;
 }
 
-uint64_t PerftRoot(const Position& position, int depth)
+uint64_t PerftRoot(Position& position, int depth)
 {
 	uint64_t total = 0;
 	MoveGenerator movegen(position);
@@ -59,7 +57,7 @@ int main(int argc, const char** argv)
 	::Boxfish::Boxfish engine;
 	Position position = CreateStartingPosition();
 	engine.SetPosition(position);
-	engine.SetPosition(CreatePositionFromFEN("r3kb1r/ppp1pp2/n4n1p/1NqpQ1p1/6b1/BP1BP3/P1PP1PPP/R3K1NR b KQkq - 2 9"));
+	//engine.SetPosition(CreatePositionFromFEN("r3kb1r/ppp1pp2/n4n1p/1NqpQ1p1/6b1/BP1BP3/P1PP1PPP/R3K1NR b KQkq - 2 9"));
 
 	std::string version = __TIMESTAMP__;
 
@@ -186,13 +184,14 @@ int main(int argc, const char** argv)
 		else if (command == "eval")
 		{
 			EvaluationResult result = EvaluateDetailed(engine.GetCurrentPosition());
-			std::cout << result.PieceSquares[TEAM_WHITE] << " " << result.Material[TEAM_BLACK] << std::endl;
+			std::cout << result.PieceSquares[TEAM_WHITE] << " " << result.PieceSquares[TEAM_BLACK] << std::endl;
 			std::cout << result.GetTotal(engine.GetCurrentPosition().TeamToPlay) << " GameStage: " << result.GameStage << std::endl;
 		}
 		else if (command == "perft")
 		{
 			int depth = std::stoi(std::string(args));
-			PerftRoot(engine.GetCurrentPosition(), depth);
+			Position pos = engine.GetCurrentPosition();
+			PerftRoot(pos, depth);
 		}
 		else if (command == "moves")
 		{
