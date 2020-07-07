@@ -53,10 +53,10 @@ namespace Boxfish
 		Piece GetPromotionPiece() const;
 		void SetPromotionPiece(Piece piece);
 
-		friend bool operator==(const Move& left, const Move& right);
-		friend bool operator!=(const Move& left, const Move& right);
+		inline friend bool operator==(const Move& left, const Move& right) { return left.m_Move == right.m_Move; }
+		inline friend bool operator!=(const Move& left, const Move& right) { return left.m_Move != right.m_Move; }
 
-		inline static Move Null() { 
+		inline static Move Null() {
 			Move mv;
 			mv.SetFlags(MOVE_NULL);
 			return mv;

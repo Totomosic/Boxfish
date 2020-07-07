@@ -107,6 +107,22 @@ namespace Boxfish
 	{
 		moveList.MoveCount = 0;
 		Team team = m_Position.TeamToPlay;
+		GeneratePawnSinglePushes(moveList, team, m_Position);
+		FilterLegalMoves(moveList);
+		if (moveList.MoveCount > 0)
+			return true;
+		GeneratePawnDoublePushes(moveList, team, m_Position);
+		FilterLegalMoves(moveList);
+		if (moveList.MoveCount > 0)
+			return true;
+		GeneratePawnLeftAttacks(moveList, team, m_Position);
+		FilterLegalMoves(moveList);
+		if (moveList.MoveCount > 0)
+			return true;
+		GeneratePawnRightAttacks(moveList, team, m_Position);
+		FilterLegalMoves(moveList);
+		if (moveList.MoveCount > 0)
+			return true;
 		GenerateKingMoves(moveList, team, m_Position);
 		FilterLegalMoves(moveList);
 		if (moveList.MoveCount > 0)
@@ -120,22 +136,6 @@ namespace Boxfish
 		if (moveList.MoveCount > 0)
 			return true;
 		GenerateBishopMoves(moveList, team, m_Position);
-		FilterLegalMoves(moveList);
-		if (moveList.MoveCount > 0)
-			return true;
-		GeneratePawnLeftAttacks(moveList, team, m_Position);
-		FilterLegalMoves(moveList);
-		if (moveList.MoveCount > 0)
-			return true;
-		GeneratePawnRightAttacks(moveList, team, m_Position);
-		FilterLegalMoves(moveList);
-		if (moveList.MoveCount > 0)
-			return true;
-		GeneratePawnSinglePushes(moveList, team, m_Position);
-		FilterLegalMoves(moveList);
-		if (moveList.MoveCount > 0)
-			return true;
-		GeneratePawnDoublePushes(moveList, team, m_Position);
 		FilterLegalMoves(moveList);
 		if (moveList.MoveCount > 0)
 			return true;
