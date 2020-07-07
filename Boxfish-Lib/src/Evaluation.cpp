@@ -7,7 +7,8 @@ namespace Boxfish
 
 	static bool s_Initialized = false;
 
-	static MoveList s_MoveList;
+	static Move s_MoveBuffer[MAX_MOVES];
+	static MoveList s_MoveList(nullptr, s_MoveBuffer);
 
 	int s_PhaseWeights[PIECE_MAX];
 	int s_MaxPhaseValue = 0;

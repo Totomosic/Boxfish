@@ -58,6 +58,8 @@ namespace Boxfish
 		PositionHistory m_PositionHistory;
 		SearchLimits m_Limits;
 
+		MovePool m_MovePool;
+
 		Move m_BestMove;
 		Centipawns m_BestScore;
 		int m_SearchDepth;

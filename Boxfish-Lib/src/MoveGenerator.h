@@ -2,20 +2,50 @@
 #include "Move.h"
 #include "PositionUtils.h"
 #include "Position.h"
+#include <array>
 
 namespace Boxfish
 {
 
 	constexpr int MAX_MOVES = 218;
+	constexpr int MOVE_POOL_SIZE = MAX_MOVES * 200;
+
+	class MovePool;
 
 	class BOX_API MoveList
 	{
-	public:
-		uint8_t MoveCount = 0;
-		Move Moves[MAX_MOVES];
+	private:
+		MovePool* m_Pool;
 
 	public:
+		uint8_t MoveCount = 0;
+		Move* Moves;
+		BOX_DEBUG_ONLY(uint32_t Index);
+
+	public:
+		MoveList(Move* moves);
+		MoveList(MovePool* pool, Move* moves);
+		MoveList(const MoveList& other) = delete;
+		MoveList& operator=(const MoveList& other) = delete;
+		MoveList(MoveList&& other);
+		MoveList& operator=(MoveList&& other);
+		~MoveList();
+
 		inline bool Empty() const { return MoveCount <= 0; }
+	};
+
+	class BOX_API MovePool
+	{
+	private:
+		std::unique_ptr<Move[]> m_MovePool;
+		size_t m_Capacity;
+		size_t m_CurrentIndex;
+
+	public:
+		MovePool(size_t size);
+
+		MoveList GetList();
+		void FreeList(const MoveList* list);
 	};
 
 	class BOX_API MoveGenerator
@@ -31,8 +61,7 @@ namespace Boxfish
 		void SetPosition(const Position& position);
 		void SetPosition(Position&& position);
 
-		MoveList GetPseudoLegalMoves();
-		MoveList GetLegalMoves(const MoveList& pseudoLegalMoves);
+		void GetPseudoLegalMoves(MoveList& moveList);
 		void FilterLegalMoves(MoveList& pseudoLegalMoves);
 
 		bool HasAtLeastOneLegalMove(MoveList& list);

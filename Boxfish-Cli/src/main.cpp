@@ -2,6 +2,8 @@
 
 using namespace Boxfish;
 
+static MovePool s_MovePool(MOVE_POOL_SIZE);
+
 uint64_t Perft(Position& position, int depth)
 {
 	if (depth <= 0)
@@ -9,14 +11,16 @@ uint64_t Perft(Position& position, int depth)
 	if (depth == 1)
 	{
 		MoveGenerator movegen(position);
-		MoveList moves = movegen.GetPseudoLegalMoves();
+		MoveList moves = s_MovePool.GetList();
+		movegen.GetPseudoLegalMoves(moves);
 		movegen.FilterLegalMoves(moves);
 		return moves.MoveCount;
 	}
 
 	MoveGenerator movegen(position);
 	uint64_t nodes = 0;
-	MoveList legalMoves = movegen.GetPseudoLegalMoves();
+	MoveList legalMoves = s_MovePool.GetList();
+	movegen.GetPseudoLegalMoves(legalMoves);
 	movegen.FilterLegalMoves(legalMoves);
 	for (int i = 0; i < legalMoves.MoveCount; i++)
 	{
@@ -31,7 +35,8 @@ uint64_t PerftRoot(Position& position, int depth)
 {
 	uint64_t total = 0;
 	MoveGenerator movegen(position);
-	MoveList moves = movegen.GetPseudoLegalMoves();
+	MoveList moves = s_MovePool.GetList();
+	movegen.GetPseudoLegalMoves(moves);
 	movegen.FilterLegalMoves(moves);
 
 	auto startTime = std::chrono::high_resolution_clock::now();
@@ -196,7 +201,8 @@ int main(int argc, const char** argv)
 		else if (command == "moves")
 		{
 			MoveGenerator generator(engine.GetCurrentPosition());
-			MoveList moves = generator.GetPseudoLegalMoves();
+			MoveList moves = s_MovePool.GetList();
+			generator.GetPseudoLegalMoves(moves);
 			generator.FilterLegalMoves(moves);
 			if (!moves.Empty())
 			{

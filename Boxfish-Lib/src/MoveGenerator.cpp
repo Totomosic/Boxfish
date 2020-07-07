@@ -3,6 +3,55 @@
 
 namespace Boxfish
 {
+	MoveList::MoveList(Move* moves) : MoveList(nullptr, moves)
+	{
+	}
+
+	MoveList::MoveList(MovePool* pool, Move* moves)
+		: m_Pool(pool), MoveCount(0), Moves(moves)
+	{
+	}
+
+	MoveList::MoveList(MoveList&& other)
+		: m_Pool(other.m_Pool), MoveCount(other.MoveCount), Moves(other.Moves)
+	{
+		BOX_DEBUG_ONLY(Index = other.Index);
+		other.m_Pool = nullptr;
+	}
+
+	MoveList& MoveList::operator=(MoveList&& other)
+	{
+		std::swap(m_Pool, other.m_Pool);
+		std::swap(MoveCount, other.MoveCount);
+		std::swap(Moves, other.Moves);
+		BOX_DEBUG_ONLY(std::swap(Index, other.Index));
+		return *this;
+	}
+
+	MoveList::~MoveList()
+	{
+		if (m_Pool)
+			m_Pool->FreeList(this);
+	}
+
+	MovePool::MovePool(size_t size)
+		: m_MovePool(std::make_unique<Move[]>(size)), m_Capacity(size), m_CurrentIndex(0)
+	{
+	}
+
+	MoveList MovePool::GetList()
+	{
+		MoveList list(this, m_MovePool.get() + m_CurrentIndex);
+		BOX_DEBUG_ONLY(list.Index = m_CurrentIndex);
+		m_CurrentIndex += MAX_MOVES;
+		return list;
+	}
+
+	void MovePool::FreeList(const MoveList* list)
+	{
+		m_CurrentIndex -= MAX_MOVES;
+		BOX_ASSERT(list->Index == m_CurrentIndex, "Invalid");
+	}
 
 	MoveGenerator::MoveGenerator()
 		: m_Position()
@@ -29,18 +78,9 @@ namespace Boxfish
 		m_Position = std::move(position);
 	}
 
-	MoveList MoveGenerator::GetPseudoLegalMoves()
+	void MoveGenerator::GetPseudoLegalMoves(MoveList& moveList)
 	{
-		MoveList moveList;
 		GeneratePseudoLegalMoves(moveList);
-		return moveList;
-	}
-
-	MoveList MoveGenerator::GetLegalMoves(const MoveList& pseudoLegalMoves)
-	{
-		MoveList moveList;
-		GenerateLegalMoves(moveList, pseudoLegalMoves);
-		return moveList;
 	}
 
 	void MoveGenerator::FilterLegalMoves(MoveList& pseudoLegalMoves)

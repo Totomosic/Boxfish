@@ -35,7 +35,7 @@ namespace Boxfish
 	}
 
 	Search::Search(bool log)
-		: m_TranspositionTable(), m_CurrentPosition(), m_PositionHistory(), m_Limits(), m_BestMove(Move::Null()), m_BestScore(), m_SearchDepth(0), m_Nodes(0), m_SearchRootStartTime(), m_StartTime(), 
+		: m_TranspositionTable(), m_CurrentPosition(), m_PositionHistory(), m_Limits(), m_MovePool(MOVE_POOL_SIZE), m_BestMove(Move::Null()), m_BestScore(), m_SearchDepth(0), m_Nodes(0), m_SearchRootStartTime(), m_StartTime(),
 		m_WasStopped(false), m_ShouldStop(false), m_Log(log), m_OrderingInfo()
 	{
 	}
@@ -156,7 +156,8 @@ namespace Boxfish
 		}
 
 		MoveGenerator generator(position);
-		MoveList legalMoves = generator.GetPseudoLegalMoves();
+		MoveList legalMoves = m_MovePool.GetList();
+		generator.GetPseudoLegalMoves(legalMoves);
 		generator.FilterLegalMoves(legalMoves);
 
 		MoveOrderingInfo ordering;
@@ -303,13 +304,14 @@ namespace Boxfish
 
 		Move bestMove = Move::Null();
 		MoveGenerator movegen(position);
-		MoveList moves = movegen.GetPseudoLegalMoves();
-		movegen.FilterLegalMoves(moves);
-		if (moves.Empty())
+		MoveList legalMoves = m_MovePool.GetList();
+		movegen.GetPseudoLegalMoves(legalMoves);
+		movegen.FilterLegalMoves(legalMoves);
+		if (legalMoves.Empty())
 		{
 			return Evaluate(position, position.TeamToPlay);
 		}
-		Move defaultMove = moves.Moves[0];
+		Move defaultMove = legalMoves.Moves[0];
 
 		MoveOrderingInfo ordering;
 		ordering.CurrentPosition = &position;
@@ -317,7 +319,7 @@ namespace Boxfish
 		{
 			ordering.PVMove = stats.PV.Moves[data.Ply];
 		}
-		MoveSelector selector(ordering, &moves);
+		MoveSelector selector(ordering, &legalMoves);
 
 		int moveIndex = 0;
 		int movesSinceBetaCutoff = 0;
@@ -427,7 +429,8 @@ namespace Boxfish
 			alpha = evaluation;
 
 		MoveGenerator movegen(position);
-		MoveList legalMoves = movegen.GetPseudoLegalMoves();
+		MoveList legalMoves = m_MovePool.GetList();
+		movegen.GetPseudoLegalMoves(legalMoves);
 		movegen.FilterLegalMoves(legalMoves);
 		if (legalMoves.Empty())
 			return evaluation;
