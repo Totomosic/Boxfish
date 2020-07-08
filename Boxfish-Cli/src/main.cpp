@@ -60,9 +60,8 @@ uint64_t PerftRoot(Position& position, int depth)
 int main(int argc, const char** argv)
 {
 	::Boxfish::Boxfish engine;
+	Search search;
 	Position position = CreateStartingPosition();
-	engine.SetPosition(position);
-	//engine.SetPosition(CreatePositionFromFEN("r3kb1r/ppp1pp2/n4n1p/1NqpQ1p1/6b1/BP1BP3/P1PP1PPP/R3K1NR b KQkq - 2 9"));
 
 	std::string version = __TIMESTAMP__;
 
@@ -89,9 +88,9 @@ int main(int argc, const char** argv)
 		
 		if (command == "d")
 		{
-			std::cout << std::endl << engine.GetCurrentPosition() << std::endl;
-			std::cout << std::endl << "Fen: " << GetFENFromPosition(engine.GetCurrentPosition()) << std::endl;
-			std::cout << std::hex << "Hash: " << engine.GetCurrentPosition().Hash.Hash << std::dec << std::endl;
+			std::cout << std::endl << position << std::endl;
+			std::cout << std::endl << "Fen: " << GetFENFromPosition(position) << std::endl;
+			std::cout << std::hex << "Hash: " << position.Hash.Hash << std::dec << std::endl;
 		}
 		else if (command == "isready")
 		{
@@ -102,19 +101,19 @@ int main(int argc, const char** argv)
 			size_t isFen = args.find("fen ");
 			if (isFen != std::string_view::npos)
 			{
-				engine.SetPosition(CreatePositionFromFEN(std::string(args.substr(isFen + 4))));
+				position = CreatePositionFromFEN(std::string(args.substr(isFen + 4)));
 			}
 			size_t startPos = args.find("startpos");
 			if (startPos != std::string_view::npos)
 			{
-				engine.SetPosition(CreateStartingPosition());
+				position = CreateStartingPosition();
 			}
 			size_t moves = args.find("moves ");
 			if (moves != std::string_view::npos)
-			{
-				PositionHistory& history = engine.GetSearch().GetHistory();
+			{	
+				PositionHistory& history = search.GetHistory();
 				history.Clear();
-				history.Push(engine.GetCurrentPosition());
+				history.Push(position);
 				size_t begin = moves + 6;
 				while (begin != std::string_view::npos && begin < args.size())
 				{
@@ -126,12 +125,10 @@ int main(int argc, const char** argv)
 						std::string to = std::string(move.substr(2));
 						Square fromSquare = SquareFromString(from);
 						Square toSquare = SquareFromString(to);
-						Position position = engine.GetCurrentPosition();
 						Move move = CreateMove(position, fromSquare, toSquare);
 						if (SanityCheckMove(position, move))
 						{
 							ApplyMove(position, move);
-							engine.SetPosition(position);
 							history.Push(position);
 						}
 						else
@@ -152,7 +149,7 @@ int main(int argc, const char** argv)
 			}
 			else
 			{
-				engine.GetSearch().GetHistory().Push(engine.GetCurrentPosition());
+				search.GetHistory().Push(position);
 			}
 		}
 		else if (command == "go")
@@ -162,8 +159,7 @@ int main(int argc, const char** argv)
 			{
 				size_t space = args.find_first_of(' ', depthString + 6);
 				int depth = std::stoi(std::string(args.substr(depthString + 6, space - depthString - 6)));
-				Search& search = engine.GetSearch();
-				search.SetCurrentPosition(engine.GetCurrentPosition());
+				search.SetCurrentPosition(position);
 
 				Move move = search.Go(depth);
 				std::cout << "bestmove " << FormatMove(move, false) << std::endl;
@@ -177,9 +173,8 @@ int main(int argc, const char** argv)
 					int time = std::stoi(std::string(args.substr(timeString + 5, space - timeString - 5)));
 					SearchLimits limits;
 					limits.Milliseconds = time;
-					Search& search = engine.GetSearch();
 					search.SetLimits(limits);
-					search.SetCurrentPosition(engine.GetCurrentPosition());
+					search.SetCurrentPosition(position);
 
 					Move move = search.Go(50);
 					std::cout << "bestmove " << FormatMove(move, false) << std::endl;
@@ -188,19 +183,17 @@ int main(int argc, const char** argv)
 		}
 		else if (command == "eval")
 		{
-			EvaluationResult result = EvaluateDetailed(engine.GetCurrentPosition());
-			std::cout << result.PieceSquares[TEAM_WHITE] << " " << result.PieceSquares[TEAM_BLACK] << std::endl;
-			std::cout << result.GetTotal(engine.GetCurrentPosition().TeamToPlay) << " GameStage: " << result.GameStage << std::endl;
+			EvaluationResult result = EvaluateDetailed(position);
+			std::cout << result.GetTotal(position.TeamToPlay) << " GameStage: " << result.GameStage << std::endl;
 		}
 		else if (command == "perft")
 		{
 			int depth = std::stoi(std::string(args));
-			Position pos = engine.GetCurrentPosition();
-			PerftRoot(pos, depth);
+			PerftRoot(position, depth);
 		}
 		else if (command == "moves")
 		{
-			MoveGenerator generator(engine.GetCurrentPosition());
+			MoveGenerator generator(position);
 			MoveList moves = s_MovePool.GetList();
 			generator.GetPseudoLegalMoves(moves);
 			generator.FilterLegalMoves(moves);

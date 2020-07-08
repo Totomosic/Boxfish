@@ -19,16 +19,8 @@ namespace Boxfish
 
 	class BOX_API Boxfish
 	{
-	private:
-		Position m_CurrentPosition;
-		Search m_Search;
-
 	public:
 		Boxfish();
-
-		Search& GetSearch();
-		const Position& GetCurrentPosition() const;
-		void SetPosition(const Position& position);
 	};
 
 }
