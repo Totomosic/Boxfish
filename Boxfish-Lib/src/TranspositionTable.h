@@ -28,14 +28,13 @@ namespace Boxfish
 	class BOX_API TranspositionTable
 	{
 	public:
-		// 50MB table
-		static constexpr uint64_t TABLE_SIZE = 32768 * 256;
+		static constexpr uint64_t TABLE_SIZE = 256 * 1024 * 1024;
 
 	private:
 		std::unique_ptr<TranspositionTableEntry[]> m_Entries;
 
 	public:
-		TranspositionTable();
+		TranspositionTable(size_t sizeBytes = TABLE_SIZE);
 
 		const TranspositionTableEntry* GetEntry(const ZobristHash& hash) const;
 		void AddEntry(const TranspositionTableEntry& entry);

@@ -34,8 +34,8 @@ namespace Boxfish
 		m_Hashes.clear();
 	}
 
-	Search::Search(bool log)
-		: m_TranspositionTable(), m_CurrentPosition(), m_PositionHistory(), m_Limits(), m_MovePool(MOVE_POOL_SIZE), m_BestMove(Move::Null()), m_BestScore(), m_SearchDepth(0), m_Nodes(0), m_SearchRootStartTime(), m_StartTime(),
+	Search::Search(size_t transpositionTableSize, bool log)
+		: m_TranspositionTable(transpositionTableSize), m_CurrentPosition(), m_PositionHistory(), m_Limits(), m_MovePool(MOVE_POOL_SIZE), m_BestMove(Move::Null()), m_BestScore(), m_SearchDepth(0), m_Nodes(0), m_SearchRootStartTime(), m_StartTime(),
 		m_WasStopped(false), m_ShouldStop(false), m_Log(log), m_OrderingInfo()
 	{
 	}

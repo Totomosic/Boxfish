@@ -3,7 +3,7 @@
 namespace Boxfish
 {
 
-	Boxfish::Boxfish()
+	void Init()
 	{
 		Logger::Init();
 		Random::Init();

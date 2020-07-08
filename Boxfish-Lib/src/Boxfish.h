@@ -17,10 +17,6 @@
 namespace Boxfish
 {
 
-	class BOX_API Boxfish
-	{
-	public:
-		Boxfish();
-	};
+	void Init();
 
 }

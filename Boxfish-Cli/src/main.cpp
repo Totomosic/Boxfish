@@ -59,7 +59,7 @@ uint64_t PerftRoot(Position& position, int depth)
 
 int main(int argc, const char** argv)
 {
-	::Boxfish::Boxfish engine;
+	::Boxfish::Init();
 	Search search;
 	Position position = CreateStartingPosition();
 

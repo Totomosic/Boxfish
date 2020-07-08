@@ -75,7 +75,7 @@ namespace Boxfish
 		MoveOrderingInfo m_OrderingInfo;
 
 	public:
-		Search(bool log = true);
+		Search(size_t transpositionTableSize = TranspositionTable::TABLE_SIZE, bool log = true);
 
 		PositionHistory& GetHistory();
 		void SetLimits(const SearchLimits& limits);

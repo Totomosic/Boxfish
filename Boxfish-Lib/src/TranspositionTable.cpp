@@ -3,8 +3,8 @@
 namespace Boxfish
 {
 
-	TranspositionTable::TranspositionTable()
-		: m_Entries{ std::make_unique<TranspositionTableEntry[]>(TABLE_SIZE) }
+	TranspositionTable::TranspositionTable(size_t sizeBytes)
+		: m_Entries{ std::make_unique<TranspositionTableEntry[]>(sizeBytes / sizeof(TranspositionTableEntry)) }
 	{
 		Clear();
 	}
