@@ -32,6 +32,7 @@ namespace Boxfish
 
 	private:
 		std::unique_ptr<TranspositionTableEntry[]> m_Entries;
+		size_t m_EntryCount;
 
 	public:
 		TranspositionTable(size_t sizeBytes = TABLE_SIZE);

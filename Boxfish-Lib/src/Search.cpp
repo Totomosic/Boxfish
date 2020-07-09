@@ -118,12 +118,59 @@ namespace Boxfish
 		return m_BestMove;
 	}
 
+	void Search::Ponder(const std::function<void(SearchResult)>& callback)
+	{
+		m_Limits.Infinite = true;
+		m_TranspositionTable.Clear();
+		m_WasStopped = false;
+		m_ShouldStop = false;
+		m_StartTime = std::chrono::high_resolution_clock::now();
+
+		SearchStats searchStats;
+
+		for (int i = 1; i <= 100; i++)
+		{
+			m_SearchRootStartTime = std::chrono::high_resolution_clock::now();
+			SearchRoot(m_CurrentPosition, i, searchStats);
+			std::chrono::time_point<std::chrono::high_resolution_clock> endTime = std::chrono::high_resolution_clock::now();
+			auto elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(endTime - m_SearchRootStartTime);
+			if (!m_WasStopped)
+			{
+				Line pv = GetPV(i);
+				if (m_Log)
+				{
+					std::cout << "info depth " << i << " score ";
+					if (m_BestScore != SCORE_MATE && m_BestScore != -SCORE_MATE)
+					{
+						std::cout << "cp " << m_BestScore;
+					}
+					else
+					{
+						std::cout << "mate " << (pv.CurrentIndex / 2) * ((m_BestScore == SCORE_MATE) ? 1 : -1);
+					}
+					std::cout << " nodes " << m_Nodes;
+					std::cout << " nps " << (size_t)(m_Nodes / (elapsed.count() / 1e9f));
+					std::cout << " time " << (size_t)(elapsed.count() / 1e6f);
+					std::cout << " pv " << FormatLine(pv) << std::endl;
+				}
+				searchStats.PV = pv;
+				if (callback)
+					callback({ pv, m_BestScore, m_BestMove });
+			}
+		}
+	}
+
 	void Search::Reset()
 	{
 		m_TranspositionTable.Clear();
 		m_BestMove = Move::Null();
 		m_BestScore = -SCORE_MATE;
 		m_PositionHistory.Clear();
+	}
+
+	void Search::Stop()
+	{
+		m_ShouldStop = true;
 	}
 
 	Line Search::GetPV(int depth) const
@@ -162,7 +209,6 @@ namespace Boxfish
 
 		MoveOrderingInfo ordering;
 		ordering.CurrentPosition = &m_CurrentPosition;
-		ordering.MoveEvaluator = std::bind(&Search::GetMoveScoreBonus, this, std::placeholders::_1, std::placeholders::_2);
 		if (stats.PV.CurrentIndex > 0)
 		{
 			ordering.PVMove = stats.PV.Moves[0];

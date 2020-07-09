@@ -45,10 +45,6 @@ namespace Boxfish
 			{
 				score = 50 + GetPieceValue(move.GetPromotionPiece());
 			}
-			else if (m_OrderingInfo.MoveEvaluator && m_OrderingInfo.CurrentPosition)
-			{
-				score = m_OrderingInfo.MoveEvaluator(*m_OrderingInfo.CurrentPosition, move);
-			}
 			if (score > bestScore)
 			{
 				bestIndex = index;

@@ -4,7 +4,7 @@ namespace Boxfish
 {
 
 	TranspositionTable::TranspositionTable(size_t sizeBytes)
-		: m_Entries{ std::make_unique<TranspositionTableEntry[]>(sizeBytes / sizeof(TranspositionTableEntry)) }
+		: m_Entries{ std::make_unique<TranspositionTableEntry[]>(sizeBytes / sizeof(TranspositionTableEntry)) }, m_EntryCount(sizeBytes / sizeof(TranspositionTableEntry))
 	{
 		Clear();
 	}
@@ -37,7 +37,7 @@ namespace Boxfish
 
 	void TranspositionTable::Clear()
 	{
-		for (size_t i = 0; i < TABLE_SIZE; i++)
+		for (size_t i = 0; i < m_EntryCount; i++)
 		{
 			m_Entries[i].Age = -1;
 		}
@@ -45,7 +45,7 @@ namespace Boxfish
 
 	size_t TranspositionTable::GetIndexFromHash(const ZobristHash& hash) const
 	{
-		return hash.Hash % TABLE_SIZE;
+		return hash.Hash % m_EntryCount;
 	}
 
 }

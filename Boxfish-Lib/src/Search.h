@@ -6,6 +6,7 @@
 #include "MoveSelector.h"
 
 #include <chrono>
+#include <atomic>
 
 namespace Boxfish
 {
@@ -39,6 +40,14 @@ namespace Boxfish
 		size_t TableMisses = 0;
 	};
 
+	struct BOX_API SearchResult
+	{
+	public:
+		Line PV;
+		Centipawns Score;
+		Move BestMove;
+	};
+
 	class BOX_API Search
 	{
 	private:
@@ -69,7 +78,7 @@ namespace Boxfish
 		std::chrono::time_point<std::chrono::high_resolution_clock> m_StartTime;
 
 		bool m_WasStopped;
-		bool m_ShouldStop;
+		std::atomic<bool> m_ShouldStop;
 		bool m_Log;
 
 		MoveOrderingInfo m_OrderingInfo;
@@ -87,7 +96,10 @@ namespace Boxfish
 		void SetCurrentPosition(const Position& position);
 		void SetCurrentPosition(Position&& position);
 		Move Go(int depth);
+		void Ponder(const std::function<void(SearchResult)>& callback = {});
 		void Reset();
+
+		void Stop();
 
 	private:
 		Line GetPV(int depth) const;
