@@ -95,7 +95,7 @@ namespace Boxfish
 
 		void SetCurrentPosition(const Position& position);
 		void SetCurrentPosition(Position&& position);
-		Move Go(int depth);
+		Move Go(int depth, const std::function<void(SearchResult)>& callback = {});
 		void Ponder(const std::function<void(SearchResult)>& callback = {});
 		void Reset();
 

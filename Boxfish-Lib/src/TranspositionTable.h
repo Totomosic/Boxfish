@@ -28,7 +28,7 @@ namespace Boxfish
 	class BOX_API TranspositionTable
 	{
 	public:
-		static constexpr uint64_t TABLE_SIZE = 256 * 1024 * 1024;
+		static constexpr uint64_t TABLE_SIZE = 50 * 1024 * 1024;
 
 	private:
 		std::unique_ptr<TranspositionTableEntry[]> m_Entries;

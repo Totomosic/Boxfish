@@ -75,7 +75,7 @@ namespace Boxfish
 		m_CurrentPosition = std::move(position);
 	}
 
-	Move Search::Go(int depth)
+	Move Search::Go(int depth, const std::function<void(SearchResult)>& callback)
 	{
 		m_TranspositionTable.Clear();
 		m_SearchDepth = depth;
@@ -111,6 +111,8 @@ namespace Boxfish
 					std::cout << " pv " << FormatLine(pv) << std::endl;
 				}
 				searchStats.PV = pv;
+				if (callback)
+					callback({ pv, m_BestScore, m_BestMove });
 			}
 			if (m_BestScore == SCORE_MATE)
 				break;
@@ -121,43 +123,7 @@ namespace Boxfish
 	void Search::Ponder(const std::function<void(SearchResult)>& callback)
 	{
 		m_Limits.Infinite = true;
-		m_TranspositionTable.Clear();
-		m_WasStopped = false;
-		m_ShouldStop = false;
-		m_StartTime = std::chrono::high_resolution_clock::now();
-
-		SearchStats searchStats;
-
-		for (int i = 1; i <= 100; i++)
-		{
-			m_SearchRootStartTime = std::chrono::high_resolution_clock::now();
-			SearchRoot(m_CurrentPosition, i, searchStats);
-			std::chrono::time_point<std::chrono::high_resolution_clock> endTime = std::chrono::high_resolution_clock::now();
-			auto elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(endTime - m_SearchRootStartTime);
-			if (!m_WasStopped)
-			{
-				Line pv = GetPV(i);
-				if (m_Log)
-				{
-					std::cout << "info depth " << i << " score ";
-					if (m_BestScore != SCORE_MATE && m_BestScore != -SCORE_MATE)
-					{
-						std::cout << "cp " << m_BestScore;
-					}
-					else
-					{
-						std::cout << "mate " << (pv.CurrentIndex / 2) * ((m_BestScore == SCORE_MATE) ? 1 : -1);
-					}
-					std::cout << " nodes " << m_Nodes;
-					std::cout << " nps " << (size_t)(m_Nodes / (elapsed.count() / 1e9f));
-					std::cout << " time " << (size_t)(elapsed.count() / 1e6f);
-					std::cout << " pv " << FormatLine(pv) << std::endl;
-				}
-				searchStats.PV = pv;
-				if (callback)
-					callback({ pv, m_BestScore, m_BestMove });
-			}
-		}
+		Go(100, callback);
 	}
 
 	void Search::Reset()
@@ -221,6 +187,7 @@ namespace Boxfish
 		if (selector.Empty())
 		{
 			m_BestMove = currentBestMove;
+			m_BestScore = Evaluate(m_CurrentPosition, m_CurrentPosition.TeamToPlay);
 			return;
 		}
 

@@ -303,9 +303,13 @@ namespace Boxfish
 		MoveGenerator movegen(position);
 		if (!movegen.HasAtLeastOneLegalMove(s_MoveList))
 		{
-			if (IsInCheck(position, position.TeamToPlay))
+			if (IsInCheck(position, TEAM_WHITE))
 			{
-				result.Checkmate[OtherTeam(position.TeamToPlay)] = true;
+				result.Checkmate[TEAM_BLACK] = true;
+			}
+			else if (IsInCheck(position, TEAM_BLACK))
+			{
+				result.Checkmate[TEAM_WHITE] = true;
 			}
 			else
 			{
