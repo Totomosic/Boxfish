@@ -40,7 +40,6 @@ namespace Boxfish
 	{
 	private:
 		MoveList& m_LegalMoves;
-		int m_MoveScores[MAX_MOVES];
 		size_t m_CurrentIndex;
 		size_t m_NumberOfCaptures;
 

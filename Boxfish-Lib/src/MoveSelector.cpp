@@ -60,26 +60,26 @@ namespace Boxfish
 		return m_LegalMoves->Moves[m_CurrentIndex++];
 	}
 
-	void ScoreMovesQuiescence(const Position& position, MoveList& moves, int* moveScores)
+	void ScoreMovesQuiescence(const Position& position, MoveList& moves)
 	{
 		for (int i = 0; i < moves.MoveCount; i++)
 		{
 			Move& move = moves.Moves[i];
 			if (move.GetFlags() & MOVE_CAPTURE)
 			{
-				moveScores[i] = 20 + GetPieceValue(move.GetCapturedPiece()) - GetPieceValue(move.GetMovingPiece());
+				move.SetValue(20 + GetPieceValue(move.GetCapturedPiece()) - GetPieceValue(move.GetMovingPiece()));
 			}
 			else if (move.GetFlags() & MOVE_PROMOTION)
 			{
-				moveScores[i] = 50 + GetPieceValue(move.GetPromotionPiece());
+				move.SetValue(50 + GetPieceValue(move.GetPromotionPiece()));
 			}
 		}
 	}
 
 	QuiescenceMoveSelector::QuiescenceMoveSelector(const Position& position, MoveList& legalMoves)
-		: m_LegalMoves(legalMoves), m_MoveScores(), m_CurrentIndex(0), m_NumberOfCaptures(0)
+		: m_LegalMoves(legalMoves), m_CurrentIndex(0), m_NumberOfCaptures(0)
 	{
-		ScoreMovesQuiescence(position, legalMoves, m_MoveScores);
+		ScoreMovesQuiescence(position, legalMoves);
 		for (int i = 0; i < m_LegalMoves.MoveCount; i++)
 		{
 			const Move& m = m_LegalMoves.Moves[i];
@@ -101,8 +101,8 @@ namespace Boxfish
 		for (int index = m_CurrentIndex; index < m_LegalMoves.MoveCount; index++)
 		{
 			const Move& move = m_LegalMoves.Moves[index];
-			Centipawns value = m_MoveScores[index];
-			if (value > bestScore && (move.GetFlags() & (MOVE_CAPTURE | MOVE_PROMOTION)))
+			Centipawns value = move.GetValue();
+			if (value > bestScore && ((move.GetFlags() & MOVE_CAPTURE) || (move.GetFlags() & MOVE_PROMOTION && (move.GetPromotionPiece() == PIECE_QUEEN || move.GetPromotionPiece() == PIECE_KNIGHT))))
 			{
 				bestScore = value;
 				bestIndex = index;

@@ -487,13 +487,19 @@ namespace Boxfish
 			Square capturedSquare = move.GetToSquare();
 			if (capturedSquare.File == FILE_A && position.Teams[otherTeam].CastleQueenSide)
 			{
-				position.Teams[otherTeam].CastleQueenSide = false;
-				position.Hash.RemoveCastleQueenside(otherTeam);
+				if ((otherTeam == TEAM_WHITE && capturedSquare.Rank == RANK_1) || (otherTeam == TEAM_BLACK && capturedSquare.Rank == RANK_8))
+				{
+					position.Teams[otherTeam].CastleQueenSide = false;
+					position.Hash.RemoveCastleQueenside(otherTeam);
+				}
 			}
 			if (capturedSquare.File == FILE_H && position.Teams[otherTeam].CastleKingSide)
 			{
-				position.Teams[otherTeam].CastleKingSide = false;
-				position.Hash.RemoveCastleKingside(otherTeam);
+				if ((otherTeam == TEAM_WHITE && capturedSquare.Rank == RANK_1) || (otherTeam == TEAM_BLACK && capturedSquare.Rank == RANK_8))
+				{
+					position.Teams[otherTeam].CastleKingSide = false;
+					position.Hash.RemoveCastleKingside(otherTeam);
+				}
 			}
 		}
 	}

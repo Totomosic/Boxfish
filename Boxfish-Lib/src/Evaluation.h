@@ -8,6 +8,7 @@ namespace Boxfish
 
 	using Centipawns = int;
 	constexpr Centipawns SCORE_MATE = 200000;
+	constexpr Centipawns SCORE_DRAW = 0;
 
 	struct BOX_API EvaluationResult
 	{

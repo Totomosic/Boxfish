@@ -63,6 +63,7 @@ namespace Boxfish
 
 		void GetPseudoLegalMoves(MoveList& moveList);
 		void FilterLegalMoves(MoveList& pseudoLegalMoves);
+		bool IsLegal(const Move& move) const;
 
 		bool HasAtLeastOneLegalMove(MoveList& list);
 

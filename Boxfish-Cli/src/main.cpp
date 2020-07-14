@@ -119,13 +119,32 @@ int main(int argc, const char** argv)
 				{
 					size_t end = args.find(' ', begin);
 					std::string_view move = args.substr(begin, end - begin);
-					if (move.size() == 4)
+					if (move.size() >= 4)
 					{
 						std::string from = std::string(move.substr(0, 2));
 						std::string to = std::string(move.substr(2));
+						Piece promotion = PIECE_QUEEN;
+						if (move.size() == 5)
+						{
+							switch (move[4])
+							{
+							case 'q':
+								promotion = PIECE_QUEEN;
+								break;
+							case 'b':
+								promotion = PIECE_BISHOP;
+								break;
+							case 'n':
+								promotion = PIECE_KNIGHT;
+								break;
+							case 'r':
+								promotion = PIECE_ROOK;
+								break;
+							}
+						}
 						Square fromSquare = SquareFromString(from);
 						Square toSquare = SquareFromString(to);
-						Move move = CreateMove(position, fromSquare, toSquare);
+						Move move = CreateMove(position, fromSquare, toSquare, promotion);
 						if (SanityCheckMove(position, move))
 						{
 							ApplyMove(position, move);

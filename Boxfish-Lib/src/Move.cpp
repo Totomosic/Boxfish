@@ -87,27 +87,27 @@ namespace Boxfish
 		if (move.GetFlags() & MOVE_NULL)
 			return FormatNullMove();
 		std::string result = SquareToString(move.GetFromSquare()) + SquareToString(move.GetToSquare());
+		if (move.GetFlags() & MOVE_PROMOTION)
+		{
+			Piece promotion = move.GetPromotionPiece();
+			switch (promotion)
+			{
+			case PIECE_QUEEN:
+				result += 'q';
+				break;
+			case PIECE_ROOK:
+				result += 'r';
+				break;
+			case PIECE_BISHOP:
+				result += 'b';
+				break;
+			case PIECE_KNIGHT:
+				result += 'n';
+				break;
+			}
+		}
 		if (includeSymbols)
 		{
-			if (move.GetFlags() & MOVE_PROMOTION)
-			{
-				Piece promotion = move.GetPromotionPiece();
-				switch (promotion)
-				{
-				case PIECE_QUEEN:
-					result += 'q';
-					break;
-				case PIECE_ROOK:
-					result += 'r';
-					break;
-				case PIECE_BISHOP:
-					result += 'b';
-					break;
-				case PIECE_KNIGHT:
-					result += 'n';
-					break;
-				}
-			}
 			if (move.GetFlags() & (MOVE_CAPTURE | MOVE_EN_PASSANT))
 			{
 				result += 'x';

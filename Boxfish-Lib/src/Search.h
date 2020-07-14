@@ -105,12 +105,13 @@ namespace Boxfish
 		Line GetPV(int depth) const;
 
 		void SearchRoot(const Position& position, int depth, SearchStats& stats);
-		Centipawns Negamax(const Position& position, SearchData data, SearchStats& stats);
+		Centipawns SearchPosition(const Position& position, SearchData data, SearchStats& stats);
 		Centipawns QuiescenceSearch(const Position& position, int alpha, int beta, int searchIndex);
 
 		bool CheckLimits() const;
 
 		Centipawns GetMoveScoreBonus(const Position& position, const Move& move) const;
+		Centipawns EvaluateDraw(const Position& postion) const;
 	};
 
 }

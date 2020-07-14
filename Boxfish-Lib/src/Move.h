@@ -33,10 +33,14 @@ namespace Boxfish
 	{
 	private:
 		uint32_t m_Move;
+		int m_Value;
 
 	public:
 		Move();
 		Move(const MoveDefinition& definition);
+
+		inline int GetValue() const { return m_Value; }
+		inline void SetValue(int value) { m_Value = value; }
 
 		MoveDefinition GetDefinition() const;
 		Square GetFromSquare() const;

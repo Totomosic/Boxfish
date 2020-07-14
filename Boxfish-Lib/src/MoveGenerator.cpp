@@ -103,6 +103,13 @@ namespace Boxfish
 		pseudoLegalMoves.MoveCount = index;
 	}
 
+	bool MoveGenerator::IsLegal(const Move& move) const
+	{
+		const BitBoard& checkers = m_Position.InfoCache.CheckedBy[m_Position.TeamToPlay];
+		bool multipleCheckers = MoreThanOne(checkers);
+		return IsMoveLegal(move, checkers, multipleCheckers);
+	}
+
 	bool MoveGenerator::HasAtLeastOneLegalMove(MoveList& moveList)
 	{
 		moveList.MoveCount = 0;

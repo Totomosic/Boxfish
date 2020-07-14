@@ -103,7 +103,7 @@ namespace Boxfish
 					}
 					else
 					{
-						std::cout << "mate " << (pv.CurrentIndex / 2) * ((m_BestScore == SCORE_MATE) ? 1 : -1);
+						std::cout << "mate " << ((int)pv.CurrentIndex / 2) * ((m_BestScore == SCORE_MATE) ? 1 : -1);
 					}
 					std::cout << " nodes " << m_Nodes;
 					std::cout << " nps " << (size_t)(m_Nodes / (elapsed.count() / 1e9f));
@@ -160,13 +160,7 @@ namespace Boxfish
 		m_Nodes = 0;
 		int alpha = -SCORE_MATE;
 		int beta = SCORE_MATE;
-		bool fullWindow = true;
-		if (depth >= 3 && false)
-		{
-			fullWindow = false;
-			alpha = m_BestScore - 50;
-			beta = m_BestScore + 50;
-		}
+		int delta = -SCORE_MATE;
 
 		MoveGenerator generator(position);
 		MoveList legalMoves = m_MovePool.GetList();
@@ -181,7 +175,6 @@ namespace Boxfish
 		}
 
 		Move currentBestMove = Move::Null();
-
 		MoveSelector selector(m_OrderingInfo, &legalMoves);
 
 		if (selector.Empty())
@@ -193,6 +186,15 @@ namespace Boxfish
 
 		Move defaultMove = legalMoves.Moves[0];
 
+		// Aspiration windows
+		if (depth >= 4 && false)
+		{
+			Centipawns prevMaxScore = m_BestScore;
+			delta = 20;
+			alpha = std::max(prevMaxScore - delta, -SCORE_MATE);
+			beta = std::min(prevMaxScore + delta, SCORE_MATE);
+		}
+
 		Centipawns currentScore = -SCORE_MATE;
 		while (!selector.Empty())
 		{
@@ -201,29 +203,37 @@ namespace Boxfish
 			line.Moves[line.CurrentIndex++] = move;
 			Position p = position;
 			ApplyMove(p, move);
-			Centipawns rootMoveBonus = GetMoveScoreBonus(position, move);
 
 			SearchData childData;
 			childData.Depth = depth - 1;
 			childData.Ply = 1;
-			childData.Alpha = rootMoveBonus - beta;
-			childData.Beta = rootMoveBonus - alpha;
+			childData.Alpha = -beta;
+			childData.Beta = -alpha;
 			childData.IsPV = move == stats.PV.Moves[0];
 
 			Centipawns score;
-			if (fullWindow)
+
+			while (true)
 			{
-				score = rootMoveBonus - Negamax(p, childData, stats);
-			}
-			else
-			{
-				score = rootMoveBonus - Negamax(p, childData, stats);
-				if (score > alpha)
+				score = -SearchPosition(p, childData, stats);
+				break;
+				if (score <= alpha)
 				{
-					childData.Alpha = rootMoveBonus - beta;
-					childData.Beta = rootMoveBonus - alpha;
-					score = rootMoveBonus - Negamax(p, childData, stats);
+					beta = (alpha + beta) / 2;
+					alpha = std::max(score - delta, -SCORE_MATE);
+					childData.Alpha = -beta;
+					childData.Beta = -alpha;
 				}
+				else if (score >= beta)
+				{
+					beta = std::min(score + delta, SCORE_MATE);
+					childData.Alpha = -beta;
+				}
+				else
+				{
+					break;
+				}
+				delta += delta / 4 + 5;
 			}
 
 			if (CheckLimits())
@@ -262,12 +272,12 @@ namespace Boxfish
 		m_BestMove = currentBestMove;
 	}
 
-	Centipawns Search::Negamax(const Position& position, SearchData data, SearchStats& stats)
+	Centipawns Search::SearchPosition(const Position& position, SearchData data, SearchStats& stats)
 	{
 		if (CheckLimits())
 		{
 			m_WasStopped = true;
-			return 0;
+			return SCORE_DRAW;
 		}
 
 		m_Nodes++;
@@ -275,11 +285,11 @@ namespace Boxfish
 		// Check for draw
 		if (position.HalfTurnsSinceCaptureOrPush >= 50)
 		{
-			return 0;
+			return EvaluateDraw(position);
 		}
 		if (m_PositionHistory.Contains(position, data.Ply))
 		{
-			return 0;
+			return EvaluateDraw(position);
 		}
 
 		if (data.Depth <= 0)
@@ -356,12 +366,12 @@ namespace Boxfish
 			childData.Beta = -data.Alpha;
 			childData.IsPV = data.IsPV && move == stats.PV.Moves[data.Ply];
 
-			Centipawns value = -Negamax(movedPosition, childData, stats);
+			Centipawns value = -SearchPosition(movedPosition, childData, stats);
 
 			if (CheckLimits())
 			{
 				m_WasStopped = true;
-				return 0;
+				return SCORE_DRAW;
 			}
 
 			// Beta cuttoff - Fail high
@@ -383,7 +393,7 @@ namespace Boxfish
 			{
 				// Re search
 				childData.Depth = data.Depth - 1;
-				value = -Negamax(movedPosition, childData, stats);
+				value = -SearchPosition(movedPosition, childData, stats);
 			}
 			if (value > data.Alpha)
 			{
@@ -425,15 +435,15 @@ namespace Boxfish
 		if (CheckLimits())
 		{
 			m_WasStopped = true;
-			return 0;
+			return SCORE_DRAW;
 		}
 
 		m_Nodes++;
 
 		if (position.HalfTurnsSinceCaptureOrPush >= 50)
-			return 0;
+			return EvaluateDraw(position);
 		if (m_PositionHistory.Contains(position, searchIndex))
-			return 0;
+			return EvaluateDraw(position);
 
 		Centipawns evaluation = Evaluate(position, position.TeamToPlay);
 		if (evaluation >= beta)
@@ -441,32 +451,32 @@ namespace Boxfish
 		if (alpha < evaluation)
 			alpha = evaluation;
 
-		MoveGenerator movegen(position);
+		MoveGenerator generator(position);
 		MoveList legalMoves = m_MovePool.GetList();
-		movegen.GetPseudoLegalMoves(legalMoves);
-		movegen.FilterLegalMoves(legalMoves);
-		if (legalMoves.Empty())
-			return evaluation;
+		generator.GetPseudoLegalMoves(legalMoves);
 		QuiescenceMoveSelector selector(position, legalMoves);
 		if (selector.Empty())
 			return evaluation;
 		while (!selector.Empty())
 		{
 			Move move = selector.GetNextMove();
-			Position movedPosition = position;
-			ApplyMove(movedPosition, move);
-			Centipawns score = -QuiescenceSearch(movedPosition, -beta, -alpha, searchIndex + 1);
-
-			if (CheckLimits())
+			if (generator.IsLegal(move))
 			{
-				m_WasStopped = true;
-				break;
-			}
+				Position movedPosition = position;
+				ApplyMove(movedPosition, move);
+				Centipawns score = -QuiescenceSearch(movedPosition, -beta, -alpha, searchIndex + 1);
 
-			if (score >= beta)
-				return score;
-			if (score > alpha)
-				alpha = score;
+				if (CheckLimits())
+				{
+					m_WasStopped = true;
+					break;
+				}
+
+				if (score >= beta)
+					return score;
+				if (score > alpha)
+					alpha = score;
+			}
 		}
 		return alpha;
 	}
@@ -491,6 +501,11 @@ namespace Boxfish
 	Centipawns Search::GetMoveScoreBonus(const Position& position, const Move& move) const
 	{
 		return 0;
+	}
+
+	Centipawns Search::EvaluateDraw(const Position& position) const
+	{
+		return SCORE_DRAW + 2 * ((int)(position.Hash.Hash + (size_t)position.GetTotalHalfMoves() * 1248125) & 1) - 1;
 	}
 
 }
