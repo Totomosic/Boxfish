@@ -9,7 +9,7 @@ namespace Boxfish
 
 	constexpr int MAX_PLY = 100;
 	constexpr int MAX_MOVES = 218;
-	constexpr int MOVE_POOL_SIZE = MAX_MOVES * (MAX_PLY + 1);
+	constexpr int MOVE_POOL_SIZE = MAX_MOVES * 2 * (MAX_PLY + 1);
 
 	class MovePool;
 

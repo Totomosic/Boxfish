@@ -19,7 +19,7 @@ namespace Boxfish
 	{
 	public:
 		const Position* CurrentPosition = nullptr;
-		Move PVMove;
+		const Move* KillerMoves = nullptr;
 	};
 
 	class BOX_API MoveSelector
@@ -42,6 +42,7 @@ namespace Boxfish
 		MoveList& m_LegalMoves;
 		size_t m_CurrentIndex;
 		size_t m_NumberOfCaptures;
+		bool m_InCheck;
 
 	public:
 		QuiescenceMoveSelector(const Position& position, MoveList& legalMoves);

@@ -120,8 +120,6 @@ namespace Boxfish
 		void Stop();
 
 	private:
-		Line GetPV(int depth) const;
-
 		void SearchRoot(const Position& position, int depth, SearchStats& stats, const std::function<void(SearchResult)>& callback);
 		template<NodeType type>
 		Centipawns SearchPosition(const Position& position, SearchStack* stack, int depth, Centipawns alpha, Centipawns beta, SearchStats& stats);
@@ -132,6 +130,10 @@ namespace Boxfish
 
 		Centipawns GetMoveScoreBonus(const Position& position, const Move& move) const;
 		Centipawns EvaluateDraw(const Position& postion) const;
+		Centipawns MateIn(int ply) const;
+		Centipawns MatedIn(int ply) const;
+		bool IsMateScore(Centipawns score) const;
+		Centipawns StaticEvalPosition(const Position& position, int ply) const;
 	};
 
 }

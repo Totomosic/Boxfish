@@ -6,7 +6,7 @@
 namespace Boxfish
 {
 
-	enum File : int
+	enum File : int8_t
 	{
 		FILE_A,
 		FILE_B,
@@ -20,7 +20,7 @@ namespace Boxfish
 		FILE_INVALID = -1
 	};
 
-	enum Rank : int
+	enum Rank : int8_t
 	{
 		RANK_1,
 		RANK_2,
@@ -36,29 +36,29 @@ namespace Boxfish
 
 	inline File operator++(File& f, int)
 	{
-		f = (File)((int)f + 1);
-		return (File)((int)f - 1);
+		f = (File)((int8_t)f + 1);
+		return (File)((int8_t)f - 1);
 	}
 
 	inline Rank operator++(Rank& r, int)
 	{
-		r = (Rank)((int)r + 1);
-		return (Rank)((int)r - 1);
+		r = (Rank)((int8_t)r + 1);
+		return (Rank)((int8_t)r - 1);
 	}
 
 	inline File operator--(File& f, int)
 	{
-		f = (File)((int)f - 1);
-		return (File)((int)f + 1);
+		f = (File)((int8_t)f - 1);
+		return (File)((int8_t)f + 1);
 	}
 
 	inline Rank operator--(Rank& r, int)
 	{
-		r = (Rank)((int)r - 1);
-		return (Rank)((int)r + 1);
+		r = (Rank)((int8_t)r - 1);
+		return (Rank)((int8_t)r + 1);
 	}
 
-	enum Piece : int
+	enum Piece : int8_t
 	{
 		PIECE_PAWN,
 		PIECE_KNIGHT,
@@ -94,24 +94,24 @@ namespace Boxfish
 
 	inline Piece operator++(Piece& p, int)
 	{
-		p = (Piece)((int)p + 1);
-		return (Piece)((int)p - 1);
+		p = (Piece)((int8_t)p + 1);
+		return (Piece)((int8_t)p - 1);
 	}
 
 	inline Piece operator--(Piece& p, int)
 	{
-		p = (Piece)((int)p - 1);
-		return (Piece)((int)p + 1);
+		p = (Piece)((int8_t)p - 1);
+		return (Piece)((int8_t)p + 1);
 	}
 
-	enum Team : int
+	enum Team : int8_t
 	{
 		TEAM_WHITE,
 		TEAM_BLACK,
 		TEAM_MAX
 	};
 
-	inline Team OtherTeam(Team current)
+	inline constexpr Team OtherTeam(Team current)
 	{
 		return (current == TEAM_WHITE) ? TEAM_BLACK : TEAM_WHITE;
 	}
@@ -133,7 +133,7 @@ namespace Boxfish
 		return !(left == right);
 	}
 
-	enum GameStage
+	enum GameStage : int8_t
 	{
 		MIDGAME,
 		ENDGAME,

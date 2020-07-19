@@ -138,8 +138,8 @@ int main(int argc, const char** argv)
 					Move move = CreateMoveFromString(position, moveString);
 					if (SanityCheckMove(position, move))
 					{
-						ApplyMove(position, move);
 						history.Push(position);
+						ApplyMove(position, move);
 					}
 					else
 					{
@@ -150,10 +150,6 @@ int main(int argc, const char** argv)
 					else
 						begin = end;
 				}
-			}
-			else
-			{
-				search.GetHistory().Push(position);
 			}
 		}
 		else if (command == "go")

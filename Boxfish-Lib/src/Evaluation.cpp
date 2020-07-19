@@ -7,6 +7,7 @@ namespace Boxfish
 
 	static bool s_Initialized = false;
 
+	static std::mutex m_MoveListLock;
 	static Move s_MoveBuffer[MAX_MOVES];
 	static MoveList s_MoveList(nullptr, s_MoveBuffer);
 
@@ -295,26 +296,30 @@ namespace Boxfish
 		return (Centipawns)(midgame + (endgame - midgame) * stage);
 	}
 
-	void EvaluateMaterial(EvaluationResult& result, const Position& position, Team team, float stage)
+	template<Team team>
+	void EvaluateMaterial(EvaluationResult& result, const Position& position, float stage)
 	{
-		Centipawns material = 0;
+		Centipawns mg = 0;
+		Centipawns eg = 0;
 		for (Piece piece = PIECE_PAWN; piece < PIECE_MAX; piece++)
 		{
 			Centipawns midgame = s_MaterialValues[MIDGAME][piece];
 			Centipawns endgame = s_MaterialValues[ENDGAME][piece];
-			int count = position.Teams[team].Pieces[piece].GetCount();
-			material += InterpolateGameStage(stage, midgame * count, endgame * count);
+			int count = position.GetTeamPieces(team, piece).GetCount();
+			mg += midgame * count;
+			eg += endgame * count;
 		}
-		result.Material[team] = material;
+		result.Material[team] = InterpolateGameStage(stage, mg, eg);
 	}
 
 	void EvaluateMaterial(EvaluationResult& result, const Position& position, float stage)
 	{
-		EvaluateMaterial(result, position, TEAM_WHITE, stage);
-		EvaluateMaterial(result, position, TEAM_BLACK, stage);
+		EvaluateMaterial<TEAM_WHITE>(result, position, stage);
+		EvaluateMaterial<TEAM_BLACK>(result, position, stage);
 	}
 
-	void EvaluatePieceSquareTables(EvaluationResult& result, const Position& position, float stage, Team team)
+	template<Team team>
+	void EvaluatePieceSquareTables(EvaluationResult& result, const Position& position, float stage)
 	{
 		Centipawns score = 0;
 		for (Piece piece = PIECE_PAWN; piece < PIECE_MAX; piece++)
@@ -341,22 +346,17 @@ namespace Boxfish
 
 	void EvaluatePieceSquareTables(EvaluationResult& result, const Position& position, float stage)
 	{
-		EvaluatePieceSquareTables(result, position, stage, TEAM_WHITE);
-		EvaluatePieceSquareTables(result, position, stage, TEAM_BLACK);
+		EvaluatePieceSquareTables<TEAM_WHITE>(result, position, stage);
+		EvaluatePieceSquareTables<TEAM_BLACK>(result, position, stage);
 	}
 
-	void EvaluateMobility(EvaluationResult& result, const Position& position, float stage)
+	template<Team team>
+	void EvaluateAttacks(EvaluationResult& result, const Position& position, float stage)
 	{
-		
-	}
-
-	void EvaluateAttacks(EvaluationResult& result, const Position& position, float stage, Team team)
-	{
-		BitBoard attacks;
-		Position board = position;
+		BitBoard attacks = ZERO_BB;
 
 		BitBoard blockers = position.GetAllPieces();
-		BitBoard& bishops = board.Teams[team].Pieces[PIECE_BISHOP];
+		BitBoard bishops = position.GetTeamPieces(team, PIECE_BISHOP);
 		while (bishops)
 		{
 			SquareIndex square = PopLeastSignificantBit(bishops);
@@ -371,8 +371,8 @@ namespace Boxfish
 
 	void EvaluateAttacks(EvaluationResult& result, const Position& position, float stage)
 	{
-		EvaluateAttacks(result, position, stage, TEAM_WHITE);
-		EvaluateAttacks(result, position, stage, TEAM_BLACK);
+		EvaluateAttacks<TEAM_WHITE>(result, position, stage);
+		EvaluateAttacks<TEAM_BLACK>(result, position, stage);
 	}
 
 	void EvaluateCheckmate(EvaluationResult& result, const Position& position, float stage)
@@ -381,6 +381,7 @@ namespace Boxfish
 		result.Checkmate[TEAM_WHITE] = false;
 		result.Checkmate[TEAM_BLACK] = false;
 		result.Stalemate = false;
+		std::scoped_lock<std::mutex> lock(m_MoveListLock);
 		if (!movegen.HasAtLeastOneLegalMove(s_MoveList))
 		{
 			if (IsInCheck(position, TEAM_WHITE))
@@ -426,7 +427,7 @@ namespace Boxfish
 	{
 		Centipawns value = 0;
 		BitBoard pawns = position.GetTeamPieces(team, PIECE_PAWN);
-		Team otherTeam = OtherTeam(team);
+		constexpr Team otherTeam = OtherTeam(team);
 
 		BitBoard otherPawns = position.GetTeamPieces(otherTeam, PIECE_PAWN);
 
@@ -448,6 +449,53 @@ namespace Boxfish
 	{
 		EvaluatePassedPawns<TEAM_WHITE>(result, position, stage);
 		EvaluatePassedPawns<TEAM_BLACK>(result, position, stage);
+	}
+
+	template<Team team>
+	void EvaluateDoubledPawns(EvaluationResult& result, const Position& position, float stage)
+	{
+		int count = 0;
+		for (File file = FILE_A; file < FILE_MAX; file++)
+		{
+			int pawnsOnFile = (position.GetTeamPieces(team, PIECE_PAWN) & FILE_MASKS[file]).GetCount();
+			if (pawnsOnFile > 0)
+				count += pawnsOnFile - 1;
+		}
+		Centipawns mg = -20 * count;
+		Centipawns eg = -30 * count;
+		result.DoubledPawns[team] = InterpolateGameStage(stage, mg, eg);
+	}
+
+	void EvaluateDoubledPawns(EvaluationResult& result, const Position& position, float stage)
+	{
+		EvaluateDoubledPawns<TEAM_WHITE>(result, position, stage);
+		EvaluateDoubledPawns<TEAM_BLACK>(result, position, stage);
+	}
+
+	template<Team team>
+	void EvaluateRooksOnOpenFiles(EvaluationResult& result, const Position& position, float stage)
+	{
+		int count = 0;
+		BitBoard rooks = position.GetTeamPieces(team, PIECE_ROOK);
+		BitBoard allPawns = position.GetPieces(PIECE_PAWN);
+		while (rooks)
+		{
+			SquareIndex square = PopLeastSignificantBit(rooks);
+			File file = BitBoard::BitIndexToSquare(square).File;
+			if ((allPawns & FILE_MASKS[file]) == ZERO_BB)
+			{
+				count++;
+			}
+		}
+		Centipawns mg = 10 * count;
+		Centipawns eg = 50 * count;
+		result.RooksOnOpenFiles[team] = InterpolateGameStage(stage, mg, eg);
+	}
+
+	void EvaluateRooksOnOpenFiles(EvaluationResult& result, const Position& position, float stage)
+	{
+		EvaluateRooksOnOpenFiles<TEAM_WHITE>(result, position, stage);
+		EvaluateRooksOnOpenFiles<TEAM_BLACK>(result, position, stage);
 	}
 
 	template<Team team>
@@ -491,11 +539,12 @@ namespace Boxfish
 		if (!result.IsCheckmate() && !result.Stalemate)
 		{
 			EvaluateMaterial(result, position, gameStage);
-			EvaluateMobility(result, position, gameStage);
 			EvaluateAttacks(result, position, gameStage);
 			EvaluatePieceSquareTables(result, position, gameStage);
 			EvaluatePawnShield(result, position, gameStage);
 			EvaluatePassedPawns(result, position, gameStage);
+			EvaluateDoubledPawns(result, position, gameStage);
+			EvaluateRooksOnOpenFiles(result, position, gameStage);
 			EvaluateKingSafety(result, position, gameStage);
 		}
 		return result;

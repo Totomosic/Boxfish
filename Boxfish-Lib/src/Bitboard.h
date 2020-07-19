@@ -34,7 +34,7 @@ namespace Boxfish
 
 		void Reset();
 
-		inline operator bool() const { return Board != 0; }
+		inline operator bool() const { return Board != 0ULL; }
 		inline friend BitBoard operator&(const BitBoard& left, const BitBoard& right) { return left.Board & right.Board; }
 		inline friend BitBoard operator|(const BitBoard& left, const BitBoard& right) { return left.Board | right.Board; }
 		inline friend BitBoard operator^(const BitBoard& left, const BitBoard& right) { return left.Board ^ right.Board; }

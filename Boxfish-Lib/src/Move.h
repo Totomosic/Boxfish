@@ -38,6 +38,10 @@ namespace Boxfish
 	public:
 		Move();
 		Move(const MoveDefinition& definition);
+		constexpr Move(uint32_t move)
+			: m_Move(move), m_Value(0)
+		{
+		}
 
 		inline int GetValue() const { return m_Value; }
 		inline void SetValue(int value) { m_Value = value; }
@@ -59,14 +63,9 @@ namespace Boxfish
 
 		inline friend bool operator==(const Move& left, const Move& right) { return left.m_Move == right.m_Move; }
 		inline friend bool operator!=(const Move& left, const Move& right) { return left.m_Move != right.m_Move; }
-
-		inline static Move Null() {
-			Move mv;
-			mv.m_Move = 0;
-			mv.SetFlags(MOVE_NULL);
-			return mv;
-		}
 	};
+
+	constexpr Move MOVE_NONE = 0U | ((MOVE_NULL & 0x7f) << 21);
 
 	std::string FormatMove(const Move& move, bool includeSymbols = true);
 	std::string FormatNullMove();
