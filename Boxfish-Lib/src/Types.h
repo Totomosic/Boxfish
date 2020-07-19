@@ -5,7 +5,7 @@
 
 namespace Boxfish
 {
-	
+
 	enum File : int
 	{
 		FILE_A,
@@ -141,26 +141,6 @@ namespace Boxfish
 	};
 
 	constexpr Square INVALID_SQUARE = { FILE_INVALID, RANK_INVALID };
-
-	constexpr uint64_t RANK_1_MASK = 0xffull;
-	constexpr uint64_t RANK_2_MASK = 0xff00ull;
-	constexpr uint64_t RANK_3_MASK = 0xff0000ull;
-	constexpr uint64_t RANK_4_MASK = 0xff000000ull;
-	constexpr uint64_t RANK_5_MASK = 0xff00000000ull;
-	constexpr uint64_t RANK_6_MASK = 0xff0000000000ull;
-	constexpr uint64_t RANK_7_MASK = 0xff000000000000ull;
-	constexpr uint64_t RANK_8_MASK = 0xff00000000000000ull;
-	constexpr uint64_t FILE_H_MASK = 0x8080808080808080ull;
-	constexpr uint64_t FILE_G_MASK = 0x4040404040404040ull;
-	constexpr uint64_t FILE_F_MASK = 0x2020202020202020ull;
-	constexpr uint64_t FILE_E_MASK = 0x1010101010101010ull;
-	constexpr uint64_t FILE_D_MASK = 0x808080808080808ull;
-	constexpr uint64_t FILE_C_MASK = 0x404040404040404ull;
-	constexpr uint64_t FILE_B_MASK = 0x202020202020202ull;
-	constexpr uint64_t FILE_A_MASK = 0x101010101010101ull;
-
-	constexpr uint64_t DARK_SQUARES_MASK = 0xAA55AA55AA55AA55;
-	constexpr uint64_t LIGHT_SQUARES_MASK = 0x55AA55AA55AA55AA;
 
 	enum SquareIndex : int 
 	{

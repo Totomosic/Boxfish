@@ -10,10 +10,11 @@ namespace Boxfish
 	struct BOX_API UndoInfo
 	{
 	public:
-		int HalfTurnsSinceCaptureOrPush = 0;
+		int HalfTurnsSinceCaptureOrPush;
 		Square EnpassantSquare = INVALID_SQUARE;
 		bool CastleKingSide[TEAM_MAX];
 		bool CastleQueenSide[TEAM_MAX];
+		PositionInfo InfoCache;
 	};
 
 	Position CreateStartingPosition();
@@ -48,6 +49,8 @@ namespace Boxfish
 	void UndoMove(Position& position, const Move& move, const UndoInfo& undo);
 	bool SanityCheckMove(const Position& position, const Move& move);
 	Move CreateMove(const Position& position, const Square& from, const Square& to, Piece promotionPiece = PIECE_QUEEN);
+	// e7d8q - Move piece from e7 -> e8 and promote to queen
+	Move CreateMoveFromString(const Position& position, const std::string& uciString);
 
 	std::ostream& operator<<(std::ostream& stream, const Position& position);
 

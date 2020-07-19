@@ -56,6 +56,7 @@ namespace Boxfish
 		static File FileOfIndex(int index);
 	};
 
+	constexpr BitBoard ZERO_BB = 0ULL;
 	constexpr BitBoard ALL_SQUARES_BB = 0xFFFFFFFFFFFFFFFF;
 
 	bool MoreThanOne(const BitBoard& board);
@@ -66,5 +67,47 @@ namespace Boxfish
 	BitBoard ShiftWest(const BitBoard& board, int count);
 
 	int GetForwardShift(Team team);
+
+	constexpr BitBoard RANK_1_MASK = 0xffull;
+	constexpr BitBoard RANK_2_MASK = 0xff00ull;
+	constexpr BitBoard RANK_3_MASK = 0xff0000ull;
+	constexpr BitBoard RANK_4_MASK = 0xff000000ull;
+	constexpr BitBoard RANK_5_MASK = 0xff00000000ull;
+	constexpr BitBoard RANK_6_MASK = 0xff0000000000ull;
+	constexpr BitBoard RANK_7_MASK = 0xff000000000000ull;
+	constexpr BitBoard RANK_8_MASK = 0xff00000000000000ull;
+	constexpr BitBoard FILE_H_MASK = 0x8080808080808080ull;
+	constexpr BitBoard FILE_G_MASK = 0x4040404040404040ull;
+	constexpr BitBoard FILE_F_MASK = 0x2020202020202020ull;
+	constexpr BitBoard FILE_E_MASK = 0x1010101010101010ull;
+	constexpr BitBoard FILE_D_MASK = 0x808080808080808ull;
+	constexpr BitBoard FILE_C_MASK = 0x404040404040404ull;
+	constexpr BitBoard FILE_B_MASK = 0x202020202020202ull;
+	constexpr BitBoard FILE_A_MASK = 0x101010101010101ull;
+
+	constexpr BitBoard FILE_MASKS[FILE_MAX] = {
+		FILE_A_MASK,
+		FILE_B_MASK,
+		FILE_C_MASK,
+		FILE_D_MASK,
+		FILE_E_MASK,
+		FILE_F_MASK,
+		FILE_G_MASK,
+		FILE_H_MASK,
+	};
+
+	constexpr BitBoard RANK_MASKS[RANK_MAX] = {
+		RANK_1_MASK,
+		RANK_2_MASK,
+		RANK_3_MASK,
+		RANK_4_MASK,
+		RANK_5_MASK,
+		RANK_6_MASK,
+		RANK_7_MASK,
+		RANK_8_MASK,
+	};
+
+	constexpr BitBoard DARK_SQUARES_MASK = 0xAA55AA55AA55AA55;
+	constexpr BitBoard LIGHT_SQUARES_MASK = 0x55AA55AA55AA55AA;
 
 }

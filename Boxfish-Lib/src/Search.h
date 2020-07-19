@@ -40,25 +40,50 @@ namespace Boxfish
 		size_t TableMisses = 0;
 	};
 
+	struct BOX_API SearchStack
+	{
+		Move* PV = nullptr;
+		int Ply = 0;
+		Move CurrentMove;
+		Move KillerMoves[2];
+		Centipawns StaticEvaluation = -SCORE_MATE;
+		int MoveCount = 0;
+		bool InCheck = false;
+	};
+
 	struct BOX_API SearchResult
 	{
 	public:
-		Line PV;
+		std::vector<Move> PV;
 		Centipawns Score;
 		Move BestMove;
+	};
+
+	class RootMove
+	{
+	public:
+		Centipawns Score;
+		std::vector<Move> PV;
+
+	public:
+		inline bool operator==(const Move& move) const
+		{
+			return move == PV[0];
+		}
+
+		inline friend bool operator<(const RootMove& left, const RootMove& right)
+		{
+			return right.Score < left.Score;
+		}
 	};
 
 	class BOX_API Search
 	{
 	private:
-		struct BOX_API SearchData
+		enum class NodeType
 		{
-		public:
-			int Depth;
-			int Ply;
-			int Alpha;
-			int Beta;
-			bool IsPV;
+			PV,
+			NonPV
 		};
 
 	private:
@@ -68,10 +93,7 @@ namespace Boxfish
 		SearchLimits m_Limits;
 
 		MovePool m_MovePool;
-
-		Move m_BestMove;
-		Centipawns m_BestScore;
-		int m_SearchDepth;
+		std::vector<RootMove> m_RootMoves;
 
 		size_t m_Nodes;
 		std::chrono::time_point<std::chrono::high_resolution_clock> m_SearchRootStartTime;
@@ -89,10 +111,6 @@ namespace Boxfish
 		PositionHistory& GetHistory();
 		void SetLimits(const SearchLimits& limits);
 
-		const Move& GetBestMove() const;
-		Centipawns GetBestScore() const;
-		Line GetPV() const;
-
 		void SetCurrentPosition(const Position& position);
 		void SetCurrentPosition(Position&& position);
 		Move Go(int depth, const std::function<void(SearchResult)>& callback = {});
@@ -104,9 +122,11 @@ namespace Boxfish
 	private:
 		Line GetPV(int depth) const;
 
-		void SearchRoot(const Position& position, int depth, SearchStats& stats);
-		Centipawns SearchPosition(const Position& position, SearchData data, SearchStats& stats);
-		Centipawns QuiescenceSearch(const Position& position, int alpha, int beta, int searchIndex);
+		void SearchRoot(const Position& position, int depth, SearchStats& stats, const std::function<void(SearchResult)>& callback);
+		template<NodeType type>
+		Centipawns SearchPosition(const Position& position, SearchStack* stack, int depth, Centipawns alpha, Centipawns beta, SearchStats& stats);
+		template<NodeType type>
+		Centipawns QuiescenceSearch(const Position& position, SearchStack* stack, Centipawns alpha, Centipawns beta);
 
 		bool CheckLimits() const;
 

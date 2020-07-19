@@ -108,6 +108,7 @@ namespace Boxfish
 		board &= board.Board - 1;
 		return (SquareIndex)lsb;
 	}
+
 #else
 	SquareIndex ForwardBitScan(const BitBoard& board)
 	{

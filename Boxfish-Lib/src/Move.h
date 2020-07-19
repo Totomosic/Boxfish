@@ -62,6 +62,7 @@ namespace Boxfish
 
 		inline static Move Null() {
 			Move mv;
+			mv.m_Move = 0;
 			mv.SetFlags(MOVE_NULL);
 			return mv;
 		}

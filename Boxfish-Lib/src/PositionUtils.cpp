@@ -179,10 +179,18 @@ namespace Boxfish
 		}
 
 		size_t space = fen.find_first_of(' ', index);
-		position.HalfTurnsSinceCaptureOrPush = std::stoi(fen.substr(index, space - index));
-		index = space + 1;
-		space = fen.find_first_of(' ', index);
-		position.TotalTurns = std::stoi(fen.substr(index)) - 1;
+		if (space != std::string::npos)
+		{
+			position.HalfTurnsSinceCaptureOrPush = std::stoi(fen.substr(index, space - index));
+			index = space + 1;
+			space = fen.find_first_of(' ', index);
+			position.TotalTurns = std::stoi(fen.substr(index)) - 1;
+		}
+		else
+		{
+			position.HalfTurnsSinceCaptureOrPush = 0;
+			position.TotalTurns = 0;
+		}
 		
 		position.InvalidateTeam(TEAM_WHITE);
 		position.InvalidateTeam(TEAM_BLACK);
@@ -508,6 +516,7 @@ namespace Boxfish
 	{
 		if (outUndoInfo)
 		{
+			outUndoInfo->InfoCache = position.InfoCache;
 			outUndoInfo->EnpassantSquare = position.EnpassantSquare;
 			outUndoInfo->HalfTurnsSinceCaptureOrPush = position.HalfTurnsSinceCaptureOrPush;
 			outUndoInfo->CastleKingSide[TEAM_WHITE] = position.Teams[TEAM_WHITE].CastleKingSide;
@@ -684,19 +693,13 @@ namespace Boxfish
 				position.Teams[TEAM_BLACK].CastleQueenSide = undo.CastleQueenSide[TEAM_BLACK];
 				position.Hash.AddCastleQueenside(TEAM_BLACK);
 			}
-
-			if (move.GetMovingPiece() == PIECE_KING)
-				CalculateKingSquare(position, currentTeam);
-			CalculateKingBlockers(position, TEAM_WHITE);
-			CalculateKingBlockers(position, TEAM_BLACK);
-			CalculateCheckers(position, TEAM_WHITE);
-			CalculateCheckers(position, TEAM_BLACK);
 		}
 		if (undo.EnpassantSquare != INVALID_SQUARE)
 		{
 			position.EnpassantSquare = undo.EnpassantSquare;
 			position.Hash.AddEnPassant(undo.EnpassantSquare.File);
 		}
+		position.InfoCache = undo.InfoCache;
 	}
 
 	bool SanityCheckMove(const Position& position, const Move& move)
@@ -758,6 +761,45 @@ namespace Boxfish
 		if (to == position.EnpassantSquare && move.GetMovingPiece() == PIECE_PAWN)
 			move.SetFlags(MOVE_EN_PASSANT);
 		return move;
+	}
+
+	Move CreateMoveFromString(const Position& position, const std::string& uciString)
+	{
+		BOX_ASSERT(uciString.size() >= 4, "Invalid UCI move string");
+		if (uciString.size() > 5)
+			BOX_WARN("Move string is too long {} characters, expected 4 or 5.", uciString.size());
+		File startFile = (File)(uciString[0] - 'a');
+		Rank startRank = (Rank)(uciString[1] - '1');
+		File endFile = (File)(uciString[2] - 'a');
+		Rank endRank = (Rank)(uciString[3] - '1');
+		BOX_ASSERT(startFile >= 0 && startFile < FILE_MAX && startRank >= 0 && startRank < RANK_MAX && endFile >= 0 && endFile < FILE_MAX && endRank >= 0 && endRank < RANK_MAX,
+			"Invalid UCII move string. Ranks/Files out of range.");
+		Piece promotion = PIECE_QUEEN;
+		if (uciString.size() >= 5)
+		{
+			// support lower case or upper case
+			char promotionChar = uciString[4];
+			if (promotionChar - 'a' < 0)
+				promotionChar += 'a' - 'A';
+			switch (promotionChar)
+			{
+			case 'q':
+				promotion = PIECE_QUEEN;
+				break;
+			case 'n':
+				promotion = PIECE_KNIGHT;
+				break;
+			case 'r':
+				promotion = PIECE_ROOK;
+				break;
+			case 'b':
+				promotion = PIECE_BISHOP;
+				break;
+			default:
+				BOX_ASSERT(false, "Invalid promotion type: {}", promotionChar);
+			}
+		}
+		return CreateMove(position, { startFile, startRank }, { endFile, endRank }, promotion);
 	}
 
 	std::ostream& operator<<(std::ostream& stream, const Position& position)

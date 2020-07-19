@@ -39,11 +39,11 @@ namespace Boxfish
 			}
 			else if (move.GetFlags() & MOVE_CAPTURE)
 			{
-				score = 20 + GetPieceValue(move.GetCapturedPiece()) - GetPieceValue(move.GetMovingPiece());
+				score = 3000 + GetPieceValue(move.GetCapturedPiece()) - GetPieceValue(move.GetMovingPiece());
 			}
 			else if (move.GetFlags() & MOVE_PROMOTION)
 			{
-				score = 50 + GetPieceValue(move.GetPromotionPiece());
+				score = 2000 + GetPieceValue(move.GetPromotionPiece());
 			}
 			if (score > bestScore)
 			{
@@ -67,11 +67,11 @@ namespace Boxfish
 			Move& move = moves.Moves[i];
 			if (move.GetFlags() & MOVE_CAPTURE)
 			{
-				move.SetValue(20 + GetPieceValue(move.GetCapturedPiece()) - GetPieceValue(move.GetMovingPiece()));
+				move.SetValue(3000 + GetPieceValue(move.GetCapturedPiece()) - GetPieceValue(move.GetMovingPiece()));
 			}
 			else if (move.GetFlags() & MOVE_PROMOTION)
 			{
-				move.SetValue(50 + GetPieceValue(move.GetPromotionPiece()));
+				move.SetValue(2000 + GetPieceValue(move.GetPromotionPiece()));
 			}
 		}
 	}

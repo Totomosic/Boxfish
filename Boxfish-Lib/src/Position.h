@@ -45,7 +45,7 @@ namespace Boxfish
 
 		inline SquareIndex GetKingSquare(Team team) const { return ForwardBitScan(Teams[team].Pieces[PIECE_KING]); }
 
-		inline BitBoard GetTeamPieces(Team team, Piece piece) const { return Teams[team].Pieces[piece]; }
+		inline const BitBoard& GetTeamPieces(Team team, Piece piece) const { return Teams[team].Pieces[piece]; }
 		inline BitBoard GetTeamPieces(Team team, Piece piece, Piece piece2) const { return GetTeamPieces(team, piece) | GetTeamPieces(team, piece2); }
 		inline BitBoard GetTeamPieces(Team team, Piece piece, Piece piece2, Piece piece3) const { return GetTeamPieces(team, piece, piece2) | GetTeamPieces(team, piece3); }
 		inline BitBoard GetPieces(Piece piece) const { return Teams[TEAM_WHITE].Pieces[piece] | Teams[TEAM_BLACK].Pieces[piece]; }

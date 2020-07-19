@@ -9,14 +9,18 @@ namespace Boxfish
 	using Centipawns = int;
 	constexpr Centipawns SCORE_MATE = 200000;
 	constexpr Centipawns SCORE_DRAW = 0;
+	constexpr Centipawns SCORE_NONE = -SCORE_MATE * 2;
 
 	struct BOX_API EvaluationResult
 	{
 	public:
-		Centipawns Material[TEAM_MAX] = { 0 };
-		Centipawns Attacks[TEAM_MAX] = { 0 };
-		Centipawns PieceSquares[TEAM_MAX] = { 0 };
-		bool Checkmate[TEAM_MAX] = { false };
+		Centipawns Material[TEAM_MAX];
+		Centipawns Attacks[TEAM_MAX];
+		Centipawns PieceSquares[TEAM_MAX];
+		Centipawns PawnShield[TEAM_MAX];
+		Centipawns PassedPawns[TEAM_MAX];
+		Centipawns KingSafety[TEAM_MAX];
+		bool Checkmate[TEAM_MAX];
 		bool Stalemate = false;
 		float GameStage;
 
@@ -32,7 +36,8 @@ namespace Boxfish
 			if (Stalemate)
 				return 0;
 			Team other = OtherTeam(team);
-			return (Material[team] - Material[other]) + (Attacks[team] - Attacks[other]) + (PieceSquares[team] - PieceSquares[other]);
+			return (Material[team] - Material[other]) + (Attacks[team] - Attacks[other]) + (PieceSquares[team] - PieceSquares[other])
+				+ (PawnShield[team] - PawnShield[other]) + (PassedPawns[team] - PassedPawns[other]) + (KingSafety[team] - KingSafety[other]);
 		}
 	};
 

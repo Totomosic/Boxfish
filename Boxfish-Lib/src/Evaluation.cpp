@@ -10,13 +10,39 @@ namespace Boxfish
 	static Move s_MoveBuffer[MAX_MOVES];
 	static MoveList s_MoveList(nullptr, s_MoveBuffer);
 
-	int s_PhaseWeights[PIECE_MAX];
-	int s_MaxPhaseValue = 0;
+	static int s_PhaseWeights[PIECE_MAX];
+	static int s_MaxPhaseValue = 0;
 
-	int s_DistanceTable[FILE_MAX * RANK_MAX][FILE_MAX * RANK_MAX];
+	static int s_DistanceTable[FILE_MAX * RANK_MAX][FILE_MAX * RANK_MAX];
 
-	Centipawns s_MaterialValues[GAME_STAGE_MAX][PIECE_MAX];
-	Centipawns s_PieceSquareTables[GAME_STAGE_MAX][TEAM_MAX][PIECE_MAX][FILE_MAX * RANK_MAX];
+	static Centipawns s_MaterialValues[GAME_STAGE_MAX][PIECE_MAX];
+	static Centipawns s_PieceSquareTables[GAME_STAGE_MAX][TEAM_MAX][PIECE_MAX][FILE_MAX * RANK_MAX];
+
+	static BitBoard s_PawnShieldMasks[TEAM_MAX][FILE_MAX * RANK_MAX];
+	static BitBoard s_PassedPawnMasks[TEAM_MAX][FILE_MAX * RANK_MAX];
+	static Centipawns s_PassedPawnRankWeights[GAME_STAGE_MAX][TEAM_MAX][RANK_MAX];
+
+	static const BitBoard s_NeighbourFiles[FILE_MAX] = {
+					  FILE_B_MASK,
+		FILE_A_MASK | FILE_C_MASK,
+		FILE_B_MASK | FILE_D_MASK,
+		FILE_C_MASK | FILE_E_MASK,
+		FILE_D_MASK | FILE_F_MASK,
+		FILE_E_MASK | FILE_G_MASK,
+		FILE_F_MASK | FILE_H_MASK,
+		FILE_G_MASK,
+	};
+
+	static const BitBoard s_NeighbourRanks[RANK_MAX] = {
+					  RANK_2_MASK,
+		RANK_1_MASK | RANK_3_MASK,
+		RANK_2_MASK | RANK_4_MASK,
+		RANK_3_MASK | RANK_5_MASK,
+		RANK_4_MASK | RANK_6_MASK,
+		RANK_5_MASK | RANK_7_MASK,
+		RANK_6_MASK | RANK_8_MASK,
+		RANK_7_MASK,
+	};
 
 	void InitPhase()
 	{
@@ -28,6 +54,67 @@ namespace Boxfish
 		s_PhaseWeights[PIECE_KING] = 0;
 
 		s_MaxPhaseValue = s_PhaseWeights[PIECE_PAWN] * 16 + s_PhaseWeights[PIECE_KNIGHT] * 4 + s_PhaseWeights[PIECE_BISHOP] * 4 + s_PhaseWeights[PIECE_ROOK] * 4 + s_PhaseWeights[PIECE_QUEEN] * 2 + s_PhaseWeights[PIECE_KING] * 2;
+	}
+
+	void InitPawnShieldMasks()
+	{
+		for (SquareIndex sq = a1; sq < FILE_MAX * RANK_MAX; sq++)
+		{
+			BitBoard square(sq);
+			s_PawnShieldMasks[TEAM_WHITE][sq] = ((square << 8) | ((square << 7) & ~FILE_H_MASK) | ((square << 9) & ~FILE_A_MASK)) & RANK_2_MASK;
+			s_PawnShieldMasks[TEAM_WHITE][sq] = ((square >> 8) | ((square >> 7) & ~FILE_H_MASK) | ((square >> 9) & ~FILE_A_MASK)) & RANK_7_MASK;
+		}
+	}
+
+	void InitPassedPawnMasks()
+	{
+		for (SquareIndex sq = a1; sq < FILE_MAX * RANK_MAX; sq++)
+		{
+			BitBoard north = GetRay(RAY_NORTH, sq);
+			BitBoard south = GetRay(RAY_SOUTH, sq);
+			
+			s_PassedPawnMasks[TEAM_WHITE][sq] = north | ShiftEast(north, 1) | ShiftWest(north, 1);
+			s_PassedPawnMasks[TEAM_BLACK][sq] = south | ShiftWest(south, 1) | ShiftEast(south, 1);
+		}
+		s_PassedPawnRankWeights[MIDGAME][TEAM_WHITE][RANK_1] = 0;
+		s_PassedPawnRankWeights[ENDGAME][TEAM_WHITE][RANK_1] = 0;
+		s_PassedPawnRankWeights[MIDGAME][TEAM_BLACK][RANK_1] = 0;
+		s_PassedPawnRankWeights[ENDGAME][TEAM_BLACK][RANK_1] = 0;
+
+		s_PassedPawnRankWeights[MIDGAME][TEAM_WHITE][RANK_2] = 0;
+		s_PassedPawnRankWeights[ENDGAME][TEAM_WHITE][RANK_2] = 0;
+		s_PassedPawnRankWeights[MIDGAME][TEAM_BLACK][RANK_2] = 100;
+		s_PassedPawnRankWeights[ENDGAME][TEAM_BLACK][RANK_2] = 200;
+
+		s_PassedPawnRankWeights[MIDGAME][TEAM_WHITE][RANK_3] = 10;
+		s_PassedPawnRankWeights[ENDGAME][TEAM_WHITE][RANK_3] = 20;
+		s_PassedPawnRankWeights[MIDGAME][TEAM_BLACK][RANK_3] = 90;
+		s_PassedPawnRankWeights[ENDGAME][TEAM_BLACK][RANK_3] = 180;
+
+		s_PassedPawnRankWeights[MIDGAME][TEAM_WHITE][RANK_4] = 5;
+		s_PassedPawnRankWeights[ENDGAME][TEAM_WHITE][RANK_4] = 40;
+		s_PassedPawnRankWeights[MIDGAME][TEAM_BLACK][RANK_4] = 10;
+		s_PassedPawnRankWeights[ENDGAME][TEAM_BLACK][RANK_4] = 80;
+
+		s_PassedPawnRankWeights[MIDGAME][TEAM_WHITE][RANK_5] = 10;
+		s_PassedPawnRankWeights[ENDGAME][TEAM_WHITE][RANK_5] = 80;
+		s_PassedPawnRankWeights[MIDGAME][TEAM_BLACK][RANK_5] = 5;
+		s_PassedPawnRankWeights[ENDGAME][TEAM_BLACK][RANK_5] = 40;
+
+		s_PassedPawnRankWeights[MIDGAME][TEAM_WHITE][RANK_6] = 90;
+		s_PassedPawnRankWeights[ENDGAME][TEAM_WHITE][RANK_6] = 180;
+		s_PassedPawnRankWeights[MIDGAME][TEAM_BLACK][RANK_6] = 10;
+		s_PassedPawnRankWeights[ENDGAME][TEAM_BLACK][RANK_6] = 20;
+
+		s_PassedPawnRankWeights[MIDGAME][TEAM_WHITE][RANK_7] = 100;
+		s_PassedPawnRankWeights[ENDGAME][TEAM_WHITE][RANK_7] = 200;
+		s_PassedPawnRankWeights[MIDGAME][TEAM_BLACK][RANK_7] = 0;
+		s_PassedPawnRankWeights[ENDGAME][TEAM_BLACK][RANK_7] = 0;
+
+		s_PassedPawnRankWeights[MIDGAME][TEAM_WHITE][RANK_8] = 0;
+		s_PassedPawnRankWeights[ENDGAME][TEAM_WHITE][RANK_8] = 0;
+		s_PassedPawnRankWeights[MIDGAME][TEAM_BLACK][RANK_8] = 0;
+		s_PassedPawnRankWeights[ENDGAME][TEAM_BLACK][RANK_8] = 0;
 	}
 
 	void InitMaterialTable()
@@ -68,7 +155,7 @@ namespace Boxfish
 			10, 10, 20, 30, 30, 20, 10, 10,
 			 5,  5, 10, 25, 25, 10,  5,  5,
 			 0,  0,  0, 20, 20,  0,  0,  0,
-			 5, -5,-10,  0,  0,-10, -5,  5,
+			 5, -5,-10,  5,  5,-10, -5,  5,
 			 5, 10, 10,-20,-20, 10, 10,  5,
 			 0,  0,  0,  0,  0,  0,  0,  0
 		};
@@ -185,6 +272,8 @@ namespace Boxfish
 			InitDistanceTable();
 			InitMaterialTable();
 			InitPieceSquareTables();
+			InitPawnShieldMasks();
+			InitPassedPawnMasks();
 			s_Initialized = true;
 		}
 	}
@@ -267,18 +356,6 @@ namespace Boxfish
 		Position board = position;
 
 		BitBoard blockers = position.GetAllPieces();
-		BitBoard& queens = board.Teams[team].Pieces[PIECE_QUEEN];
-		while (queens)
-		{
-			SquareIndex square = PopLeastSignificantBit(queens);
-			attacks |= GetSlidingAttacks(PIECE_QUEEN, square, blockers);
-		}
-		BitBoard& rooks = board.Teams[team].Pieces[PIECE_ROOK];
-		while (rooks)
-		{
-			SquareIndex square = PopLeastSignificantBit(rooks);
-			attacks |= GetSlidingAttacks(PIECE_ROOK, square, blockers);
-		}
 		BitBoard& bishops = board.Teams[team].Pieces[PIECE_BISHOP];
 		while (bishops)
 		{
@@ -287,8 +364,8 @@ namespace Boxfish
 		}
 
 		int count = attacks.GetCount();
-		Centipawns mg = count * 1;
-		Centipawns eg = count * 2;
+		Centipawns mg = count * 2;
+		Centipawns eg = count * 3;
 		result.Attacks[team] = InterpolateGameStage(stage, mg, eg);
 	}
 
@@ -301,6 +378,9 @@ namespace Boxfish
 	void EvaluateCheckmate(EvaluationResult& result, const Position& position, float stage)
 	{
 		MoveGenerator movegen(position);
+		result.Checkmate[TEAM_WHITE] = false;
+		result.Checkmate[TEAM_BLACK] = false;
+		result.Stalemate = false;
 		if (!movegen.HasAtLeastOneLegalMove(s_MoveList))
 		{
 			if (IsInCheck(position, TEAM_WHITE))
@@ -318,6 +398,90 @@ namespace Boxfish
 		}
 	}
 
+	template<Team team>
+	void EvaluatePawnShield(EvaluationResult& result, const Position& position, float stage)
+	{
+		SquareIndex kingSquare = position.InfoCache.KingSquare[team];
+		int count = (s_PawnShieldMasks[team][kingSquare] & position.GetTeamPieces(team, PIECE_PAWN)).GetCount();
+
+		File kingFile = BitBoard::BitIndexToSquare(kingSquare).File;
+		if ((position.GetTeamPieces(team, PIECE_PAWN) & s_NeighbourFiles[kingFile]) == ZERO_BB)
+		{
+			count -= 2;
+		}
+
+		constexpr Centipawns mg = 20;
+		constexpr Centipawns eg = 0;
+		result.PawnShield[team] = InterpolateGameStage(stage, mg * count, eg * count);
+	}
+
+	void EvaluatePawnShield(EvaluationResult& result, const Position& position, float stage)
+	{
+		EvaluatePawnShield<TEAM_WHITE>(result, position, stage);
+		EvaluatePawnShield<TEAM_BLACK>(result, position, stage);
+	}
+
+	template<Team team>
+	void EvaluatePassedPawns(EvaluationResult& result, const Position& position, float stage)
+	{
+		Centipawns value = 0;
+		BitBoard pawns = position.GetTeamPieces(team, PIECE_PAWN);
+		Team otherTeam = OtherTeam(team);
+
+		BitBoard otherPawns = position.GetTeamPieces(otherTeam, PIECE_PAWN);
+
+		while (pawns)
+		{
+			SquareIndex square = PopLeastSignificantBit(pawns);
+			if ((otherPawns & s_PassedPawnMasks[team][square]) == ZERO_BB)
+			{
+				Rank rank = BitBoard::BitIndexToSquare(square).Rank;
+				Centipawns mg = s_PassedPawnRankWeights[MIDGAME][team][rank];
+				Centipawns eg = s_PassedPawnRankWeights[ENDGAME][team][rank];
+				value += InterpolateGameStage(stage, mg, eg);
+			}
+		}
+		result.PassedPawns[team] = value;
+	}
+
+	void EvaluatePassedPawns(EvaluationResult& result, const Position& position, float stage)
+	{
+		EvaluatePassedPawns<TEAM_WHITE>(result, position, stage);
+		EvaluatePassedPawns<TEAM_BLACK>(result, position, stage);
+	}
+
+	template<Team team>
+	void EvaluateKingSafety(EvaluationResult& result, const Position& position, float stage)
+	{
+		// Pawn storm
+		Team otherTeam = OtherTeam(team);
+		SquareIndex kingSquare = position.InfoCache.KingSquare[team];
+		Square kingSq = BitBoard::BitIndexToSquare(kingSquare);
+		BitBoard fileMasks = FILE_MASKS[kingSq.File] | s_NeighbourFiles[kingSq.File];
+		int multiplier = (team == TEAM_WHITE) ? 1 : -1;
+
+		BitBoard ranks = RANK_MASKS[kingSq.Rank];
+		for (int i = 1; i < 4; i++)
+		{
+			File rank = (File)(kingSq.Rank + i * multiplier);
+			if (rank < 0 || rank >= RANK_MAX)
+			{
+				break;
+			}
+			ranks |= RANK_MASKS[rank];
+		}
+		int count = (position.GetTeamPieces(otherTeam, PIECE_PAWN) & (fileMasks & ranks)).GetCount();
+		constexpr Centipawns mg = -10;
+		constexpr Centipawns eg = 0;
+		result.KingSafety[team] = InterpolateGameStage(stage, mg * count, eg * count);
+	}
+
+	void EvaluateKingSafety(EvaluationResult& result, const Position& position, float stage)
+	{
+		EvaluateKingSafety<TEAM_WHITE>(result, position, stage);
+		EvaluateKingSafety<TEAM_BLACK>(result, position, stage);
+	}
+
 	EvaluationResult EvaluateDetailed(const Position& position)
 	{
 		EvaluationResult result;
@@ -330,6 +494,9 @@ namespace Boxfish
 			EvaluateMobility(result, position, gameStage);
 			EvaluateAttacks(result, position, gameStage);
 			EvaluatePieceSquareTables(result, position, gameStage);
+			EvaluatePawnShield(result, position, gameStage);
+			EvaluatePassedPawns(result, position, gameStage);
+			EvaluateKingSafety(result, position, gameStage);
 		}
 		return result;
 	}

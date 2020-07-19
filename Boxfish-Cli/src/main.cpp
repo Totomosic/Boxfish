@@ -4,6 +4,8 @@ using namespace Boxfish;
 
 static MovePool s_MovePool(MOVE_POOL_SIZE);
 
+#define BOX_UNDO_MOVES 0
+
 uint64_t Perft(Position& position, int depth)
 {
 	if (depth <= 0)
@@ -24,9 +26,16 @@ uint64_t Perft(Position& position, int depth)
 	movegen.FilterLegalMoves(legalMoves);
 	for (int i = 0; i < legalMoves.MoveCount; i++)
 	{
+#if BOX_UNDO_MOVES
+		UndoInfo undo;
+		ApplyMove(position, legalMoves.Moves[i], &undo);
+		nodes += Perft(position, depth - 1);
+		UndoMove(position, legalMoves.Moves[i], undo);
+#else
 		Position movedPosition = position;
 		ApplyMove(movedPosition, legalMoves.Moves[i]);
 		nodes += Perft(movedPosition, depth - 1);
+#endif
 	}
 	return nodes;
 }
@@ -42,15 +51,22 @@ uint64_t PerftRoot(Position& position, int depth)
 	auto startTime = std::chrono::high_resolution_clock::now();
 	for (int i = 0; i < moves.MoveCount; i++)
 	{
+#if BOX_UNDO_MOVES
+		UndoInfo undo;
+		ApplyMove(position, moves.Moves[i], &undo);
+		uint64_t perft = Perft(position, depth - 1);
+		UndoMove(position, moves.Moves[i], undo);
+#else
 		Position movedPosition = position;
 		ApplyMove(movedPosition, moves.Moves[i]);
 		uint64_t perft = Perft(movedPosition, depth - 1);
+#endif
 		total += perft;
-
 		std::cout << FormatMove(moves.Moves[i], false) << ": " << perft << std::endl;
 	}
 	auto endTime = std::chrono::high_resolution_clock::now();
 	auto elapsed = endTime - startTime;
+	std::cout << "====================================" << std::endl;
 	std::cout << "Total Time: " << std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count() << "ms" << std::endl;
 	std::cout << "Total Nodes: " << total << std::endl;
 	std::cout << "Nodes per Second: " << (size_t)(total / (double)std::chrono::duration_cast<std::chrono::nanoseconds>(elapsed).count() * 1e9) << std::endl;
@@ -118,47 +134,16 @@ int main(int argc, const char** argv)
 				while (begin != std::string_view::npos && begin < args.size())
 				{
 					size_t end = args.find(' ', begin);
-					std::string_view move = args.substr(begin, end - begin);
-					if (move.size() >= 4)
+					std::string moveString = std::string(args.substr(begin, end - begin));
+					Move move = CreateMoveFromString(position, moveString);
+					if (SanityCheckMove(position, move))
 					{
-						std::string from = std::string(move.substr(0, 2));
-						std::string to = std::string(move.substr(2));
-						Piece promotion = PIECE_QUEEN;
-						if (move.size() == 5)
-						{
-							switch (move[4])
-							{
-							case 'q':
-								promotion = PIECE_QUEEN;
-								break;
-							case 'b':
-								promotion = PIECE_BISHOP;
-								break;
-							case 'n':
-								promotion = PIECE_KNIGHT;
-								break;
-							case 'r':
-								promotion = PIECE_ROOK;
-								break;
-							}
-						}
-						Square fromSquare = SquareFromString(from);
-						Square toSquare = SquareFromString(to);
-						Move move = CreateMove(position, fromSquare, toSquare, promotion);
-						if (SanityCheckMove(position, move))
-						{
-							ApplyMove(position, move);
-							history.Push(position);
-						}
-						else
-						{
-							std::cout << "Move is not valid." << std::endl;
-						}
+						ApplyMove(position, move);
+						history.Push(position);
 					}
 					else
 					{
-						BOX_WARN("Invalid move length");
-						break;
+						std::cout << "Move is not valid." << std::endl;
 					}
 					if (end != std::string_view::npos)
 						begin = args.find_first_not_of(' ', end + 1);
