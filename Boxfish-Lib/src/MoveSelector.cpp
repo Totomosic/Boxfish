@@ -48,6 +48,12 @@ namespace Boxfish
 					score = 100;
 				}
 			}
+
+			// Counter move
+			if (m_OrderingInfo.CounterMove != MOVE_NONE && move == m_OrderingInfo.CounterMove)
+			{
+				score += 50;
+			}
 			if (score > bestScore)
 			{
 				bestIndex = index;

@@ -73,7 +73,7 @@ namespace Boxfish
 
 	Search::Search(size_t transpositionTableSize, bool log)
 		: m_TranspositionTable(transpositionTableSize), m_CurrentPosition(), m_PositionHistory(), m_Limits(), m_MovePool(MOVE_POOL_SIZE), m_Nodes(0), m_SearchRootStartTime(), m_StartTime(),
-		m_WasStopped(false), m_ShouldStop(false), m_Log(log), m_OrderingInfo()
+		m_WasStopped(false), m_ShouldStop(false), m_Log(log), m_CounterMoves()
 	{
 	}
 
@@ -99,6 +99,7 @@ namespace Boxfish
 
 	Move Search::Go(int depth, const std::function<void(SearchResult)>& callback)
 	{
+		ClearCounterMoves();
 		m_TranspositionTable.Clear();
 		m_WasStopped = false;
 		m_ShouldStop = false;
@@ -141,11 +142,23 @@ namespace Boxfish
 		Centipawns delta = -SCORE_MATE;
 		Centipawns bestScore;
 
-		stack->PV = pv;
-		stack->PV[0] = MOVE_NONE;
-		stack->Ply = 0;
-		stack->InCheck = false;
-		stack->StaticEvaluation = SCORE_NONE;
+		SearchStack* stackPtr = stack;
+
+		stackPtr->PV = pv;
+		stackPtr->PV[0] = MOVE_NONE;
+		stackPtr->Ply = 0;
+		stackPtr->InCheck = false;
+		stackPtr->CurrentMove = MOVE_NONE;
+		stackPtr->StaticEvaluation = SCORE_NONE;
+
+		stackPtr++;
+
+		stackPtr->PV = pv;
+		stackPtr->PV[0] = MOVE_NONE;
+		stackPtr->Ply = 0;
+		stackPtr->InCheck = false;
+		stackPtr->CurrentMove = MOVE_NONE;
+		stackPtr->StaticEvaluation = SCORE_NONE;
 
 		int rootDepth = 0;
 
@@ -169,7 +182,7 @@ namespace Boxfish
 
 			while (true)
 			{
-				bestScore = SearchPosition<NodeType::PV>(position, stack, rootDepth, alpha, beta, stats);
+				bestScore = SearchPosition<NodeType::PV>(position, stackPtr, rootDepth, alpha, beta, stats);
 				if (bestScore <= alpha)
 				{
 					beta = (alpha + beta) / 2;
@@ -330,10 +343,12 @@ namespace Boxfish
 			return eval;
 		}
 		Move defaultMove = legalMoves.Moves[0];
+		Move previousMove = (stack - 1)->CurrentMove;
 
 		MoveOrderingInfo ordering;
 		ordering.CurrentPosition = &position;
 		ordering.KillerMoves = stack->KillerMoves;
+		ordering.CounterMove = m_CounterMoves[previousMove.GetFromSquareIndex()][previousMove.GetToSquareIndex()];
 		MoveSelector selector(ordering, &legalMoves);
 
 		int moveIndex = 0;
@@ -355,7 +370,7 @@ namespace Boxfish
 					continue;
 			}
 
-			(stack + 1)->CurrentMove = move;
+			stack->CurrentMove = move;
 
 			Position movedPosition = position;
 			ApplyMove(movedPosition, move);
@@ -429,6 +444,10 @@ namespace Boxfish
 					// Store killer move
 					stack->KillerMoves[1] = stack->KillerMoves[0];
 					stack->KillerMoves[0] = move;
+				}
+				if (previousMove != MOVE_NONE)
+				{
+					m_CounterMoves[previousMove.GetFromSquareIndex()][previousMove.GetToSquareIndex()] = move;
 				}
 				movesSinceBetaCutoff = 0;
 				depthExtension = 0;
@@ -577,6 +596,17 @@ namespace Boxfish
 		else if (eval == -SCORE_MATE)
 			eval = MatedIn(ply);
 		return eval;
+	}
+
+	void Search::ClearCounterMoves()
+	{
+		for (SquareIndex from = a1; from < FILE_MAX * RANK_MAX; from++)
+		{
+			for (SquareIndex to = a1; to < FILE_MAX * RANK_MAX; to++)
+			{
+				m_CounterMoves[from][to] = MOVE_NONE;
+			}
+		}
 	}
 
 }

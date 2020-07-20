@@ -20,7 +20,6 @@ namespace Boxfish
 		Centipawns PawnShield[TEAM_MAX];
 		Centipawns PassedPawns[TEAM_MAX];
 		Centipawns DoubledPawns[TEAM_MAX];
-		Centipawns RooksOnOpenFiles[TEAM_MAX];
 		Centipawns KingSafety[TEAM_MAX];
 		bool Checkmate[TEAM_MAX];
 		bool Stalemate = false;
@@ -40,7 +39,7 @@ namespace Boxfish
 			Team other = OtherTeam(team);
 			return (Material[team] - Material[other]) + (Attacks[team] - Attacks[other]) + (PieceSquares[team] - PieceSquares[other])
 				+ (PawnShield[team] - PawnShield[other]) + (PassedPawns[team] - PassedPawns[other]) + (DoubledPawns[team] - DoubledPawns[other])
-				+ (RooksOnOpenFiles[team] - RooksOnOpenFiles[other]) + (KingSafety[team] - KingSafety[other]);
+				+ (KingSafety[team] - KingSafety[other]);
 		}
 	};
 

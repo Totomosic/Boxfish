@@ -20,6 +20,7 @@ namespace Boxfish
 	public:
 		const Position* CurrentPosition = nullptr;
 		const Move* KillerMoves = nullptr;
+		Move CounterMove = MOVE_NONE;
 	};
 
 	class BOX_API MoveSelector

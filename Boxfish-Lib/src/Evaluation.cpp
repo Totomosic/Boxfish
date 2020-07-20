@@ -473,32 +473,6 @@ namespace Boxfish
 	}
 
 	template<Team team>
-	void EvaluateRooksOnOpenFiles(EvaluationResult& result, const Position& position, float stage)
-	{
-		int count = 0;
-		BitBoard rooks = position.GetTeamPieces(team, PIECE_ROOK);
-		BitBoard allPawns = position.GetPieces(PIECE_PAWN);
-		while (rooks)
-		{
-			SquareIndex square = PopLeastSignificantBit(rooks);
-			File file = BitBoard::BitIndexToSquare(square).File;
-			if ((allPawns & FILE_MASKS[file]) == ZERO_BB)
-			{
-				count++;
-			}
-		}
-		Centipawns mg = 10 * count;
-		Centipawns eg = 50 * count;
-		result.RooksOnOpenFiles[team] = InterpolateGameStage(stage, mg, eg);
-	}
-
-	void EvaluateRooksOnOpenFiles(EvaluationResult& result, const Position& position, float stage)
-	{
-		EvaluateRooksOnOpenFiles<TEAM_WHITE>(result, position, stage);
-		EvaluateRooksOnOpenFiles<TEAM_BLACK>(result, position, stage);
-	}
-
-	template<Team team>
 	void EvaluateKingSafety(EvaluationResult& result, const Position& position, float stage)
 	{
 		// Pawn storm
@@ -544,7 +518,6 @@ namespace Boxfish
 			EvaluatePawnShield(result, position, gameStage);
 			EvaluatePassedPawns(result, position, gameStage);
 			EvaluateDoubledPawns(result, position, gameStage);
-			EvaluateRooksOnOpenFiles(result, position, gameStage);
 			EvaluateKingSafety(result, position, gameStage);
 		}
 		return result;

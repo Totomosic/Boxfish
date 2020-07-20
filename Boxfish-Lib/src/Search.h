@@ -103,7 +103,7 @@ namespace Boxfish
 		std::atomic<bool> m_ShouldStop;
 		bool m_Log;
 
-		MoveOrderingInfo m_OrderingInfo;
+		Move m_CounterMoves[FILE_MAX * RANK_MAX][FILE_MAX * RANK_MAX];
 
 	public:
 		Search(size_t transpositionTableSize = TranspositionTable::TABLE_SIZE, bool log = true);
@@ -134,6 +134,8 @@ namespace Boxfish
 		Centipawns MatedIn(int ply) const;
 		bool IsMateScore(Centipawns score) const;
 		Centipawns StaticEvalPosition(const Position& position, int ply) const;
+
+		void ClearCounterMoves();
 	};
 
 }
