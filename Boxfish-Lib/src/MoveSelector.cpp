@@ -17,22 +17,10 @@ namespace Boxfish
 	MoveSelector::MoveSelector(const MoveOrderingInfo& info, MoveList* legalMoves)
 		: m_OrderingInfo(info), m_LegalMoves(legalMoves), m_CurrentIndex(0)
 	{
-	}
-
-	bool MoveSelector::Empty() const
-	{
-		return m_CurrentIndex >= m_LegalMoves->MoveCount;
-	}
-
-	Move MoveSelector::GetNextMove()
-	{
-		BOX_ASSERT(!Empty(), "Move list is empty");
-		int bestIndex = m_CurrentIndex;
-		Centipawns bestScore = -SCORE_MATE;
 		for (int index = m_CurrentIndex; index < m_LegalMoves->MoveCount; index++)
 		{
 			Centipawns score = 0;
-			const Move& move = m_LegalMoves->Moves[index];
+			Move& move = m_LegalMoves->Moves[index];
 			if (move.GetFlags() & MOVE_CAPTURE)
 			{
 				score = 200 + GetPieceValue(move.GetCapturedPiece()) - GetPieceValue(move.GetMovingPiece());
@@ -54,10 +42,27 @@ namespace Boxfish
 			{
 				score += 50;
 			}
-			if (score > bestScore)
+			move.SetValue(score);
+		}
+	}
+
+	bool MoveSelector::Empty() const
+	{
+		return m_CurrentIndex >= m_LegalMoves->MoveCount;
+	}
+
+	Move MoveSelector::GetNextMove()
+	{
+		BOX_ASSERT(!Empty(), "Move list is empty");
+		int bestIndex = m_CurrentIndex;
+		Centipawns bestScore = -SCORE_MATE;
+		for (int index = m_CurrentIndex; index < m_LegalMoves->MoveCount; index++)
+		{
+			const Move& move = m_LegalMoves->Moves[index];
+			if (move.GetValue() > bestScore)
 			{
 				bestIndex = index;
-				bestScore = score;
+				bestScore = move.GetValue();
 				if (bestScore == SCORE_MATE)
 					break;
 			}

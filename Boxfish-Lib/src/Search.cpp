@@ -525,6 +525,11 @@ namespace Boxfish
 		while (!selector.Empty())
 		{
 			Move move = selector.GetNextMove();
+
+			constexpr Centipawns delta = 200;
+			if ((move.GetFlags() & MOVE_CAPTURE) && (evaluation + GetPieceValue(move.GetCapturedPiece()) + delta < alpha) && !(move.GetFlags() & MOVE_PROMOTION))
+				continue;
+
 			if (generator.IsLegal(move))
 			{
 				Position movedPosition = position;
