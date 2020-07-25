@@ -20,6 +20,7 @@ namespace Boxfish
 	Position CreateStartingPosition();
 	Position CreatePositionFromFEN(const std::string& fen);
 	std::string GetFENFromPosition(const Position& position);
+	Position MirrorPosition(const Position& position);
 
 	BitBoard GetTeamPiecesBitBoard(const Position& position, Team team);
 	BitBoard GetOverallPiecesBitBoard(const Position& position);

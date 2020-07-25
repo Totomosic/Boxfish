@@ -4,8 +4,24 @@ namespace Boxfish
 {
 
 	TranspositionTable::TranspositionTable(size_t sizeBytes)
-		: m_Entries{ std::make_unique<TranspositionTableEntry[]>(sizeBytes / sizeof(TranspositionTableEntry)) }, m_EntryCount(sizeBytes / sizeof(TranspositionTableEntry))
+		: m_Entries{ nullptr }, m_EntryCount()
 	{
+		size_t nEntries = sizeBytes / sizeof(TranspositionTableEntry);
+
+		if (nEntries != 0)
+		{
+			uint8_t nBits = 1;
+			size_t ret = 1;
+			while (nEntries >>= 1)
+			{
+				nBits++;
+				ret <<= 1;
+			}
+			m_EntryCount = ret - 1;
+			m_Entries = std::make_unique<TranspositionTableEntry[]>(m_EntryCount);
+			m_Mask = m_EntryCount;
+		}
+
 		Clear();
 	}
 
@@ -45,7 +61,7 @@ namespace Boxfish
 
 	size_t TranspositionTable::GetIndexFromHash(const ZobristHash& hash) const
 	{
-		return hash.Hash % m_EntryCount;
+		return hash.Hash & m_Mask;
 	}
 
 }

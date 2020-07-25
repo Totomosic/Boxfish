@@ -1,4 +1,5 @@
 #include "Boxfish.h"
+#include <fstream>
 
 using namespace Boxfish;
 
@@ -76,7 +77,7 @@ uint64_t PerftRoot(Position& position, int depth)
 int main(int argc, const char** argv)
 {
 	::Boxfish::Init();
-	Search search;
+	Search search(256 * 1024 * 1024);
 	Position position = CreateStartingPosition();
 
 	std::string version = __TIMESTAMP__;
@@ -184,7 +185,7 @@ int main(int argc, const char** argv)
 		else if (command == "eval")
 		{
 			EvaluationResult result = EvaluateDetailed(position);
-			std::cout << result.GetTotal(position.TeamToPlay) << " GameStage: " << result.GameStage << std::endl;
+			std::cout << FormatEvaluation(result) << std::endl;
 		}
 		else if (command == "perft")
 		{
@@ -207,6 +208,27 @@ int main(int argc, const char** argv)
 			else
 			{
 				std::cout << FormatNullMove() << std::endl;
+			}
+		}
+		else if (command == "test_eval")
+		{
+			std::string filename = std::string(args);
+			std::ifstream file(filename);
+			char line[1024];
+			while (file.good())
+			{
+				file.getline(line, sizeof(line));
+				Position position = CreatePositionFromFEN(line);
+				EvaluationResult firstResult = EvaluateDetailed(position);
+				Position mirrored = MirrorPosition(position);
+				EvaluationResult secondResult = EvaluateDetailed(position);
+				std::cout << "Evaluating... " << line << " Result: " << firstResult.GetTotal(TEAM_WHITE) << std::endl;
+				if (firstResult.GetTotal(TEAM_WHITE) != -secondResult.GetTotal(TEAM_BLACK))
+				{
+					std::cout << "Validation Failed! - FEN " << line << std::endl;
+					std::cout << FormatEvaluation(firstResult) << std::endl;
+					std::cout << FormatEvaluation(secondResult) << std::endl;
+				}
 			}
 		}
 		else

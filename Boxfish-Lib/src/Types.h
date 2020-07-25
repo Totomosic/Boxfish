@@ -65,7 +65,7 @@ namespace Boxfish
 		PIECE_BISHOP,
 		PIECE_ROOK,
 		PIECE_QUEEN,
-		PIECE_KING,
+		PIECE_KING, // King must be last piece for material eval
 		PIECE_MAX,
 		PIECE_INVALID
 	};

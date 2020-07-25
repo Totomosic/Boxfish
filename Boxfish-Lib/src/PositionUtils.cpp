@@ -281,6 +281,36 @@ namespace Boxfish
 		return result;
 	}
 
+	Position MirrorPosition(const Position& position)
+	{
+		Position result;
+		result.EnpassantSquare = { position.EnpassantSquare.File, (Rank)(RANK_MAX - position.EnpassantSquare.Rank - 1) };
+		result.TeamToPlay = OtherTeam(position.TeamToPlay);
+		result.HalfTurnsSinceCaptureOrPush = position.HalfTurnsSinceCaptureOrPush;
+		result.TotalTurns = position.TotalTurns;
+		
+		result.Teams[TEAM_WHITE] = position.Teams[TEAM_BLACK];
+		result.Teams[TEAM_BLACK] = position.Teams[TEAM_BLACK];
+		for (Piece piece = PIECE_PAWN; piece < PIECE_MAX; piece++)
+		{
+			result.Teams[TEAM_WHITE].Pieces[piece] = FlipVertically(result.Teams[TEAM_WHITE].Pieces[piece]);
+			result.Teams[TEAM_BLACK].Pieces[piece] = FlipVertically(result.Teams[TEAM_BLACK].Pieces[piece]);
+		}
+
+		result.InvalidateTeam(TEAM_WHITE);
+		result.InvalidateTeam(TEAM_BLACK);
+		result.InvalidateAll();
+		CalculateKingSquare(result, TEAM_WHITE);
+		CalculateKingSquare(result, TEAM_BLACK);
+		CalculateKingBlockers(result, TEAM_WHITE);
+		CalculateKingBlockers(result, TEAM_BLACK);
+		CalculateCheckers(result, TEAM_WHITE);
+		CalculateCheckers(result, TEAM_BLACK);
+		result.Hash.SetFromPosition(result);
+
+		return result;
+	}
+
 	BitBoard GetTeamPiecesBitBoard(const Position& position, Team team)
 	{
 		BitBoard result = 0;

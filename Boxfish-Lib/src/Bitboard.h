@@ -65,6 +65,7 @@ namespace Boxfish
 	SquareIndex PopLeastSignificantBit(BitBoard& board);
 	BitBoard ShiftEast(const BitBoard& board, int count);
 	BitBoard ShiftWest(const BitBoard& board, int count);
+	BitBoard FlipVertically(const BitBoard& board);
 
 	int GetForwardShift(Team team);
 

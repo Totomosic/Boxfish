@@ -95,14 +95,21 @@ namespace Boxfish
 	}
 
 	QuiescenceMoveSelector::QuiescenceMoveSelector(const Position& position, MoveList& legalMoves)
-		: m_LegalMoves(legalMoves), m_CurrentIndex(0), m_NumberOfCaptures(0), m_InCheck(position.InfoCache.CheckedBy[position.TeamToPlay])
+		: m_LegalMoves(legalMoves), m_CurrentIndex(0), m_NumberOfCaptures(0), m_InCheck(IsInCheck(position, position.TeamToPlay))
 	{
 		ScoreMovesQuiescence(position, legalMoves);
-		for (int i = 0; i < m_LegalMoves.MoveCount; i++)
+		if (m_InCheck)
 		{
-			const Move& m = m_LegalMoves.Moves[i];
-			if (m_InCheck || (m.GetFlags() & MOVE_CAPTURE))
-				m_NumberOfCaptures++;
+			m_NumberOfCaptures = m_LegalMoves.MoveCount;
+		}
+		else
+		{
+			for (int i = 0; i < m_LegalMoves.MoveCount; i++)
+			{
+				const Move& m = m_LegalMoves.Moves[i];
+				if (m.GetFlags() & MOVE_CAPTURE)
+					m_NumberOfCaptures++;
+			}
 		}
 	}
 

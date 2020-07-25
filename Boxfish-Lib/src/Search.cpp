@@ -499,7 +499,7 @@ namespace Boxfish
 	Centipawns Search::QuiescenceSearch(const Position& position, SearchStack* stack, Centipawns alpha, Centipawns beta)
 	{
 		constexpr bool IsPvNode = NT == NodeType::PV;
-		const bool inCheck = position.InfoCache.CheckedBy[position.TeamToPlay];
+		const bool inCheck = IsInCheck(position, position.TeamToPlay);
 
 		(stack + 1)->Ply = stack->Ply + 1;
 
@@ -527,7 +527,7 @@ namespace Boxfish
 			Move move = selector.GetNextMove();
 
 			constexpr Centipawns delta = 200;
-			if ((move.GetFlags() & MOVE_CAPTURE) && (evaluation + GetPieceValue(move.GetCapturedPiece()) + delta < alpha) && !(move.GetFlags() & MOVE_PROMOTION))
+			if (!inCheck && ((move.GetFlags() & MOVE_CAPTURE) && (evaluation + GetPieceValue(move.GetCapturedPiece()) + delta < alpha) && !(move.GetFlags() & MOVE_PROMOTION)))
 				continue;
 
 			if (generator.IsLegal(move))

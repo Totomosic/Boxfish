@@ -68,6 +68,8 @@ namespace Boxfish
 
 		bool HasAtLeastOneLegalMove(MoveList& list);
 
+		static BitBoard GetReachableKingSquares(const Position& position, Team team);
+
 	private:
 		void GeneratePseudoLegalMoves(MoveList& moveList);
 		void GenerateLegalMoves(MoveList& moveList, const MoveList& pseudoLegalMoves);
