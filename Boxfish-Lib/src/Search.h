@@ -35,7 +35,6 @@ namespace Boxfish
 	struct BOX_API SearchStats
 	{
 	public:
-		Line PV;
 		size_t TableHits = 0;
 		size_t TableMisses = 0;
 	};
@@ -48,7 +47,7 @@ namespace Boxfish
 		Move KillerMoves[2];
 		Centipawns StaticEvaluation = -SCORE_MATE;
 		int MoveCount = 0;
-		bool InCheck = false;
+		bool CanNull = true;
 	};
 
 	struct BOX_API SearchResult
@@ -104,6 +103,8 @@ namespace Boxfish
 		bool m_Log;
 
 		Move m_CounterMoves[FILE_MAX * RANK_MAX][FILE_MAX * RANK_MAX];
+		Centipawns m_HistoryTable[TEAM_MAX][FILE_MAX * RANK_MAX][FILE_MAX * RANK_MAX];
+		Centipawns m_ButterflyTable[TEAM_MAX][FILE_MAX * RANK_MAX][FILE_MAX * RANK_MAX];
 
 	public:
 		Search(size_t transpositionTableSize = TranspositionTable::TABLE_SIZE, bool log = true);
@@ -133,9 +134,10 @@ namespace Boxfish
 		Centipawns MateIn(int ply) const;
 		Centipawns MatedIn(int ply) const;
 		bool IsMateScore(Centipawns score) const;
-		Centipawns StaticEvalPosition(const Position& position, int ply) const;
+		Centipawns StaticEvalPosition(const Position& position, Centipawns alpha, Centipawns beta, int ply) const;
 
 		void ClearCounterMoves();
+		void ClearTable(Centipawns (&table)[TEAM_MAX][FILE_MAX * RANK_MAX][FILE_MAX * RANK_MAX]);
 	};
 
 }

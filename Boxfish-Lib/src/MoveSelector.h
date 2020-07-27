@@ -6,21 +6,14 @@
 namespace Boxfish
 {
 
-	struct BOX_API Line
-	{
-	public:
-		size_t CurrentIndex = 0;
-		Move Moves[50];
-	};
-
-	std::string FormatLine(const Line& line, bool includeSymbols = true);
-
 	struct BOX_API MoveOrderingInfo
 	{
 	public:
 		const Position* CurrentPosition = nullptr;
 		const Move* KillerMoves = nullptr;
 		Move CounterMove = MOVE_NONE;
+		Centipawns (*HistoryTable)[TEAM_MAX][FILE_MAX * RANK_MAX][FILE_MAX * RANK_MAX];
+		Centipawns (*ButterflyTable)[TEAM_MAX][FILE_MAX * RANK_MAX][FILE_MAX * RANK_MAX];
 	};
 
 	class BOX_API MoveSelector

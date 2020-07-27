@@ -61,6 +61,10 @@ namespace Boxfish
 		Piece GetPromotionPiece() const;
 		void SetPromotionPiece(Piece piece);
 
+		bool IsCapture() const;
+		bool IsPromotion() const;
+		bool IsCaptureOrPromotion() const;
+
 		inline friend bool operator==(const Move& left, const Move& right) { return left.m_Move == right.m_Move; }
 		inline friend bool operator!=(const Move& left, const Move& right) { return left.m_Move != right.m_Move; }
 	};

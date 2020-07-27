@@ -144,7 +144,7 @@ int main(int argc, const char** argv)
 					}
 					else
 					{
-						std::cout << "Move is not valid." << std::endl;
+						std::cout << "Move " << FormatMove(move) << " is not valid." << std::endl;
 					}
 					if (end != std::string_view::npos)
 						begin = args.find_first_not_of(' ', end + 1);

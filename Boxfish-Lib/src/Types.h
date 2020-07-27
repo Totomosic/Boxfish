@@ -61,7 +61,7 @@ namespace Boxfish
 	enum Piece : int8_t
 	{
 		PIECE_PAWN,
-		PIECE_KNIGHT,
+		PIECE_KNIGHT, // Knight must be second for game stage calculation
 		PIECE_BISHOP,
 		PIECE_ROOK,
 		PIECE_QUEEN,

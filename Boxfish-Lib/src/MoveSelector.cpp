@@ -4,16 +4,6 @@
 namespace Boxfish
 {
 
-	std::string FormatLine(const Line& line, bool includeSymbols)
-	{
-		std::string result = "";
-		for (size_t i = 0; i < line.CurrentIndex; i++)
-		{
-			result += FormatMove(line.Moves[i], includeSymbols) + " ";
-		}
-		return result;
-	}
-
 	MoveSelector::MoveSelector(const MoveOrderingInfo& info, MoveList* legalMoves)
 		: m_OrderingInfo(info), m_LegalMoves(legalMoves), m_CurrentIndex(0)
 	{
@@ -41,6 +31,16 @@ namespace Boxfish
 			if (m_OrderingInfo.CounterMove != MOVE_NONE && move == m_OrderingInfo.CounterMove)
 			{
 				score += 50;
+			}
+			// History Heuristic
+			if (m_OrderingInfo.HistoryTable && m_OrderingInfo.ButterflyTable)
+			{
+				Centipawns history = (*m_OrderingInfo.HistoryTable)[m_OrderingInfo.CurrentPosition->TeamToPlay][move.GetFromSquareIndex()][move.GetToSquareIndex()];
+				Centipawns butterfly = (*m_OrderingInfo.ButterflyTable)[m_OrderingInfo.CurrentPosition->TeamToPlay][move.GetFromSquareIndex()][move.GetToSquareIndex()];
+				if (history != 0 && butterfly != 0)
+				{
+					score += history / butterfly;
+				}
 			}
 			move.SetValue(score);
 		}
@@ -127,7 +127,7 @@ namespace Boxfish
 		{
 			const Move& move = m_LegalMoves.Moves[index];
 			Centipawns value = move.GetValue();
-			if (value > bestScore && (m_InCheck || ((move.GetFlags() & MOVE_CAPTURE) || (move.GetFlags() & MOVE_PROMOTION && (move.GetPromotionPiece() == PIECE_QUEEN || move.GetPromotionPiece() == PIECE_KNIGHT)))))
+			if (value > bestScore && (m_InCheck || ((move.GetFlags() & MOVE_CAPTURE) || ((move.GetFlags() & MOVE_PROMOTION) && (move.GetPromotionPiece() == PIECE_QUEEN || move.GetPromotionPiece() == PIECE_KNIGHT)))))
 			{
 				bestScore = value;
 				bestIndex = index;

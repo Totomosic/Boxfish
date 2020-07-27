@@ -73,7 +73,7 @@ namespace Boxfish
 
 	Search::Search(size_t transpositionTableSize, bool log)
 		: m_TranspositionTable(transpositionTableSize), m_CurrentPosition(), m_PositionHistory(), m_Limits(), m_MovePool(MOVE_POOL_SIZE), m_Nodes(0), m_SearchRootStartTime(), m_StartTime(),
-		m_WasStopped(false), m_ShouldStop(false), m_Log(log), m_CounterMoves()
+		m_WasStopped(false), m_ShouldStop(false), m_Log(log), m_CounterMoves(), m_HistoryTable(), m_ButterflyTable()
 	{
 	}
 
@@ -100,6 +100,8 @@ namespace Boxfish
 	Move Search::Go(int depth, const std::function<void(SearchResult)>& callback)
 	{
 		ClearCounterMoves();
+		ClearTable(m_HistoryTable);
+		ClearTable(m_ButterflyTable);
 		m_TranspositionTable.Clear();
 		m_WasStopped = false;
 		m_ShouldStop = false;
@@ -147,18 +149,18 @@ namespace Boxfish
 		stackPtr->PV = pv;
 		stackPtr->PV[0] = MOVE_NONE;
 		stackPtr->Ply = 0;
-		stackPtr->InCheck = false;
 		stackPtr->CurrentMove = MOVE_NONE;
 		stackPtr->StaticEvaluation = SCORE_NONE;
+		stackPtr->CanNull = true;
 
 		stackPtr++;
 
 		stackPtr->PV = pv;
 		stackPtr->PV[0] = MOVE_NONE;
 		stackPtr->Ply = 0;
-		stackPtr->InCheck = false;
 		stackPtr->CurrentMove = MOVE_NONE;
 		stackPtr->StaticEvaluation = SCORE_NONE;
+		stackPtr->CanNull = true;
 
 		int rootDepth = 0;
 
@@ -175,7 +177,7 @@ namespace Boxfish
 			if (rootDepth >= 4)
 			{
 				Centipawns prevMaxScore = bestScore;
-				delta = 20;
+				delta = 19;
 				alpha = std::max(prevMaxScore - delta, -SCORE_MATE);
 				beta = std::min(prevMaxScore + delta, SCORE_MATE);
 			}
@@ -217,7 +219,7 @@ namespace Boxfish
 			if (m_RootMoves.empty())
 			{
 				RootMove rm;
-				rm.Score = StaticEvalPosition(position, stack->Ply);
+				rm.Score = StaticEvalPosition(position, alpha, beta, stack->Ply);
 				rm.PV = { MOVE_NONE };
 				m_RootMoves.push_back(rm);
 			}
@@ -237,7 +239,10 @@ namespace Boxfish
 				}
 				else
 				{
-					std::cout << "mate " << ((int)rootPV.size() / 2 + 1) * ((rootMove.Score > 0) ? 1 : -1);
+					if (rootMove.Score > 0)
+						std::cout << "mate " << ((int)rootPV.size()) / 2 + 1;
+					else
+						std::cout << "mate " << -((int)rootPV.size()) / 2 - 1;
 				}
 				std::cout << " nodes " << m_Nodes;
 				std::cout << " nps " << (size_t)(m_Nodes / (elapsed.count() / 1e9f));
@@ -272,6 +277,7 @@ namespace Boxfish
 		BOX_ASSERT(alpha < beta && beta >= -SCORE_MATE && beta <= SCORE_MATE && alpha >= -SCORE_MATE && alpha <= SCORE_MATE, "Invalid bounds");
 		constexpr bool IsPvNode = NT == NodeType::PV;
 		const bool isRoot = IsPvNode && stack->Ply == 0;
+		const bool inCheck = IsInCheck(position, position.TeamToPlay);
 
 		Move pv[MAX_PLY + 1];
 
@@ -338,23 +344,67 @@ namespace Boxfish
 		movegen.FilterLegalMoves(legalMoves);
 		if (legalMoves.Empty())
 		{
-			Centipawns eval = StaticEvalPosition(position, stack->Ply);
+			Centipawns eval = StaticEvalPosition(position, alpha, beta, stack->Ply);
 			stack->StaticEvaluation = eval;
 			return eval;
 		}
 		Move defaultMove = legalMoves.Moves[0];
 		Move previousMove = (stack - 1)->CurrentMove;
 
+		// Eval pruning
+		if (depth < 3 && !IsPvNode && !inCheck && !IsEndgame(position))
+		{
+			Centipawns eval = StaticEvalPosition(position, alpha, beta, stack->Ply);
+			stack->StaticEvaluation = eval;
+			Centipawns margin = depth * 120;
+			if (eval - margin >= beta)
+			{
+				return eval - margin;
+			}
+		}
+
+		// Null move pruning
+		if (!IsPvNode && !inCheck && depth > 1 && stack->CanNull && !IsEndgame(position))
+		{
+			stack->CurrentMove = MOVE_NONE;
+			Position movedPosition = position;
+			ApplyMove(movedPosition, MOVE_NONE);
+			(stack + 1)->CanNull = false;
+
+			int r = 2;
+			if (depth > 6)
+				r = 3;
+
+			Centipawns score = -SearchPosition<NodeType::NonPV>(movedPosition, stack + 1, std::max(0, depth - r), -beta, -beta + 1, stats);
+			stack->MoveCount++;
+			if (score >= beta)
+			{
+				return beta;
+			}
+		}
+
+		// Futility pruning
+		bool futilityPrune = false;
+		constexpr int futilityMargins[4] = { 0, 200, 300, 500 };
+		if (depth <= 3 && !IsPvNode && !inCheck && !IsMateScore(alpha))
+		{
+			if (stack->StaticEvaluation == SCORE_NONE)
+				stack->StaticEvaluation = StaticEvalPosition(position, alpha, beta, stack->Ply);
+			if (stack->StaticEvaluation + futilityMargins[depth] <= alpha)
+				futilityPrune = true;
+		}
+
+		(stack + 1)->CanNull = true;
+
 		MoveOrderingInfo ordering;
 		ordering.CurrentPosition = &position;
 		ordering.KillerMoves = stack->KillerMoves;
 		ordering.CounterMove = m_CounterMoves[previousMove.GetFromSquareIndex()][previousMove.GetToSquareIndex()];
+		ordering.HistoryTable = &m_HistoryTable;
+		ordering.ButterflyTable = &m_ButterflyTable;
 		MoveSelector selector(ordering, &legalMoves);
 
 		int moveIndex = 0;
-		int movesSinceBetaCutoff = 0;
-		int depthExtension = 0;
-
 		Centipawns bestValue = SCORE_NONE;
 
  		while (!selector.Empty())
@@ -375,25 +425,38 @@ namespace Boxfish
 			Position movedPosition = position;
 			ApplyMove(movedPosition, move);
 
-			if ((move.GetFlags() & (MOVE_CAPTURE | MOVE_PROMOTION)) && depthExtension < 0)
+			if (futilityPrune && moveIndex > 1 && !move.IsCaptureOrPromotion() && !IsInCheck(movedPosition, movedPosition.TeamToPlay))
 			{
-				depthExtension = 0;
+				continue;
 			}
 
-			int childDepth = depth + depthExtension - 1;
+			int depthReduction = 0;
+			int childDepth = depth - 1;
+			if (inCheck)
+			{
+				childDepth++;
+			}
+
+			if (!IsPvNode && childDepth > 3 && moveIndex > 3 && !inCheck && !move.IsCaptureOrPromotion() && !IsInCheck(movedPosition, movedPosition.TeamToPlay))
+			{
+				depthReduction = 1;
+				if (moveIndex > 6)
+					depthReduction++;
+				childDepth -= depthReduction;
+			}
 
 			stack->MoveCount++;
 
-			Centipawns value;
+			Centipawns value = SCORE_MATE;
 			if (!IsPvNode || moveIndex != 1)
 			{
-				value = -SearchPosition<NodeType::NonPV>(movedPosition, stack + 1, childDepth, -beta, -alpha, stats);
+				value = -SearchPosition<NodeType::NonPV>(movedPosition, stack + 1, childDepth, -alpha - 1, -alpha, stats);
 			}
-			if (IsPvNode && (moveIndex == 1 || (value > alpha/* && (isRoot || value < beta)*/)))
+			if (IsPvNode && (moveIndex == 1 || (value > alpha && (isRoot || value < beta))))
 			{
 				pv[0] = MOVE_NONE;
 				(stack + 1)->PV = pv;
-				value = -SearchPosition<NodeType::PV>(movedPosition, stack + 1, depth - 1, -beta, -alpha, stats);
+				value = -SearchPosition<NodeType::PV>(movedPosition, stack + 1, childDepth, -beta, -alpha, stats);
 			}
 
 			if (CheckLimits())
@@ -405,7 +468,7 @@ namespace Boxfish
 			if (isRoot)
 			{
 				RootMove rm;
-				if (moveIndex == 1 || value > bestValue)
+				if (moveIndex == 1 || value > alpha)
 				{
 					UpdatePV(stack->PV, move, (stack + 1)->PV);
 					rm.Score = value;
@@ -413,7 +476,6 @@ namespace Boxfish
 					{
 						rm.PV.push_back(*m);
 					}
-					stack->PV[0] = MOVE_NONE;
 				}
 				else
 				{
@@ -429,28 +491,30 @@ namespace Boxfish
 				if (value > alpha)
 				{
 					alpha = value;
-				}
-				if (IsPvNode)
-				{
-					UpdatePV(stack->PV, move, (stack + 1)->PV);
+					if (IsPvNode)
+					{
+						UpdatePV(stack->PV, move, (stack + 1)->PV);
+					}
 				}
 			}
 
 			// Beta cuttoff - Fail high
 			if (value >= beta)
 			{
-				if ((move.GetFlags() & MOVE_CAPTURE) == 0 && move != stack->KillerMoves[1] && move != stack->KillerMoves[0])
+				if (!move.IsCaptureOrPromotion())
 				{
-					// Store killer move
-					stack->KillerMoves[1] = stack->KillerMoves[0];
-					stack->KillerMoves[0] = move;
+					if (move != stack->KillerMoves[1] && move != stack->KillerMoves[0])
+					{
+						// Store killer move
+						stack->KillerMoves[1] = stack->KillerMoves[0];
+						stack->KillerMoves[0] = move;
+					}
+					m_HistoryTable[position.TeamToPlay][move.GetFromSquareIndex()][move.GetToSquareIndex()] += depth * depth;
 				}
 				if (previousMove != MOVE_NONE)
 				{
 					m_CounterMoves[previousMove.GetFromSquareIndex()][previousMove.GetToSquareIndex()] = move;
 				}
-				movesSinceBetaCutoff = 0;
-				depthExtension = 0;
 				TranspositionTableEntry failHighEntry;
 				failHighEntry.Score = value;
 				failHighEntry.Depth = depth;
@@ -461,27 +525,14 @@ namespace Boxfish
 				m_TranspositionTable.AddEntry(failHighEntry);
 				return beta;
 			}
-			
-			movesSinceBetaCutoff++;
-			if (depth > 3)
+			else if (!move.IsCaptureOrPromotion())
 			{
-				if (movesSinceBetaCutoff > 10)
-				{
-					depthExtension = -depth / 3;
-				}
-				else if (movesSinceBetaCutoff > 3)
-				{
-					depthExtension = -1;
-				}
+				m_ButterflyTable[position.TeamToPlay][move.GetFromSquareIndex()][move.GetToSquareIndex()] += depth * depth;
 			}
 		}
 		if (bestMove.GetFlags() & MOVE_NULL)
 		{
-			bestMove = defaultMove;
-		}
-		if (IsPvNode)
-		{
-			UpdatePV(stack->PV, bestMove, (stack + 1)->PV);
+			return bestValue;
 		}
 
 		TranspositionTableEntry newEntry;
@@ -510,7 +561,7 @@ namespace Boxfish
 		if (m_PositionHistory.Contains(position, stack->Ply))
 			return EvaluateDraw(position);
 
-		Centipawns evaluation = StaticEvalPosition(position, stack->Ply);
+		Centipawns evaluation = StaticEvalPosition(position, alpha, beta, stack->Ply);
 		if (evaluation >= beta && !inCheck)
 			return beta;
 		if (alpha < evaluation)
@@ -593,9 +644,9 @@ namespace Boxfish
 		return score >= MateIn(MAX_PLY) || score <= MatedIn(MAX_PLY);
 	}
 
-	Centipawns Search::StaticEvalPosition(const Position& position, int ply) const
+	Centipawns Search::StaticEvalPosition(const Position& position, Centipawns alpha, Centipawns beta, int ply) const
 	{
-		Centipawns eval = Evaluate(position, position.TeamToPlay);
+		Centipawns eval = Evaluate(position, position.TeamToPlay, alpha, beta);
 		if (eval == SCORE_MATE)
 			eval = MateIn(ply);
 		else if (eval == -SCORE_MATE)
@@ -610,6 +661,18 @@ namespace Boxfish
 			for (SquareIndex to = a1; to < FILE_MAX * RANK_MAX; to++)
 			{
 				m_CounterMoves[from][to] = MOVE_NONE;
+			}
+		}
+	}
+
+	void Search::ClearTable(Centipawns (&table)[TEAM_MAX][FILE_MAX * RANK_MAX][FILE_MAX * RANK_MAX])
+	{
+		for (SquareIndex from = a1; from < FILE_MAX * RANK_MAX; from++)
+		{
+			for (SquareIndex to = a1; to < FILE_MAX * RANK_MAX; to++)
+			{
+				table[TEAM_WHITE][from][to] = 0;
+				table[TEAM_BLACK][from][to] = 0;
 			}
 		}
 	}

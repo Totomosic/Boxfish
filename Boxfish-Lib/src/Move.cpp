@@ -82,6 +82,21 @@ namespace Boxfish
 		m_Move = (m_Move & ~mask) | ((piece << 3) & mask);
 	}
 
+	bool Move::IsCapture() const
+	{
+		return GetFlags() & MOVE_CAPTURE;
+	}
+
+	bool Move::IsPromotion() const
+	{
+		return GetFlags() & MOVE_PROMOTION;
+	}
+
+	bool Move::IsCaptureOrPromotion() const
+	{
+		return GetFlags() & (MOVE_CAPTURE | MOVE_PROMOTION);
+	}
+
 	std::string FormatMove(const Move& move, bool includeSymbols)
 	{
 		if (move.GetFlags() & MOVE_NULL)
