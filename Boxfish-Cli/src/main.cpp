@@ -103,7 +103,20 @@ int main(int argc, const char** argv)
 			command = line;
 		}
 		
-		if (command == "d")
+		if (command == "help")
+		{
+			std::cout << "UCI Commands:" << std::endl;
+			std::cout << "d - print the board" << std::endl;
+			std::cout << "isready" << std::endl;
+			std::cout << "position fen <fen_string> [moves <list_of_moves>] - set the current board position from a FEN string" << std::endl;
+			std::cout << "position moves <list_of_moves> - apply a list of moves to the current position" << std::endl;
+			std::cout << "go depth <depth_in_plies> - Search for the best move in the current position up to a given depth" << std::endl;
+			std::cout << "go movetime <time_in_ms> - Search for the best move in the current position up to a given time limit" << std::endl;
+			std::cout << "eval - print the static evaluation of the current position" << std::endl;
+			std::cout << "perft <depth> - performance test move generation" << std::endl;
+			std::cout << "moves - list all legal moves in the position" << std::endl;
+		}
+		else if (command == "d")
 		{
 			std::cout << std::endl << position << std::endl;
 			std::cout << std::endl << "Fen: " << GetFENFromPosition(position) << std::endl;
@@ -167,17 +180,17 @@ int main(int argc, const char** argv)
 			}
 			else
 			{
-				size_t timeString = args.find("time ");
+				size_t timeString = args.find("movetime ");
 				if (timeString != std::string_view::npos)
 				{
-					size_t space = args.find_first_of(' ', depthString + 5);
-					int time = std::stoi(std::string(args.substr(timeString + 5, space - timeString - 5)));
+					size_t space = args.find_first_of(' ', depthString + 9);
+					int time = std::stoi(std::string(args.substr(timeString + 9, space - timeString - 9)));
 					SearchLimits limits;
 					limits.Milliseconds = time;
 					search.SetLimits(limits);
 					search.SetCurrentPosition(position);
 
-					Move move = search.Go(50);
+					Move move = search.Go(MAX_PLY);
 					std::cout << "bestmove " << FormatMove(move, false) << std::endl;
 				}
 			}
