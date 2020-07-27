@@ -109,7 +109,13 @@ namespace Boxfish
 		return (SquareIndex)lsb;
 	}
 
+	BitBoard FlipVertically(const BitBoard& board)
+	{
+		return _byteswap_uint64(board.Board);
+	}
+
 #else
+
 	SquareIndex ForwardBitScan(const BitBoard& board)
 	{
 		return (SquareIndex)(__builtin_ffsll(board.Board) - 1);
@@ -126,6 +132,12 @@ namespace Boxfish
 		board.Board &= board.Board - 1;
 		return (SquareIndex)lsbIndex;
 	}
+
+	BitBoard FlipVertically(const BitBoard& board)
+	{
+		return __bswap_64(board.Board);
+	}
+
 #endif
 
 	BitBoard ShiftEast(const BitBoard& board, int count)
@@ -146,11 +158,6 @@ namespace Boxfish
 			newBoard = ((newBoard >> 1) & (~FILE_H_MASK));
 		}
 		return newBoard;
-	}
-
-	BitBoard FlipVertically(const BitBoard& board)
-	{
-		return _byteswap_uint64(board.Board);
 	}
 
 	int GetForwardShift(Team team)
