@@ -3,6 +3,7 @@ BoxfishOutputDir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
 -- Project Directories
 BoxfishLibDir = "Boxfish-Lib/"
 BoxfishCliDir = "Boxfish-Cli/"
+BoxfishTestDir = "Boxfish-Test/"
 
 -- Include directories relative to solution directory
 BoxfishIncludeDirs = {}

@@ -17,3 +17,4 @@ include ("Paths.lua")
 
 include (BoxfishLibDir)
 include (BoxfishCliDir)
+include (BoxfishTestDir)
