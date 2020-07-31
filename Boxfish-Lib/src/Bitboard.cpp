@@ -5,7 +5,12 @@ namespace Boxfish
 
 	bool BitBoard::GetAt(const Square& square) const
 	{
-		return (Board & BOX_BIT((uint64_t)SquareToBitIndex(square))) != 0;
+		return (*this) & BitBoard { BitBoard::SquareToBitIndex(square) };
+	}
+
+	void BitBoard::SetAt(const Square& square)
+	{
+		(*this) |= BitBoard{ BitBoard::SquareToBitIndex(square) };
 	}
 
 #ifdef BOX_PLATFORM_WINDOWS
@@ -20,48 +25,6 @@ namespace Boxfish
 	}
 #endif
 
-	std::vector<Square> BitBoard::GetSquares() const
-	{
-		std::vector<Square> result;
-		for (int i = 0; i < RANK_MAX * FILE_MAX; i++)
-		{
-			if (Board & BOX_BIT(i))
-				result.push_back(BitIndexToSquare((SquareIndex)i));
-		}
-		return result;
-	}
-
-	void BitBoard::SetAt(const Square& square)
-	{
-		Board |= BOX_BIT(SquareToBitIndex(square));
-	}
-
-	void BitBoard::Reset()
-	{
-		Board = 0;
-	}
-
-	SquareIndex BitBoard::SquareToBitIndex(const Square& square)
-	{
-		BOX_ASSERT(square.File >= 0 && square.File < FILE_MAX && square.Rank >= 0 && square.Rank < RANK_MAX, "Invalid square");
-		return (SquareIndex)(square.File + square.Rank * FILE_MAX);
-	}
-
-	Square BitBoard::BitIndexToSquare(SquareIndex index)
-	{
-		return { FileOfIndex(index), RankOfIndex(index) };
-	}
-
-	Rank BitBoard::RankOfIndex(int index)
-	{
-		return (Rank)(index / FILE_MAX);
-	}
-
-	File BitBoard::FileOfIndex(int index)
-	{
-		return (File)(index % FILE_MAX);
-	}
-
 	std::ostream& operator<<(std::ostream& stream, const BitBoard& board)
 	{
 		stream << "   | A B C D E F G H" << std::endl;
@@ -71,7 +34,7 @@ namespace Boxfish
 			stream << ' ' << (char)('1' + (rank - RANK_1)) << ' ' << '|' << ' ';
 			for (File file = FILE_A; file < FILE_MAX; file++)
 			{
-				stream << ((board.GetAt({ file, rank })) ? '1' : '0') << ' ';
+				stream << ((board & BitBoard{ BitBoard::SquareToBitIndex({ file, rank }) }) ? '1' : '0') << ' ';
 			}
 			if (rank != RANK_1)
 				stream << std::endl;

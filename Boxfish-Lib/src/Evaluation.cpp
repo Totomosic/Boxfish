@@ -27,9 +27,8 @@ namespace Boxfish
 		return (team == TEAM_WHITE) ? whiteSquare : s_OppositeSquare[whiteSquare];
 	}
 
-	static std::mutex m_MoveListLock;
 	static Move s_MoveBuffer[MAX_MOVES];
-	static MoveList s_MoveList(nullptr, s_MoveBuffer);
+	static MoveList s_MoveList(s_MoveBuffer);
 
 	static int s_PhaseWeights[PIECE_MAX];
 	int s_MaxPhaseValue = 0;
@@ -141,30 +140,30 @@ namespace Boxfish
 		s_PassedPawnRankWeights[MIDGAME][TEAM_WHITE][RANK_2] = 0;
 		s_PassedPawnRankWeights[ENDGAME][TEAM_WHITE][RANK_2] = 0;
 		s_PassedPawnRankWeights[MIDGAME][TEAM_BLACK][RANK_2] = 50;
-		s_PassedPawnRankWeights[ENDGAME][TEAM_BLACK][RANK_2] = 60;
+		s_PassedPawnRankWeights[ENDGAME][TEAM_BLACK][RANK_2] = 80;
 
 		s_PassedPawnRankWeights[MIDGAME][TEAM_WHITE][RANK_3] = 10;
-		s_PassedPawnRankWeights[ENDGAME][TEAM_WHITE][RANK_3] = 20;
+		s_PassedPawnRankWeights[ENDGAME][TEAM_WHITE][RANK_3] = 30;
 		s_PassedPawnRankWeights[MIDGAME][TEAM_BLACK][RANK_3] = 30;
 		s_PassedPawnRankWeights[ENDGAME][TEAM_BLACK][RANK_3] = 40;
 
-		s_PassedPawnRankWeights[MIDGAME][TEAM_WHITE][RANK_4] = 5;
-		s_PassedPawnRankWeights[ENDGAME][TEAM_WHITE][RANK_4] = 10;
+		s_PassedPawnRankWeights[MIDGAME][TEAM_WHITE][RANK_4] = 12;
+		s_PassedPawnRankWeights[ENDGAME][TEAM_WHITE][RANK_4] = 40;
 		s_PassedPawnRankWeights[MIDGAME][TEAM_BLACK][RANK_4] = 15;
-		s_PassedPawnRankWeights[ENDGAME][TEAM_BLACK][RANK_4] = 20;
+		s_PassedPawnRankWeights[ENDGAME][TEAM_BLACK][RANK_4] = 60;
 
 		s_PassedPawnRankWeights[MIDGAME][TEAM_WHITE][RANK_5] = 15;
-		s_PassedPawnRankWeights[ENDGAME][TEAM_WHITE][RANK_5] = 20;
-		s_PassedPawnRankWeights[MIDGAME][TEAM_BLACK][RANK_5] = 5;
-		s_PassedPawnRankWeights[ENDGAME][TEAM_BLACK][RANK_5] = 10;
+		s_PassedPawnRankWeights[ENDGAME][TEAM_WHITE][RANK_5] = 60;
+		s_PassedPawnRankWeights[MIDGAME][TEAM_BLACK][RANK_5] = 12;
+		s_PassedPawnRankWeights[ENDGAME][TEAM_BLACK][RANK_5] = 40;
 
 		s_PassedPawnRankWeights[MIDGAME][TEAM_WHITE][RANK_6] = 30;
 		s_PassedPawnRankWeights[ENDGAME][TEAM_WHITE][RANK_6] = 40;
 		s_PassedPawnRankWeights[MIDGAME][TEAM_BLACK][RANK_6] = 10;
-		s_PassedPawnRankWeights[ENDGAME][TEAM_BLACK][RANK_6] = 20;
+		s_PassedPawnRankWeights[ENDGAME][TEAM_BLACK][RANK_6] = 30;
 
 		s_PassedPawnRankWeights[MIDGAME][TEAM_WHITE][RANK_7] = 50;
-		s_PassedPawnRankWeights[ENDGAME][TEAM_WHITE][RANK_7] = 60;
+		s_PassedPawnRankWeights[ENDGAME][TEAM_WHITE][RANK_7] = 80;
 		s_PassedPawnRankWeights[MIDGAME][TEAM_BLACK][RANK_7] = 0;
 		s_PassedPawnRankWeights[ENDGAME][TEAM_BLACK][RANK_7] = 0;
 
@@ -183,7 +182,7 @@ namespace Boxfish
 		s_MaterialValues[MIDGAME][PIECE_QUEEN] = 975;
 		s_MaterialValues[MIDGAME][PIECE_KING] = 20000;
 
-		s_MaterialValues[ENDGAME][PIECE_PAWN] = 110;
+		s_MaterialValues[ENDGAME][PIECE_PAWN] = 100;
 		s_MaterialValues[ENDGAME][PIECE_KNIGHT] = 325;
 		s_MaterialValues[ENDGAME][PIECE_BISHOP] = 335;
 		s_MaterialValues[ENDGAME][PIECE_ROOK] = 500;
@@ -454,7 +453,6 @@ namespace Boxfish
 		result.Checkmate[TEAM_WHITE] = false;
 		result.Checkmate[TEAM_BLACK] = false;
 		result.Stalemate = false;
-		std::scoped_lock<std::mutex> lock(m_MoveListLock);
 		if (!movegen.HasAtLeastOneLegalMove(s_MoveList))
 		{
 			if (IsInCheck(position, TEAM_WHITE))
@@ -538,7 +536,7 @@ namespace Boxfish
 			SquareIndex square = PopLeastSignificantBit(pawns);
 			if ((otherPawns & s_PassedPawnMasks[team][square]) == ZERO_BB)
 			{
-				Rank rank = BitBoard::BitIndexToSquare(square).Rank;
+				Rank rank = BitBoard::RankOfIndex(square);
 				mgValue += s_PassedPawnRankWeights[MIDGAME][team][rank];
 				egValue += s_PassedPawnRankWeights[ENDGAME][team][rank];
 				if (IsPawnSupported(position, square, team))

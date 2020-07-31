@@ -71,7 +71,4 @@ namespace Boxfish
 
 	constexpr Move MOVE_NONE = 0U | ((MOVE_NULL & 0x7f) << 21);
 
-	std::string FormatMove(const Move& move, bool includeSymbols = true);
-	std::string FormatNullMove();
-
 }

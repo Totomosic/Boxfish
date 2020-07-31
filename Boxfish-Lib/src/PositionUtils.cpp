@@ -1,6 +1,7 @@
 #include "PositionUtils.h"
 #include "Utils.h"
 #include "Attacks.h"
+#include "Uci.h"
 
 namespace Boxfish
 {
@@ -803,7 +804,7 @@ namespace Boxfish
 		File endFile = (File)(uciString[2] - 'a');
 		Rank endRank = (Rank)(uciString[3] - '1');
 		BOX_ASSERT(startFile >= 0 && startFile < FILE_MAX && startRank >= 0 && startRank < RANK_MAX && endFile >= 0 && endFile < FILE_MAX && endRank >= 0 && endRank < RANK_MAX,
-			"Invalid UCII move string. Ranks/Files out of range.");
+			"Invalid UCI move string. Ranks/Files out of range.");
 		Piece promotion = PIECE_QUEEN;
 		if (uciString.size() >= 5)
 		{

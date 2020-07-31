@@ -1,0 +1,325 @@
+#include "CommandManager.h"
+
+namespace Boxfish
+{
+
+	std::vector<std::string> Split(const std::string& str, const std::string& delimiter)
+	{
+		std::vector<std::string> result;
+		size_t begin = 0;
+		size_t end = str.find(delimiter, begin);
+		while (end != std::string::npos)
+		{
+			result.push_back(str.substr(begin, end - begin));
+			begin = end + delimiter.size();
+			end = str.find(delimiter, begin);
+		}
+		result.push_back(str.substr(begin, end - begin));
+		return result;
+	}
+
+	CommandManager::CommandManager()
+		: m_CommandMap(), m_CurrentPosition(CreateStartingPosition()), m_Search(256 * 1024 * 1024), m_Searching(false), m_SearchThread()
+	{
+		m_CommandMap["help"] = [this](const std::vector<std::string>& args)
+		{
+			Help();
+		};
+
+		m_CommandMap["isready"] = [this](const std::vector<std::string>& args)
+		{
+			IsReady();
+		};
+
+		m_CommandMap["ucinewgame"] = [this](const std::vector<std::string>& args)
+		{
+			NewGame();
+		};
+
+		m_CommandMap["d"] = [this](const std::vector<std::string>& args)
+		{
+			PrintBoard();
+		};
+
+		m_CommandMap["position"] = [this](const std::vector<std::string>& args)
+		{
+			if (args.size() > 0)
+			{
+				auto it = args.begin();
+				if (*it == "fen")
+				{
+					it++;
+					std::string fen = "";
+					while (*it != "moves" && it != args.end())
+					{
+						fen += *it++;
+					}
+					SetPositionFen(fen);
+				}
+				if (it != args.end() && *it == "startpos")
+				{
+					SetPositionFen(GetFENFromPosition(CreateStartingPosition()));
+					it++;
+				}
+				if (it != args.end() && *it == "moves")
+				{
+					ApplyMoves({ it + 1, args.end() });
+				}
+			}
+		};
+
+		m_CommandMap["eval"] = [this](const std::vector<std::string>& args)
+		{
+			Eval();
+		};
+
+		m_CommandMap["perft"] = [this](const std::vector<std::string>& args)
+		{
+			if (args.size() > 0)
+			{
+				int depth = std::stoi(args[0]);
+				Perft(depth);
+			}
+		};
+
+		m_CommandMap["go"] = [this](const std::vector<std::string>& args)
+		{
+			if (args.size() > 0)
+			{
+				if (args.size() > 1)
+				{
+					if (args[0] == "depth")
+					{
+						int depth = std::stoi(args[1]);
+						GoDepth(depth);
+					}
+					else if (args[0] == "movetime")
+					{
+						int milliseconds = std::stoi(args[1]);
+						GoTime(milliseconds);
+					}
+				}
+				else if (args[0] == "ponder")
+				{
+					GoPonder();
+				}
+			}
+		};
+
+		m_CommandMap["moves"] = [this](const std::vector<std::string>& args)
+		{
+			Moves();
+		};
+
+		m_CommandMap["stop"] = [this](const std::vector<std::string>& args)
+		{
+			Stop();
+		};
+
+		m_CommandMap["quit"] = [this](const std::vector<std::string>& args)
+		{
+			Quit();
+		};
+
+		ExecuteCommand("ucinewgame");
+	}
+
+	CommandManager::~CommandManager()
+	{
+		if (m_SearchThread.joinable())
+			m_SearchThread.join();
+	}
+
+	void CommandManager::ExecuteCommand(const std::string& uciCommand)
+	{
+		std::vector<std::string> commandParts = Split(uciCommand, " ");
+		if (commandParts.size() > 0)
+		{
+			std::string& command = commandParts[0];
+			if (m_CommandMap.find(command) != m_CommandMap.end())
+			{
+				std::vector<std::string> args = { commandParts.begin() + 1, commandParts.end() };
+				m_CommandMap.at(command)(args);
+			}
+			else
+			{
+				std::cout << "Unknown command: " << command << std::endl;
+			}
+		}
+	}
+
+	void CommandManager::Help()
+	{
+		std::cout << "Available Commands:" << std::endl;
+		std::cout << "* isready" << std::endl;
+		std::cout << "\tCheck if the engine is ready." << std::endl;
+		std::cout << "* ucinewgame" << std::endl;
+		std::cout << "\tInform the engine that this is a new game." << std::endl;
+		std::cout << "* d" << std::endl;
+		std::cout << "\tPrint the current position." << std::endl;
+		std::cout << "* position [fen <fenstring> | startpos] [moves <moves>...]" << std::endl;
+		std::cout << "\tSet the current position from a FEN string or to the starting position." << std::endl;
+		std::cout << "\tAdditionally, apply a list of moves to the given position." << std::endl;
+		std::cout << "\tIf fen or startpos is not provided the moves will be applied to the current position." << std::endl;
+		std::cout << "* eval" << std::endl;
+		std::cout << "\tPrint the static evaluation for the current position." << std::endl;
+		std::cout << "* perft <depth>" << std::endl;
+		std::cout << "\tPerformance test move generation for a given depth in the current position." << std::endl;
+		std::cout << "* go" << std::endl;
+		std::cout << "\tMain command to begin searching in the current position." << std::endl;
+		std::cout << "\tAccepts a number of different arguments:" << std::endl;
+		std::cout << "\t* ponder" << std::endl;
+		std::cout << "\t\tStart searching in ponder mode, searching infinitely until a stop command." << std::endl;
+		std::cout << "\t* depth <depth>" << std::endl;
+		std::cout << "\t\tSearch the current position to a given depth." << std::endl;
+		std::cout << "\t* movetime <time_ms>" << std::endl;
+		std::cout << "\t\tSearch the current position for a given number of milliseconds." << std::endl;
+		std::cout << "* stop" << std::endl;
+		std::cout << "\tStop searching as soon as possible." << std::endl;
+		std::cout << "* quit" << std::endl;
+		std::cout << "\tQuit the program as soon as possible." << std::endl;
+	}
+
+	void CommandManager::IsReady()
+	{
+		std::cout << "readyok" << std::endl;
+	}
+
+	void CommandManager::NewGame()
+	{
+		if (!m_Searching)
+		{
+			m_Search.GetHistory().Clear();
+			m_CurrentPosition = CreateStartingPosition();
+		}
+	}
+
+	void CommandManager::PrintBoard()
+	{
+		std::cout << m_CurrentPosition << std::endl;
+		std::cout << "FEN: " << GetFENFromPosition(m_CurrentPosition) << std::endl;
+		std::cout << "Hash: " << std::hex << m_CurrentPosition.Hash.Hash << std::dec << std::endl;
+	}
+
+	void CommandManager::SetPositionFen(const std::string& fen)
+	{
+		if (!m_Searching)
+		{
+			m_Search.GetHistory().Clear();
+			m_CurrentPosition = CreatePositionFromFEN(fen);
+		}
+	}
+
+	void CommandManager::ApplyMoves(const std::vector<std::string>& moves)
+	{
+		if (!m_Searching)
+		{
+			for (const std::string& moveString : moves)
+			{
+				m_Search.GetHistory().Push(m_CurrentPosition);
+				Move move = CreateMoveFromString(m_CurrentPosition, moveString);
+				ApplyMove(m_CurrentPosition, move);
+			}
+		}
+	}
+
+	void CommandManager::Eval()
+	{
+		EvaluationResult evaluation = EvaluateDetailed(m_CurrentPosition);
+		std::cout << FormatEvaluation(evaluation) << std::endl;
+	}
+
+	void CommandManager::Perft(int depth)
+	{
+		if (!m_Searching)
+		{
+			m_Search.SetCurrentPosition(m_CurrentPosition);
+			m_Search.Perft(depth);
+		}
+	}
+
+	void CommandManager::GoDepth(int depth)
+	{
+		if (!m_Searching)
+		{
+			m_Searching = true;
+			m_Search.SetCurrentPosition(m_CurrentPosition);
+			if (m_SearchThread.joinable())
+				m_SearchThread.join();
+			m_SearchThread = std::thread([this, depth]()
+			{
+				SearchLimits limits;
+				m_Search.SetLimits(limits);
+				Move bestMove = m_Search.Go(depth);
+				std::cout << "bestmove " << UCI::FormatMove(bestMove) << std::endl;
+				m_Searching = false;
+			});
+		}
+	}
+
+	void CommandManager::GoTime(int milliseconds)
+	{
+		if (!m_Searching)
+		{
+			m_Searching = true;
+			m_Search.SetCurrentPosition(m_CurrentPosition);
+			if (m_SearchThread.joinable())
+				m_SearchThread.join();
+			m_SearchThread = std::thread([this, milliseconds]()
+			{
+				SearchLimits limits;
+				limits.Milliseconds = milliseconds;
+				m_Search.SetLimits(limits);
+				Move bestMove = m_Search.Go(MAX_PLY);
+				std::cout << "bestmove " << UCI::FormatMove(bestMove) << std::endl;
+				m_Searching = false;
+			});
+		}
+	}
+
+	void CommandManager::GoPonder()
+	{
+		if (!m_Searching)
+		{
+			m_Searching = true;
+			m_Search.SetCurrentPosition(m_CurrentPosition);
+			if (m_SearchThread.joinable())
+				m_SearchThread.join();
+			m_SearchThread = std::thread([this]()
+			{
+				m_Search.Ponder();
+				m_Searching = false;
+			});
+		}
+	}
+
+	void CommandManager::Moves()
+	{
+		Move moveBuffer[MAX_MOVES];
+		MoveGenerator generator(m_CurrentPosition);
+		MoveList moves(moveBuffer);
+		generator.GetPseudoLegalMoves(moves);
+		generator.FilterLegalMoves(moves);
+
+		for (int i = 0; i < moves.MoveCount; i++)
+		{
+			std::cout << UCI::FormatMove(moves.Moves[i]) << std::endl;
+		}
+	}
+
+	void CommandManager::Stop()
+	{
+		if (m_Searching)
+		{
+			m_Search.Stop();
+			m_SearchThread.join();
+		}
+	}
+
+	void CommandManager::Quit()
+	{
+		Stop();
+		exit(0);
+	}
+
+}

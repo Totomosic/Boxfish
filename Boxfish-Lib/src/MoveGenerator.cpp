@@ -85,6 +85,8 @@ namespace Boxfish
 
 	void MoveGenerator::FilterLegalMoves(MoveList& pseudoLegalMoves)
 	{
+		if (pseudoLegalMoves.MoveCount <= 0)
+			return;
 		const BitBoard& checkers = m_Position.InfoCache.CheckedBy[m_Position.TeamToPlay];
 		bool multipleCheckers = MoreThanOne(checkers);
 

@@ -27,12 +27,10 @@ namespace Boxfish
 		{
 		}
 
-		bool GetAt(const Square& square) const;
 		int GetCount() const;
-		std::vector<Square> GetSquares() const;
+		// Methods only used when getting/setting from FEN
+		bool GetAt(const Square& square) const;
 		void SetAt(const Square& square);
-
-		void Reset();
 
 		inline operator bool() const { return Board != 0ULL; }
 		inline friend BitBoard operator&(const BitBoard& left, const BitBoard& right) { return left.Board & right.Board; }
@@ -50,10 +48,15 @@ namespace Boxfish
 		friend std::ostream& operator<<(std::ostream& stream, const BitBoard& board);
 
 	public:
-		static SquareIndex SquareToBitIndex(const Square& square);
-		static Square BitIndexToSquare(SquareIndex index);
-		static Rank RankOfIndex(int index);
-		static File FileOfIndex(int index);
+		inline static SquareIndex SquareToBitIndex(const Square& square)
+		{
+			BOX_ASSERT(square.File >= 0 && square.File < FILE_MAX&& square.Rank >= 0 && square.Rank < RANK_MAX, "Invalid square");
+			return (SquareIndex)(square.File + square.Rank * FILE_MAX);
+		}
+
+		inline static Square BitIndexToSquare(SquareIndex index) { return { FileOfIndex(index), RankOfIndex(index) }; }
+		inline static Rank RankOfIndex(int index) { return (Rank)(index / FILE_MAX); }
+		inline static File FileOfIndex(int index) { return (File)(index % FILE_MAX); }
 	};
 
 	constexpr BitBoard ZERO_BB = 0ULL;

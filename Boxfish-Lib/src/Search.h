@@ -27,6 +27,8 @@ namespace Boxfish
 	public:
 		PositionHistory();
 
+		const std::vector<ZobristHash>& GetPositions() const;
+
 		bool Contains(const Position& position, int searchIndex) const;
 		void Push(const Position& position);
 		void Clear();
@@ -42,9 +44,11 @@ namespace Boxfish
 	struct BOX_API SearchStack
 	{
 		Move* PV = nullptr;
+		ZobristHash* PositionHistory = nullptr;
 		int Ply = 0;
-		Move CurrentMove;
-		Move KillerMoves[2];
+		int PlySinceCaptureOrPawnPush = 0;
+		Move CurrentMove = MOVE_NONE;
+		Move KillerMoves[2] = { MOVE_NONE, MOVE_NONE };
 		Centipawns StaticEvaluation = -SCORE_MATE;
 		int MoveCount = 0;
 		bool CanNull = true;
@@ -114,6 +118,7 @@ namespace Boxfish
 
 		void SetCurrentPosition(const Position& position);
 		void SetCurrentPosition(Position&& position);
+		size_t Perft(int depth);
 		Move Go(int depth, const std::function<void(SearchResult)>& callback = {});
 		void Ponder(const std::function<void(SearchResult)>& callback = {});
 		void Reset();
@@ -121,15 +126,17 @@ namespace Boxfish
 		void Stop();
 
 	private:
-		void SearchRoot(const Position& position, int depth, SearchStats& stats, const std::function<void(SearchResult)>& callback);
+		size_t Perft(Position& position, int depth);
+
+		void SearchRoot(Position& position, int depth, SearchStats& stats, const std::function<void(SearchResult)>& callback);
 		template<NodeType type>
-		Centipawns SearchPosition(const Position& position, SearchStack* stack, int depth, Centipawns alpha, Centipawns beta, SearchStats& stats);
+		Centipawns SearchPosition(Position& position, SearchStack* stack, int depth, Centipawns alpha, Centipawns beta, SearchStats& stats);
 		template<NodeType type>
-		Centipawns QuiescenceSearch(const Position& position, SearchStack* stack, Centipawns alpha, Centipawns beta);
+		Centipawns QuiescenceSearch(Position& position, SearchStack* stack, Centipawns alpha, Centipawns beta);
 
 		bool CheckLimits() const;
 
-		Centipawns GetMoveScoreBonus(const Position& position, const Move& move) const;
+		bool IsDraw(const Position& position, SearchStack* stack) const;
 		Centipawns EvaluateDraw(const Position& postion) const;
 		Centipawns MateIn(int ply) const;
 		Centipawns MatedIn(int ply) const;
