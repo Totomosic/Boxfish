@@ -47,10 +47,10 @@ namespace Boxfish
 		ZobristHash* PositionHistory = nullptr;
 		int Ply = 0;
 		int PlySinceCaptureOrPawnPush = 0;
+		int MoveCount = 0;
 		Move CurrentMove = MOVE_NONE;
 		Move KillerMoves[2] = { MOVE_NONE, MOVE_NONE };
 		Centipawns StaticEvaluation = -SCORE_MATE;
-		int MoveCount = 0;
 		bool CanNull = true;
 	};
 

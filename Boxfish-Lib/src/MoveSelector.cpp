@@ -4,6 +4,11 @@
 namespace Boxfish
 {
 
+	constexpr Centipawns SCORE_GOOD_CAPTURE = 100000000;
+	constexpr Centipawns SCORE_PROMOTION = 90000000;
+	constexpr Centipawns SCORE_KILLER = 80000000;
+	constexpr Centipawns SCORE_BAD_CAPTURE = 50000000;
+
 	MoveSelector::MoveSelector(const MoveOrderingInfo& info, MoveList* legalMoves)
 		: m_OrderingInfo(info), m_LegalMoves(legalMoves), m_CurrentIndex(0)
 	{
@@ -13,24 +18,31 @@ namespace Boxfish
 			Move& move = m_LegalMoves->Moves[index];
 			if (move.GetFlags() & MOVE_CAPTURE)
 			{
-				score = 200 + GetPieceValue(move.GetCapturedPiece()) - GetPieceValue(move.GetMovingPiece());
+				if (SeeGE(*m_OrderingInfo.CurrentPosition, move))
+				{
+					score = SCORE_GOOD_CAPTURE + GetPieceValue(move.GetCapturedPiece()) - GetPieceValue(move.GetMovingPiece());
+				}
+				else
+				{
+					score = SCORE_BAD_CAPTURE + GetPieceValue(move.GetCapturedPiece()) - GetPieceValue(move.GetMovingPiece());
+				}
 			}
 			else if (move.GetFlags() & MOVE_PROMOTION)
 			{
-				score = 150 + GetPieceValue(move.GetPromotionPiece());
+				score = SCORE_PROMOTION + GetPieceValue(move.GetPromotionPiece());
 			}
 			else if (m_OrderingInfo.KillerMoves)
 			{
 				if (move == m_OrderingInfo.KillerMoves[0] || move == m_OrderingInfo.KillerMoves[1])
 				{
-					score = 100;
+					score = SCORE_KILLER;
 				}
 			}
 
 			// Counter move
 			if (m_OrderingInfo.CounterMove != MOVE_NONE && move == m_OrderingInfo.CounterMove)
 			{
-				score += 50;
+				score += 20;
 			}
 			// History Heuristic
 			if (m_OrderingInfo.HistoryTable && m_OrderingInfo.ButterflyTable)
@@ -81,11 +93,11 @@ namespace Boxfish
 			Move& move = moves.Moves[i];
 			if (move.GetFlags() & MOVE_CAPTURE)
 			{
-				move.SetValue(200 + GetPieceValue(move.GetCapturedPiece()) - GetPieceValue(move.GetMovingPiece()));
+				move.SetValue(SCORE_GOOD_CAPTURE + GetPieceValue(move.GetCapturedPiece()) - GetPieceValue(move.GetMovingPiece()));
 			}
 			else if (move.GetFlags() & MOVE_PROMOTION)
 			{
-				move.SetValue(150 + GetPieceValue(move.GetPromotionPiece()));
+				move.SetValue(SCORE_PROMOTION + GetPieceValue(move.GetPromotionPiece()));
 			}
 			else
 			{

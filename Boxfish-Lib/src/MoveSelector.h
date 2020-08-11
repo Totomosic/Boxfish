@@ -11,6 +11,7 @@ namespace Boxfish
 	public:
 		const Position* CurrentPosition = nullptr;
 		const Move* KillerMoves = nullptr;
+		Move PreviousMove = MOVE_NONE;
 		Move CounterMove = MOVE_NONE;
 		Centipawns (*HistoryTable)[TEAM_MAX][FILE_MAX * RANK_MAX][FILE_MAX * RANK_MAX];
 		Centipawns (*ButterflyTable)[TEAM_MAX][FILE_MAX * RANK_MAX][FILE_MAX * RANK_MAX];

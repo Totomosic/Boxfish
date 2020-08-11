@@ -1,6 +1,7 @@
 #pragma once
 #include "Position.h"
 #include "Move.h"
+#include "Evaluation.h"
 #include <string>
 #include <iostream>
 
@@ -22,9 +23,6 @@ namespace Boxfish
 	std::string GetFENFromPosition(const Position& position);
 	Position MirrorPosition(const Position& position);
 
-	BitBoard GetTeamPiecesBitBoard(const Position& position, Team team);
-	BitBoard GetOverallPiecesBitBoard(const Position& position);
-
 	BitBoard GetAttackers(const Position& position, Team team, const Square& square, const BitBoard& blockers);
 	BitBoard GetAttackers(const Position& position, Team team, SquareIndex square, const BitBoard& blockers);
 	// Returns a bitboard containing all the pieces that are pinned by sliders to the square
@@ -42,9 +40,11 @@ namespace Boxfish
 	Piece GetPieceAtSquare(const Position& position, Team team, SquareIndex square);
 	bool IsPieceOnSquare(const Position& position, Team team, Piece piece, SquareIndex square);
 
-	bool IsInCheck(const Position& position, Team team);
+	inline bool IsInCheck(const Position& position, Team team) { return position.InfoCache.InCheck[team]; }
 	bool IsSquareUnderAttack(const Position& position, Team byTeam, const Square& square);
 	bool IsSquareUnderAttack(const Position& position, Team byTeam, SquareIndex square);
+
+	bool SeeGE(const Position& position, const Move& move, Centipawns threshold = 0);
 
 	void ApplyMove(Position& position, const Move& move, UndoInfo* outUndoInfo = nullptr);
 	void UndoMove(Position& position, const Move& move, const UndoInfo& undo);

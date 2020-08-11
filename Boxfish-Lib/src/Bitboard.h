@@ -22,11 +22,6 @@ namespace Boxfish
 		{
 		}
 
-		constexpr BitBoard(SquareIndex index)
-			: Board(1ULL << (int)index)
-		{
-		}
-
 		int GetCount() const;
 		// Methods only used when getting/setting from FEN
 		bool GetAt(const Square& square) const;
@@ -113,5 +108,26 @@ namespace Boxfish
 
 	constexpr BitBoard DARK_SQUARES_MASK = 0xAA55AA55AA55AA55;
 	constexpr BitBoard LIGHT_SQUARES_MASK = 0x55AA55AA55AA55AA;
+
+	constexpr BitBoard SQUARE_BITBOARDS[FILE_MAX * RANK_MAX] = {
+		1ULL << a1, 1ULL << b1, 1ULL << c1, 1ULL << d1, 1ULL << e1, 1ULL << f1, 1ULL << g1, 1ULL << h1,
+		1ULL << a2, 1ULL << b2, 1ULL << c2, 1ULL << d2, 1ULL << e2, 1ULL << f2, 1ULL << g2, 1ULL << h2,
+		1ULL << a3, 1ULL << b3, 1ULL << c3, 1ULL << d3, 1ULL << e3, 1ULL << f3, 1ULL << g3, 1ULL << h3,
+		1ULL << a4, 1ULL << b4, 1ULL << c4, 1ULL << d4, 1ULL << e4, 1ULL << f4, 1ULL << g4, 1ULL << h4,
+		1ULL << a5, 1ULL << b5, 1ULL << c5, 1ULL << d5, 1ULL << e5, 1ULL << f5, 1ULL << g5, 1ULL << h5,
+		1ULL << a6, 1ULL << b6, 1ULL << c6, 1ULL << d6, 1ULL << e6, 1ULL << f6, 1ULL << g6, 1ULL << h6,
+		1ULL << a7, 1ULL << b7, 1ULL << c7, 1ULL << d7, 1ULL << e7, 1ULL << f7, 1ULL << g7, 1ULL << h7,
+		1ULL << a8, 1ULL << b8, 1ULL << c8, 1ULL << d8, 1ULL << e8, 1ULL << f8, 1ULL << g8, 1ULL << h8,
+	};
+
+	inline BitBoard operator&(const BitBoard& left, SquareIndex right) { return left & SQUARE_BITBOARDS[right]; };
+	inline BitBoard operator|(const BitBoard& left, SquareIndex right) { return left | SQUARE_BITBOARDS[right]; };
+	inline BitBoard operator^(const BitBoard& left, SquareIndex right) { return left ^ SQUARE_BITBOARDS[right]; };
+	inline BitBoard operator~(SquareIndex square) { return ~SQUARE_BITBOARDS[square]; }
+	inline BitBoard& operator&=(BitBoard& left, SquareIndex right) { left.Board &= SQUARE_BITBOARDS[right].Board; return left; };
+	inline BitBoard& operator|=(BitBoard& left, SquareIndex right) { left.Board |= SQUARE_BITBOARDS[right].Board; return left; };
+	inline BitBoard& operator^=(BitBoard& left, SquareIndex right) { left.Board ^= SQUARE_BITBOARDS[right].Board; return left; };
+
+	inline BitBoard operator|(SquareIndex left, SquareIndex right) { return SQUARE_BITBOARDS[left] | SQUARE_BITBOARDS[right]; }
 
 }

@@ -21,7 +21,7 @@ project "Boxfish-Test"
         "src",
         "../%{BoxfishIncludeDirs.spdlog}",
         "../%{BoxfishIncludeDirs.Boxfish}",
-        "vendor/catch/include/"
+        "../%{BoxfishIncludeDirs.Catch}"
     }
 
     links

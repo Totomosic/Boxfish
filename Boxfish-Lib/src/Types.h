@@ -6,6 +6,18 @@
 namespace Boxfish
 {
 
+	enum Team : int8_t
+	{
+		TEAM_WHITE,
+		TEAM_BLACK,
+		TEAM_MAX
+	};
+
+	inline constexpr Team OtherTeam(Team current)
+	{
+		return (current == TEAM_WHITE) ? TEAM_BLACK : TEAM_WHITE;
+	}
+
 	enum File : int8_t
 	{
 		FILE_A,
@@ -33,6 +45,22 @@ namespace Boxfish
 		RANK_MAX,
 		RANK_INVALID = -1
 	};
+
+	constexpr Rank INVERSE_RANK[RANK_MAX] = {
+		RANK_8,
+		RANK_7,
+		RANK_6,
+		RANK_5,
+		RANK_4,
+		RANK_3,
+		RANK_2,
+		RANK_1
+	};
+
+	inline Rank RelativeRank(Team team, Rank whiteRank)
+	{
+		return (team == TEAM_WHITE) ? whiteRank : INVERSE_RANK[whiteRank];
+	}
 
 	inline File operator++(File& f, int)
 	{
@@ -102,18 +130,6 @@ namespace Boxfish
 	{
 		p = (Piece)((int8_t)p - 1);
 		return (Piece)((int8_t)p + 1);
-	}
-
-	enum Team : int8_t
-	{
-		TEAM_WHITE,
-		TEAM_BLACK,
-		TEAM_MAX
-	};
-
-	inline constexpr Team OtherTeam(Team current)
-	{
-		return (current == TEAM_WHITE) ? TEAM_BLACK : TEAM_WHITE;
 	}
 
 	struct BOX_API Square

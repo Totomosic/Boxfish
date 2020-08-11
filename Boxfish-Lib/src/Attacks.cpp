@@ -252,8 +252,8 @@ namespace Boxfish
             {
                 for (Piece piece : { PIECE_BISHOP, PIECE_ROOK })
                 {
-                    if (GetSlidingAttacks(piece, s1, 0ULL) & BitBoard { s2 })
-                        s_Lines[s1][s2] = (GetSlidingAttacks(piece, s1, 0ULL) & GetSlidingAttacks(piece, s2, 0ULL)) | BitBoard{ s1 } | BitBoard{ s2 };
+                    if (GetSlidingAttacks(piece, s1, 0ULL) & s2)
+                        s_Lines[s1][s2] = (GetSlidingAttacks(piece, s1, 0ULL) & GetSlidingAttacks(piece, s2, 0ULL)) | s1 | s2;
                 }
             }
         }
@@ -319,7 +319,7 @@ namespace Boxfish
 
     bool IsAligned(SquareIndex a, SquareIndex b, SquareIndex c)
     {
-        return GetLineBetween(a, b) & BitBoard { c };
+        return GetLineBetween(a, b) & c;
     }
 
 }

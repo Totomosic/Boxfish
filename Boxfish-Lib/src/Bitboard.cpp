@@ -5,12 +5,12 @@ namespace Boxfish
 
 	bool BitBoard::GetAt(const Square& square) const
 	{
-		return (*this) & BitBoard { BitBoard::SquareToBitIndex(square) };
+		return (*this) & BitBoard::SquareToBitIndex(square);
 	}
 
 	void BitBoard::SetAt(const Square& square)
 	{
-		(*this) |= BitBoard{ BitBoard::SquareToBitIndex(square) };
+		(*this) |= BitBoard::SquareToBitIndex(square);
 	}
 
 #ifdef BOX_PLATFORM_WINDOWS
@@ -34,7 +34,7 @@ namespace Boxfish
 			stream << ' ' << (char)('1' + (rank - RANK_1)) << ' ' << '|' << ' ';
 			for (File file = FILE_A; file < FILE_MAX; file++)
 			{
-				stream << ((board & BitBoard{ BitBoard::SquareToBitIndex({ file, rank }) }) ? '1' : '0') << ' ';
+				stream << ((board & BitBoard::SquareToBitIndex({ file, rank })) ? '1' : '0') << ' ';
 			}
 			if (rank != RANK_1)
 				stream << std::endl;

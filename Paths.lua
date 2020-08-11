@@ -9,6 +9,7 @@ BoxfishTestDir = "Boxfish-Test/"
 BoxfishIncludeDirs = {}
 BoxfishIncludeDirs["spdlog"] =     BoxfishLibDir .. "vendor/spdlog/include/"
 BoxfishIncludeDirs["Boxfish"] =    BoxfishLibDir .. "src/"
+BoxfishIncludeDirs["Catch"] =      BoxfishTestDir .. "vendor/catch/include/"
 
 -- Library directories relative to solution directory
 LibraryDirs = {}

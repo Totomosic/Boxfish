@@ -41,6 +41,7 @@ namespace Boxfish
 
 	MoveList MovePool::GetList()
 	{
+		BOX_ASSERT(m_CurrentIndex + MAX_MOVES <= m_Capacity, "No more move lists");
 		MoveList list(this, m_MovePool.get() + m_CurrentIndex);
 		BOX_DEBUG_ONLY(list.Index = m_CurrentIndex);
 		m_CurrentIndex += MAX_MOVES;
@@ -189,7 +190,7 @@ namespace Boxfish
 		if (move.GetFlags() & MOVE_EN_PASSANT)
 		{
 			SquareIndex captureSquare = (SquareIndex)(move.GetToSquareIndex() - GetForwardShift(m_Position.TeamToPlay));
-			BitBoard occupied = (m_Position.GetAllPieces() ^ BitBoard { move.GetFromSquareIndex() } ^ BitBoard{ captureSquare }) | BitBoard{ move.GetToSquareIndex() };
+			BitBoard occupied = (m_Position.GetAllPieces() ^ move.GetFromSquareIndex() ^ captureSquare) | move.GetToSquareIndex();
 			return !(GetSlidingAttacks(PIECE_ROOK, kingSquare, occupied) & m_Position.GetTeamPieces(OtherTeam(m_Position.TeamToPlay), PIECE_QUEEN, PIECE_ROOK))
 				&& !(GetSlidingAttacks(PIECE_BISHOP, kingSquare, occupied) & m_Position.GetTeamPieces(OtherTeam(m_Position.TeamToPlay), PIECE_QUEEN, PIECE_BISHOP));
 		}
@@ -201,12 +202,12 @@ namespace Boxfish
 					return false;
 				SquareIndex checkingSquare = BackwardBitScan(checkers);
 				// Move must block the checker or capture the blocker
-				if (!((GetBitBoardBetween(checkingSquare, kingSquare) | checkers) & BitBoard { move.GetToSquareIndex() }))
+				if (!((GetBitBoardBetween(checkingSquare, kingSquare) | checkers) & move.GetToSquareIndex()))
 				{
 					return false;
 				}
 			}
-			else if (GetAttackers(m_Position, OtherTeam(m_Position.TeamToPlay), move.GetToSquareIndex(), m_Position.GetAllPieces() ^ BitBoard { move.GetFromSquareIndex() }))
+			else if (GetAttackers(m_Position, OtherTeam(m_Position.TeamToPlay), move.GetToSquareIndex(), m_Position.GetAllPieces() ^ move.GetFromSquareIndex()))
 			{
 				return false;
 			}
@@ -215,7 +216,7 @@ namespace Boxfish
 		{
 			return !IsSquareUnderAttack(m_Position, OtherTeam(m_Position.TeamToPlay), move.GetToSquareIndex());
 		}
-		return !(m_Position.InfoCache.BlockersForKing[m_Position.TeamToPlay] & BitBoard { move.GetFromSquareIndex() })
+		return !(m_Position.InfoCache.BlockersForKing[m_Position.TeamToPlay] & move.GetFromSquareIndex())
 					|| IsAligned(move.GetFromSquareIndex(), move.GetToSquareIndex(), kingSquare);
 	}
 
@@ -312,7 +313,7 @@ namespace Boxfish
 		BitBoard movedPawns = ((team == TEAM_WHITE) ? (pawns << 7) : (pawns >> 7));
 		if (position.EnpassantSquare != INVALID_SQUARE)
 		{
-			BitBoard enPassant = movedPawns & (BitBoard{ BitBoard::SquareToBitIndex(position.EnpassantSquare) }) & fileMask;
+			BitBoard enPassant = movedPawns & BitBoard::SquareToBitIndex(position.EnpassantSquare) & fileMask;
 			if (enPassant)
 			{
 				SquareIndex index = PopLeastSignificantBit(enPassant);
@@ -344,7 +345,7 @@ namespace Boxfish
 		BitBoard movedPawns = ((team == TEAM_WHITE) ? (pawns << 9) : (pawns >> 9));
 		if (position.EnpassantSquare != INVALID_SQUARE)
 		{
-			BitBoard enPassant = movedPawns & (BitBoard{ BitBoard::SquareToBitIndex(position.EnpassantSquare) }) & fileMask;
+			BitBoard enPassant = movedPawns & BitBoard::SquareToBitIndex(position.EnpassantSquare) & fileMask;
 			if (enPassant)
 			{
 				SquareIndex index = PopLeastSignificantBit(enPassant);
@@ -423,7 +424,7 @@ namespace Boxfish
 		{
 			if (position.Teams[TEAM_WHITE].CastleKingSide)
 			{
-				BitBoard passThrough = BitBoard(f1) | BitBoard(g1);
+				BitBoard passThrough = f1 | g1;
 				bool squaresOccupied = passThrough & occupied;
 				bool underAttack = IsSquareUnderAttack(position, OtherTeam(team), f1) | IsSquareUnderAttack(position, OtherTeam(team), g1) | IsInCheck(position, team);
 				if (!squaresOccupied && !underAttack)
@@ -433,7 +434,7 @@ namespace Boxfish
 			}
 			if (position.Teams[TEAM_WHITE].CastleQueenSide)
 			{
-				BitBoard passThrough = BitBoard(b1) | BitBoard(c1) | BitBoard(d1);
+				BitBoard passThrough = b1 | c1 | d1;
 				bool squaresOccupied = passThrough & occupied;
 				bool underAttack = IsSquareUnderAttack(position, OtherTeam(team), c1) | IsSquareUnderAttack(position, OtherTeam(team), d1) | IsInCheck(position, team);
 				if (!squaresOccupied && !underAttack)
@@ -446,7 +447,7 @@ namespace Boxfish
 		{
 			if (position.Teams[TEAM_BLACK].CastleKingSide)
 			{
-				BitBoard passThrough = BitBoard(f8) | BitBoard(g8);
+				BitBoard passThrough = f8 | g8;
 				bool squaresOccupied = passThrough & occupied;
 				bool underAttack = IsSquareUnderAttack(position, OtherTeam(team), f8) | IsSquareUnderAttack(position, OtherTeam(team), g8) | IsInCheck(position, team);
 				if (!squaresOccupied && !underAttack)
@@ -456,7 +457,7 @@ namespace Boxfish
 			}
 			if (position.Teams[TEAM_BLACK].CastleQueenSide)
 			{
-				BitBoard passThrough = BitBoard(b8) | BitBoard(c8) | BitBoard(d8);
+				BitBoard passThrough = b8 | c8 | d8;
 				bool squaresOccupied = passThrough & occupied;
 				bool underAttack = IsSquareUnderAttack(position, OtherTeam(team), c8) | IsSquareUnderAttack(position, OtherTeam(team), d8) | IsInCheck(position, team);
 				if (!squaresOccupied && !underAttack)

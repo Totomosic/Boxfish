@@ -8,7 +8,6 @@ namespace Boxfish
 
 	extern int s_MaxPhaseValue;
 
-	using Centipawns = int;
 	constexpr Centipawns SCORE_MATE = 200000;
 	constexpr Centipawns SCORE_DRAW = 0;
 	constexpr Centipawns SCORE_NONE = -SCORE_MATE * 2;
@@ -46,21 +45,11 @@ namespace Boxfish
 		Centipawns Queens[GAME_STAGE_MAX][TEAM_MAX];
 		Centipawns KingSafety[GAME_STAGE_MAX][TEAM_MAX];
 		Centipawns Tempo[GAME_STAGE_MAX][TEAM_MAX];
-		bool Checkmate[TEAM_MAX];
-		bool Stalemate = false;
 		int GameStage;
 
 	public:
-		inline bool IsCheckmate() const { return Checkmate[TEAM_WHITE] || Checkmate[TEAM_BLACK]; }
-
 		inline Centipawns GetTotal(Team team) const
 		{
-			if (Checkmate[team])
-				return SCORE_MATE;
-			if (Checkmate[OtherTeam(team)])
-				return -SCORE_MATE;
-			if (Stalemate)
-				return 0;
 			Team other = OtherTeam(team);
 			Centipawns midgame =
 				(Material[MIDGAME][team] - Material[MIDGAME][other]) +

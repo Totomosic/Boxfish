@@ -49,10 +49,10 @@ namespace Boxfish
 				if (*it == "fen")
 				{
 					it++;
-					std::string fen = "";
-					while (*it != "moves" && it != args.end())
+					std::string fen = *it++;
+					while (it != args.end() && *it != "moves")
 					{
-						fen += *it++;
+						fen += " " + *it++;
 					}
 					SetPositionFen(fen);
 				}

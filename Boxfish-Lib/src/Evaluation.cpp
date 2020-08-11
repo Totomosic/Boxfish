@@ -145,7 +145,7 @@ namespace Boxfish
 		s_PassedPawnRankWeights[MIDGAME][TEAM_WHITE][RANK_3] = 10;
 		s_PassedPawnRankWeights[ENDGAME][TEAM_WHITE][RANK_3] = 30;
 		s_PassedPawnRankWeights[MIDGAME][TEAM_BLACK][RANK_3] = 30;
-		s_PassedPawnRankWeights[ENDGAME][TEAM_BLACK][RANK_3] = 40;
+		s_PassedPawnRankWeights[ENDGAME][TEAM_BLACK][RANK_3] = 70;
 
 		s_PassedPawnRankWeights[MIDGAME][TEAM_WHITE][RANK_4] = 12;
 		s_PassedPawnRankWeights[ENDGAME][TEAM_WHITE][RANK_4] = 40;
@@ -158,7 +158,7 @@ namespace Boxfish
 		s_PassedPawnRankWeights[ENDGAME][TEAM_BLACK][RANK_5] = 40;
 
 		s_PassedPawnRankWeights[MIDGAME][TEAM_WHITE][RANK_6] = 30;
-		s_PassedPawnRankWeights[ENDGAME][TEAM_WHITE][RANK_6] = 40;
+		s_PassedPawnRankWeights[ENDGAME][TEAM_WHITE][RANK_6] = 70;
 		s_PassedPawnRankWeights[MIDGAME][TEAM_BLACK][RANK_6] = 10;
 		s_PassedPawnRankWeights[ENDGAME][TEAM_BLACK][RANK_6] = 30;
 
@@ -446,29 +446,6 @@ namespace Boxfish
 	// =================================================================================================================================
 	// EVALUATION FUNCTIONS
 	// =================================================================================================================================
-
-	void EvaluateCheckmate(EvaluationResult& result, const Position& position)
-	{
-		MoveGenerator movegen(position);
-		result.Checkmate[TEAM_WHITE] = false;
-		result.Checkmate[TEAM_BLACK] = false;
-		result.Stalemate = false;
-		if (!movegen.HasAtLeastOneLegalMove(s_MoveList))
-		{
-			if (IsInCheck(position, TEAM_WHITE))
-			{
-				result.Checkmate[TEAM_BLACK] = true;
-			}
-			else if (IsInCheck(position, TEAM_BLACK))
-			{
-				result.Checkmate[TEAM_WHITE] = true;
-			}
-			else
-			{
-				result.Stalemate = true;
-			}
-		}
-	}
 
 	template<Team team>
 	void EvaluateMaterial(EvaluationResult& result, const Position& position)
@@ -923,32 +900,28 @@ namespace Boxfish
 		EvaluationResult result;
 		ClearResult(result);
 		result.GameStage = CalculateGameStage(position);
-		EvaluateCheckmate(result, position);
-		if (!result.IsCheckmate() && !result.Stalemate)
-		{
-			EvaluateMaterial(result, position);
-			EvaluatePieceSquareTables(result, position);
+		EvaluateMaterial(result, position);
+		EvaluatePieceSquareTables(result, position);
 			
-			Centipawns current = result.GetTotal(team);
-			constexpr Centipawns delta = 200;
-			if (current > alpha - delta && current < beta + delta)
-			{
-				result.Data.KingAttackZone[TEAM_WHITE] = CalculateKingAttackRegion<TEAM_WHITE>(position);
-				result.Data.KingAttackZone[TEAM_BLACK] = CalculateKingAttackRegion<TEAM_BLACK>(position);
-				result.Data.PawnAttacks[TEAM_WHITE] = CalculatePawnAttacks<TEAM_WHITE>(position);
-				result.Data.PawnAttacks[TEAM_BLACK] = CalculatePawnAttacks<TEAM_BLACK>(position);
+		Centipawns current = result.GetTotal(team);
+		constexpr Centipawns delta = 200;
+		if (current > alpha - delta && current < beta + delta)
+		{
+			result.Data.KingAttackZone[TEAM_WHITE] = CalculateKingAttackRegion<TEAM_WHITE>(position);
+			result.Data.KingAttackZone[TEAM_BLACK] = CalculateKingAttackRegion<TEAM_BLACK>(position);
+			result.Data.PawnAttacks[TEAM_WHITE] = CalculatePawnAttacks<TEAM_WHITE>(position);
+			result.Data.PawnAttacks[TEAM_BLACK] = CalculatePawnAttacks<TEAM_BLACK>(position);
 
-				EvaluatePassedPawns(result, position);
-				EvaluateDoubledPawns(result, position);
-				EvaluateWeakPawns(result, position);
-				EvaluateBlockedPieces(result, position);
-				EvaluateKnights(result, position);
-				EvaluateBishops(result, position);
-				EvaluateRooks(result, position);
-				EvaluateQueens(result, position);
-				EvaluateKingSafety(result, position);
-				EvaluateTempo(result, position);
-			}
+			EvaluatePassedPawns(result, position);
+			EvaluateDoubledPawns(result, position);
+			EvaluateWeakPawns(result, position);
+			EvaluateBlockedPieces(result, position);
+			EvaluateKnights(result, position);
+			EvaluateBishops(result, position);
+			EvaluateRooks(result, position);
+			EvaluateQueens(result, position);
+			EvaluateKingSafety(result, position);
+			EvaluateTempo(result, position);
 		}
 		return result;
 	}
