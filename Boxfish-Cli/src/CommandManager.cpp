@@ -19,7 +19,7 @@ namespace Boxfish
 	}
 
 	CommandManager::CommandManager()
-		: m_CommandMap(), m_CurrentPosition(CreateStartingPosition()), m_Search(256 * 1024 * 1024), m_Searching(false), m_SearchThread()
+		: m_CommandMap(), m_CurrentPosition(CreateStartingPosition()), m_Search(256 * 1024 * 1024), m_Settings(), m_Searching(false), m_SearchThread()
 	{
 		m_CommandMap["help"] = [this](const std::vector<std::string>& args)
 		{
@@ -34,6 +34,40 @@ namespace Boxfish
 		m_CommandMap["ucinewgame"] = [this](const std::vector<std::string>& args)
 		{
 			NewGame();
+		};
+
+		m_CommandMap["setoption"] = [this](const std::vector<std::string>& args)
+		{
+			if (args.size() > 1)
+			{
+				auto it = args.begin();
+				while (it != args.end() && *it != "name")
+					it++;
+				if (it != args.end())
+					it++;
+				if (it != args.end())
+				{
+					std::string name = *it;
+					it++;
+					while (it != args.end() && *it != "value")
+					{
+						name += " " + *it;
+						it++;
+					}
+					if (it != args.end())
+						it++;
+					if (it != args.end())
+					{
+						std::string value = *it;
+						while (it != args.end())
+						{
+							value += " " + *it;
+							it++;
+						}
+						SetOption(name, value);
+					}
+				}
+			}
 		};
 
 		m_CommandMap["d"] = [this](const std::vector<std::string>& args)
@@ -199,6 +233,20 @@ namespace Boxfish
 		std::cout << m_CurrentPosition << std::endl;
 		std::cout << "FEN: " << GetFENFromPosition(m_CurrentPosition) << std::endl;
 		std::cout << "Hash: " << std::hex << m_CurrentPosition.Hash.Hash << std::dec << std::endl;
+	}
+
+	void CommandManager::SetOption(std::string name, const std::string& value)
+	{
+		std::transform(name.begin(), name.end(), name.begin(), [](char c) { return std::tolower(c); });
+		if (name == "multipv")
+		{
+			m_Settings.MultiPV = std::max(0, std::stoi(value));
+		}
+		if (name == "skill level")
+		{
+			m_Settings.SkillLevel = std::min(std::max(0, std::stoi(value)), 20);
+		}
+		m_Search.SetSettings(m_Settings);
 	}
 
 	void CommandManager::SetPositionFen(const std::string& fen)

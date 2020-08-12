@@ -10,4 +10,9 @@ namespace Boxfish
 		
 	}
 
+	void Random::Seed(uint32_t seed)
+	{
+		s_Engine.seed(seed);
+	}
+
 }

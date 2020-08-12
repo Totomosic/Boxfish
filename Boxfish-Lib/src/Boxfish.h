@@ -14,6 +14,7 @@
 
 #include "Search.h"
 #include "Uci.h"
+#include "Settings.h"
 
 namespace Boxfish
 {

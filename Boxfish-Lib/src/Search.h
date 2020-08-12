@@ -4,6 +4,7 @@
 #include "PositionUtils.h"
 #include "TranspositionTable.h"
 #include "MoveSelector.h"
+#include "Settings.h"
 
 #include <chrono>
 #include <atomic>
@@ -52,6 +53,7 @@ namespace Boxfish
 		Move KillerMoves[2] = { MOVE_NONE, MOVE_NONE };
 		Centipawns StaticEvaluation = -SCORE_MATE;
 		bool CanNull = true;
+		Centipawns Contempt = 0;
 	};
 
 	struct BOX_API SearchResult
@@ -89,14 +91,22 @@ namespace Boxfish
 			NonPV
 		};
 
+		struct BOX_API RootInfo
+		{
+		public:
+			std::vector<RootMove>& Moves;
+			int PVIndex;
+			int PVLast;
+		};
+
 	private:
 		TranspositionTable m_TranspositionTable;
 		Position m_CurrentPosition;
 		PositionHistory m_PositionHistory;
+		BoxfishSettings m_Settings;
 		SearchLimits m_Limits;
 
 		MovePool m_MovePool;
-		std::vector<RootMove> m_RootMoves;
 
 		size_t m_Nodes;
 		std::chrono::time_point<std::chrono::high_resolution_clock> m_SearchRootStartTime;
@@ -114,6 +124,7 @@ namespace Boxfish
 		Search(size_t transpositionTableSize = TranspositionTable::TABLE_SIZE, bool log = true);
 
 		PositionHistory& GetHistory();
+		void SetSettings(const BoxfishSettings& settings);
 		void SetLimits(const SearchLimits& limits);
 
 		void SetCurrentPosition(const Position& position);
@@ -128,16 +139,16 @@ namespace Boxfish
 	private:
 		size_t Perft(Position& position, int depth);
 
-		void SearchRoot(Position& position, int depth, SearchStats& stats, const std::function<void(SearchResult)>& callback);
+		RootMove SearchRoot(Position& position, int depth, SearchStats& stats, const std::function<void(SearchResult)>& callback);
 		template<NodeType type>
-		Centipawns SearchPosition(Position& position, SearchStack* stack, int depth, Centipawns alpha, Centipawns beta, SearchStats& stats);
+		Centipawns SearchPosition(Position& position, SearchStack* stack, int depth, Centipawns alpha, Centipawns beta, SearchStats& stats, const RootInfo& rootInfo);
 		template<NodeType type>
 		Centipawns QuiescenceSearch(Position& position, SearchStack* stack, Centipawns alpha, Centipawns beta);
 
 		bool CheckLimits() const;
 
 		bool IsDraw(const Position& position, SearchStack* stack) const;
-		Centipawns EvaluateDraw(const Position& postion) const;
+		Centipawns EvaluateDraw(const Position& postion, Centipawns contempt) const;
 		Centipawns MateIn(int ply) const;
 		Centipawns MatedIn(int ply) const;
 		bool IsMateScore(Centipawns score) const;
@@ -145,6 +156,9 @@ namespace Boxfish
 
 		void ClearCounterMoves();
 		void ClearTable(Centipawns (&table)[TEAM_MAX][FILE_MAX * RANK_MAX][FILE_MAX * RANK_MAX]);
+
+		std::vector<RootMove> GenerateRootMoves(const Position& position, SearchStack* stack);
+		int ChooseBestMove(const std::vector<RootMove>& moves, int skillLevel, int maxPVs) const;
 	};
 
 }

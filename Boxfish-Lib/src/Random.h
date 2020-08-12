@@ -14,6 +14,7 @@ namespace Boxfish
 		Random() = delete;
 
 		static void Init();
+		static void Seed(uint32_t seed);
 		
 		template<typename T>
 		static T GetNext(T low, T high)

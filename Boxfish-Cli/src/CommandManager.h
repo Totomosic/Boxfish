@@ -11,6 +11,7 @@ namespace Boxfish
 
 		Position m_CurrentPosition;
 		Search m_Search;
+		BoxfishSettings m_Settings;
 		std::atomic<bool> m_Searching;
 		std::thread m_SearchThread;
 
@@ -25,6 +26,7 @@ namespace Boxfish
 		void IsReady();
 		void NewGame();
 		void PrintBoard();
+		void SetOption(std::string name, const std::string& value);
 		void SetPositionFen(const std::string& fen);
 		void ApplyMoves(const std::vector<std::string>& moves);
 		void Eval();
