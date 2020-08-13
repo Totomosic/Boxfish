@@ -420,7 +420,9 @@ namespace Boxfish
 
 		bool raisedAlpha = false;
 
-		Move pv[MAX_PLY + 1];
+		MoveList pvMoveList = m_MovePool.GetList();
+		//Move pv[MAX_PLY + 1];
+		Move* pv = pvMoveList.Moves;
 
 		stack->StaticEvaluation = SCORE_NONE;
 		(stack + 1)->PositionHistory = stack->PositionHistory + 1;
@@ -606,8 +608,6 @@ namespace Boxfish
 
 			if (futilityPrune && moveIndex > FIRST_MOVE_INDEX && !isCaptureOrPromotion && !givesCheck)
 				continue;
-
-			Prefetch((void*)m_TranspositionTable.GetEntry(movedPosition.Hash));
 
 			bool fullDepthSearch = false;
 			int depthReduction = 0;
