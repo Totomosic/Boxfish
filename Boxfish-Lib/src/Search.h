@@ -35,13 +35,6 @@ namespace Boxfish
 		void Clear();
 	};
 
-	struct BOX_API SearchStats
-	{
-	public:
-		size_t TableHits = 0;
-		size_t TableMisses = 0;
-	};
-
 	struct BOX_API SearchStack
 	{
 		Move* PV = nullptr;
@@ -139,9 +132,9 @@ namespace Boxfish
 	private:
 		size_t Perft(Position& position, int depth);
 
-		RootMove SearchRoot(Position& position, int depth, SearchStats& stats, const std::function<void(SearchResult)>& callback);
+		RootMove SearchRoot(Position& position, int depth, const std::function<void(SearchResult)>& callback);
 		template<NodeType type>
-		Centipawns SearchPosition(Position& position, SearchStack* stack, int depth, Centipawns alpha, Centipawns beta, SearchStats& stats, const RootInfo& rootInfo);
+		Centipawns SearchPosition(Position& position, SearchStack* stack, int depth, Centipawns alpha, Centipawns beta, const RootInfo& rootInfo);
 		template<NodeType type>
 		Centipawns QuiescenceSearch(Position& position, SearchStack* stack, Centipawns alpha, Centipawns beta);
 

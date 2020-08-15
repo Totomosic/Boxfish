@@ -109,27 +109,25 @@ namespace Boxfish
 
 	void InitPawnShieldMasks()
 	{
-		for (SquareIndex sq = a1; sq < FILE_MAX * RANK_MAX; sq++)
+		for (SquareIndex square = a1; square < FILE_MAX * RANK_MAX; square++)
 		{
-			BitBoard square(sq);
-			s_PawnShieldMasks[TEAM_WHITE][sq] = ((square << 8) | ((square << 7) & ~FILE_H_MASK) | ((square << 9) & ~FILE_A_MASK)) & RANK_2_MASK;
-			s_PawnShieldMasks[TEAM_BLACK][sq] = ((square >> 8) | ((square >> 7) & ~FILE_H_MASK) | ((square >> 9) & ~FILE_A_MASK)) & RANK_7_MASK;
+			s_PawnShieldMasks[TEAM_WHITE][square] = ((square << 8) | ((square << 7) & ~FILE_H_MASK) | ((square << 9) & ~FILE_A_MASK)) & (RANK_2_MASK | RANK_3_MASK);
+			s_PawnShieldMasks[TEAM_BLACK][square] = ((square >> 8) | ((square >> 7) & ~FILE_H_MASK) | ((square >> 9) & ~FILE_A_MASK)) & (RANK_7_MASK | RANK_6_MASK);
 		}
 	}
 
 	void InitPassedPawnMasks()
 	{
-		for (SquareIndex sq = a1; sq < FILE_MAX * RANK_MAX; sq++)
+		for (SquareIndex square = a1; square < FILE_MAX * RANK_MAX; square++)
 		{
-			BitBoard north = GetRay(RAY_NORTH, sq);
-			BitBoard south = GetRay(RAY_SOUTH, sq);
+			BitBoard north = GetRay(RAY_NORTH, square);
+			BitBoard south = GetRay(RAY_SOUTH, square);
 			
-			s_PassedPawnMasks[TEAM_WHITE][sq] = north | ShiftEast(north, 1) | ShiftWest(north, 1);
-			s_PassedPawnMasks[TEAM_BLACK][sq] = south | ShiftWest(south, 1) | ShiftEast(south, 1);
+			s_PassedPawnMasks[TEAM_WHITE][square] = north | ShiftEast(north, 1) | ShiftWest(north, 1);
+			s_PassedPawnMasks[TEAM_BLACK][square] = south | ShiftWest(south, 1) | ShiftEast(south, 1);
 
-			BitBoard square = sq;
-			s_SupportedPawnMasks[TEAM_WHITE][sq] = ((square << 1) | (square >> 1) | (square >> 9) | (square >> 7)) & (~FILE_A_MASK & ~FILE_H_MASK & ~RANK_8_MASK);
-			s_SupportedPawnMasks[TEAM_BLACK][sq] = ((square << 1) | (square >> 1) | (square << 9) | (square << 7)) & (~FILE_A_MASK & ~FILE_H_MASK & ~RANK_8_MASK);
+			s_SupportedPawnMasks[TEAM_WHITE][square] = (((square << 1) & ~FILE_A_MASK) | ((square >> 1) & ~FILE_H_MASK) | ((square >> 9) & ~RANK_8_MASK & ~FILE_H_MASK) | ((square >> 7) & ~RANK_8_MASK & ~FILE_A_MASK));
+			s_SupportedPawnMasks[TEAM_BLACK][square] = (((square << 1) & ~FILE_A_MASK) | ((square >> 1) & ~FILE_H_MASK) | ((square << 9) & ~RANK_1_MASK & ~FILE_A_MASK) | ((square << 7) & ~RANK_1_MASK & ~FILE_H_MASK));
 		}
 
 		s_PassedPawnRankWeights[MIDGAME][TEAM_WHITE][RANK_1] = 0;
@@ -382,6 +380,8 @@ namespace Boxfish
 		}
 		return region;*/
 
+		constexpr int ATTACK_LENGTH = 3;
+
 		SquareIndex kingSquare = position.InfoCache.KingSquare[team];
 		Square sq = BitBoard::BitIndexToSquare(kingSquare);
 
@@ -389,7 +389,7 @@ namespace Boxfish
 		if (team == TEAM_WHITE)
 		{
 			BitBoard ranks = RANK_MASKS[sq.Rank];
-			for (int i = 1; i <= 2 && (sq.Rank + i) < RANK_MAX; i++)
+			for (int i = 1; i <= ATTACK_LENGTH && (sq.Rank + i) < RANK_MAX; i++)
 			{
 				ranks |= RANK_MASKS[sq.Rank + i];
 			}
@@ -402,7 +402,7 @@ namespace Boxfish
 		else
 		{
 			BitBoard ranks = RANK_MASKS[sq.Rank];
-			for (int i = 1; i <= 2 && (sq.Rank - i) >= RANK_1; i++)
+			for (int i = 1; i <= ATTACK_LENGTH && (sq.Rank - i) >= RANK_1; i++)
 			{
 				ranks |= RANK_MASKS[sq.Rank - i];
 			}
@@ -417,8 +417,7 @@ namespace Boxfish
 
 	bool IsPawnSupported(const Position& position, SquareIndex square, Team team)
 	{
-		const BitBoard& pawns = position.GetTeamPieces(team, PIECE_PAWN);
-		return (s_SupportedPawnMasks[team][square] & pawns) != ZERO_BB;
+		return (s_SupportedPawnMasks[team][square] & position.GetTeamPieces(team, PIECE_PAWN)) != ZERO_BB;
 	}
 
 	template<Team team>

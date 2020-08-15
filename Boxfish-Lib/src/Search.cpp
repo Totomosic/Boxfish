@@ -157,9 +157,7 @@ namespace Boxfish
 		m_ShouldStop = false;
 		m_StartTime = std::chrono::high_resolution_clock::now();
 
-		SearchStats searchStats;
-
-		RootMove rootMove = SearchRoot(m_CurrentPosition, depth, searchStats, callback);
+		RootMove rootMove = SearchRoot(m_CurrentPosition, depth, callback);
 		if (rootMove.PV.empty())
 			return MOVE_NONE;
 		return rootMove.PV[0];
@@ -218,7 +216,7 @@ namespace Boxfish
 		return nodes;
 	}
 
-	RootMove Search::SearchRoot(Position& position, int depth, SearchStats& stats, const std::function<void(SearchResult)>& callback)
+	RootMove Search::SearchRoot(Position& position, int depth, const std::function<void(SearchResult)>& callback)
 	{
 		SearchStack stack[MAX_PLY + 1];
 		Move pv[MAX_PLY + 1];
@@ -292,7 +290,7 @@ namespace Boxfish
 
 				while (true)
 				{
-					int newBestScore = SearchPosition<NodeType::PV>(position, stackPtr, rootDepth, alpha, beta, stats, RootInfo{ rootMoves, pvIndex, (int)rootMoves.size() });
+					int newBestScore = SearchPosition<NodeType::PV>(position, stackPtr, rootDepth, alpha, beta, RootInfo{ rootMoves, pvIndex, (int)rootMoves.size() });
 					if (pvIndex == 0)
 						bestScore = newBestScore;
 					if (newBestScore <= alpha)
@@ -411,7 +409,7 @@ namespace Boxfish
 	}
 
 	template<Search::NodeType NT>
-	Centipawns Search::SearchPosition(Position& position, SearchStack* stack, int depth, Centipawns alpha, Centipawns beta, SearchStats& stats, const Search::RootInfo& rootInfo)
+	Centipawns Search::SearchPosition(Position& position, SearchStack* stack, int depth, Centipawns alpha, Centipawns beta, const Search::RootInfo& rootInfo)
 	{
 		BOX_ASSERT(alpha < beta && beta >= -SCORE_MATE && beta <= SCORE_MATE && alpha >= -SCORE_MATE && alpha <= SCORE_MATE, "Invalid bounds");
 		constexpr bool IsPvNode = NT == NodeType::PV;
@@ -454,7 +452,6 @@ namespace Boxfish
 		{
 			if (entry->Depth >= depth)
 			{
-				stats.TableHits++;
 				switch (entry->Flag)
 				{
 				case EXACT:
@@ -475,7 +472,6 @@ namespace Boxfish
 					return entry->Score;
 				}
 			}
-			stats.TableMisses++;
 		}
 		else
 		{
@@ -528,7 +524,7 @@ namespace Boxfish
 			if (depth > 6)
 				r = 3;
 
-			Centipawns score = -SearchPosition<NodeType::NonPV>(movedPosition, stack + 1, std::max(0, depth - r - 1), -beta, -beta + 1, stats, rootInfo);
+			Centipawns score = -SearchPosition<NodeType::NonPV>(movedPosition, stack + 1, std::max(0, depth - r - 1), -beta, -beta + 1, rootInfo);
 			if (score >= beta)
 			{
 				return beta;
@@ -631,7 +627,7 @@ namespace Boxfish
 				if ((stack - 1)->MoveCount > 14 + FIRST_MOVE_INDEX)
 					depthReduction--;
 				int d = extendedDepth - std::max(depthReduction, 0);
-				value = -SearchPosition<NodeType::NonPV>(movedPosition, stack + 1, d, -(alpha + 1), -alpha, stats, rootInfo);
+				value = -SearchPosition<NodeType::NonPV>(movedPosition, stack + 1, d, -(alpha + 1), -alpha, rootInfo);
 				fullDepthSearch = value > alpha && d != extendedDepth;
 			}
 			else
@@ -641,13 +637,13 @@ namespace Boxfish
 
 			int childDepth = extendedDepth - depthReduction;
 			if (fullDepthSearch)
-				value = -SearchPosition<NodeType::NonPV>(movedPosition, stack + 1, childDepth, -(alpha + 1), -alpha, stats, rootInfo);
+				value = -SearchPosition<NodeType::NonPV>(movedPosition, stack + 1, childDepth, -(alpha + 1), -alpha, rootInfo);
 			
 			if (IsPvNode && (moveIndex == FIRST_MOVE_INDEX || (value > alpha && (isRoot || value < beta))))
 			{
 				pv[0] = MOVE_NONE;
 				(stack + 1)->PV = pv;
-				value = -SearchPosition<NodeType::PV>(movedPosition, stack + 1, childDepth, -beta, -alpha, stats, rootInfo);
+				value = -SearchPosition<NodeType::PV>(movedPosition, stack + 1, childDepth, -beta, -alpha, rootInfo);
 			}
 
 			//if (isRoot)

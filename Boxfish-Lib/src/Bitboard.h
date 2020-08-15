@@ -128,6 +128,9 @@ namespace Boxfish
 	inline BitBoard& operator|=(BitBoard& left, SquareIndex right) { left.Board |= SQUARE_BITBOARDS[right].Board; return left; };
 	inline BitBoard& operator^=(BitBoard& left, SquareIndex right) { left.Board ^= SQUARE_BITBOARDS[right].Board; return left; };
 
+	inline BitBoard operator<<(SquareIndex left, int right) { return SQUARE_BITBOARDS[left] << right; };
+	inline BitBoard operator>>(SquareIndex left, int right) { return SQUARE_BITBOARDS[left] >> right; };
+
 	inline BitBoard operator|(SquareIndex left, SquareIndex right) { return SQUARE_BITBOARDS[left] | SQUARE_BITBOARDS[right]; }
 
 }
