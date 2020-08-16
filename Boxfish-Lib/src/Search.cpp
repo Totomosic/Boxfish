@@ -450,7 +450,7 @@ namespace Boxfish
 		const TranspositionTableEntry* entry = m_TranspositionTable.GetEntry(position.Hash);
 		if (!isRoot && entry && entry->Hash == position.Hash)
 		{
-			if (entry->Depth >= depth)
+			if (entry->Depth >= depth && !IsPvNode)
 			{
 				switch (entry->Flag)
 				{
@@ -622,10 +622,8 @@ namespace Boxfish
 			if (!IsPvNode && depth >= 4 && moveIndex > 4 + FIRST_MOVE_INDEX && !inCheck && !isCaptureOrPromotion && !givesCheck)
 			{
 				depthReduction = 1;
-				if (moveIndex > 9 + FIRST_MOVE_INDEX)
+				if (moveIndex > 6 + FIRST_MOVE_INDEX)
 					depthReduction++;
-				if ((stack - 1)->MoveCount > 14 + FIRST_MOVE_INDEX)
-					depthReduction--;
 				int d = extendedDepth - std::max(depthReduction, 0);
 				value = -SearchPosition<NodeType::NonPV>(movedPosition, stack + 1, d, -(alpha + 1), -alpha, rootInfo);
 				fullDepthSearch = value > alpha && d != extendedDepth;
@@ -960,7 +958,7 @@ namespace Boxfish
 
 		for (int i = 0; i < pvs; i++)
 		{
-			int push = (weakness * int(bestScore - moves[i].Score) + delta * (Random::GetNext(0, weakness))) / 128;
+			int push = (weakness * int(bestScore - moves[i].Score) + delta * (Random::GetNext(0, weakness))) / 120;
 			if (moves[i].Score + push >= maxScore)
 			{
 				maxScore = moves[i].Score + push;

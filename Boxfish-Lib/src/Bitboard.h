@@ -28,30 +28,30 @@ namespace Boxfish
 		void SetAt(const Square& square);
 
 		inline operator bool() const { return Board != 0ULL; }
-		inline friend BitBoard operator&(const BitBoard& left, const BitBoard& right) { return left.Board & right.Board; }
-		inline friend BitBoard operator|(const BitBoard& left, const BitBoard& right) { return left.Board | right.Board; }
-		inline friend BitBoard operator^(const BitBoard& left, const BitBoard& right) { return left.Board ^ right.Board; }
-		inline friend BitBoard operator&(const BitBoard& left, uint64_t right) { return left.Board & right; }
-		inline friend BitBoard operator|(const BitBoard& left, uint64_t right) { return left.Board | right; }
-		inline friend BitBoard operator^(const BitBoard& left, uint64_t right) { return left.Board ^ right; }
-		inline friend BitBoard operator~(const BitBoard& board) { return ~board.Board; }
-		inline friend BitBoard& operator&=(BitBoard& left, const BitBoard& right) { left.Board &= right.Board; return left; }
-		inline friend BitBoard& operator|=(BitBoard& left, const BitBoard& right) { left.Board |= right.Board; return left; }
-		inline friend BitBoard& operator^=(BitBoard& left, const BitBoard& right) { left.Board ^= right.Board; return left; }
-		inline friend BitBoard operator<<(const BitBoard& left, int right) { return left.Board << right; }
-		inline friend BitBoard operator>>(const BitBoard& left, int right) { return left.Board >> right; }
+		inline constexpr friend BitBoard operator&(const BitBoard& left, const BitBoard& right) { return left.Board & right.Board; }
+		inline constexpr friend BitBoard operator|(const BitBoard& left, const BitBoard& right) { return left.Board | right.Board; }
+		inline constexpr friend BitBoard operator^(const BitBoard& left, const BitBoard& right) { return left.Board ^ right.Board; }
+		inline constexpr friend BitBoard operator&(const BitBoard& left, uint64_t right) { return left.Board & right; }
+		inline constexpr friend BitBoard operator|(const BitBoard& left, uint64_t right) { return left.Board | right; }
+		inline constexpr friend BitBoard operator^(const BitBoard& left, uint64_t right) { return left.Board ^ right; }
+		inline constexpr friend BitBoard operator~(const BitBoard& board) { return ~board.Board; }
+		inline constexpr friend BitBoard& operator&=(BitBoard& left, const BitBoard& right) { left.Board &= right.Board; return left; }
+		inline constexpr friend BitBoard& operator|=(BitBoard& left, const BitBoard& right) { left.Board |= right.Board; return left; }
+		inline constexpr friend BitBoard& operator^=(BitBoard& left, const BitBoard& right) { left.Board ^= right.Board; return left; }
+		inline constexpr friend BitBoard operator<<(const BitBoard& left, int right) { return left.Board << right; }
+		inline constexpr friend BitBoard operator>>(const BitBoard& left, int right) { return left.Board >> right; }
 		friend std::ostream& operator<<(std::ostream& stream, const BitBoard& board);
 
 	public:
 		inline static SquareIndex SquareToBitIndex(const Square& square)
 		{
-			BOX_ASSERT(square.File >= 0 && square.File < FILE_MAX&& square.Rank >= 0 && square.Rank < RANK_MAX, "Invalid square");
+			BOX_ASSERT(square.File >= 0 && square.File < FILE_MAX && square.Rank >= 0 && square.Rank < RANK_MAX, "Invalid square");
 			return (SquareIndex)(square.File + square.Rank * FILE_MAX);
 		}
 
 		inline static Square BitIndexToSquare(SquareIndex index) { return { FileOfIndex(index), RankOfIndex(index) }; }
-		inline static Rank RankOfIndex(int index) { return (Rank)(index / FILE_MAX); }
-		inline static File FileOfIndex(int index) { return (File)(index % FILE_MAX); }
+		inline static Rank RankOfIndex(int index) { return (Rank)(index >> 3); }
+		inline static File FileOfIndex(int index) { return (File)(index & 7); }
 	};
 
 	constexpr BitBoard ZERO_BB = 0ULL;
@@ -66,6 +66,9 @@ namespace Boxfish
 	BitBoard FlipVertically(const BitBoard& board);
 
 	int GetForwardShift(Team team);
+
+	inline SquareIndex FrontmostSquare(const BitBoard& board, Team team) { return (team == TEAM_WHITE) ? BackwardBitScan(board) : ForwardBitScan(board); }
+	inline SquareIndex BackmostSquare(const BitBoard& board, Team team) { return (team == TEAM_WHITE) ? ForwardBitScan(board) : BackwardBitScan(board); }
 
 	constexpr BitBoard RANK_1_MASK = 0xffull;
 	constexpr BitBoard RANK_2_MASK = 0xff00ull;

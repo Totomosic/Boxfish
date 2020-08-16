@@ -12,7 +12,7 @@ int main(int argc, const char** argv)
 	std::cout << "Boxfish " << version << " by J. Morrison" << std::endl;
 
 	CommandManager commands;
-
+ 
 	char buffer[4096];
 	while (true)
 	{

@@ -16,7 +16,7 @@ namespace Boxfish
 		{
 			Centipawns score = 0;
 			Move& move = m_LegalMoves->Moves[index];
-			if (move.GetFlags() & MOVE_CAPTURE)
+			if (move.IsCapture())
 			{
 				if (SeeGE(*m_OrderingInfo.CurrentPosition, move))
 				{
@@ -27,20 +27,20 @@ namespace Boxfish
 					score = SCORE_BAD_CAPTURE + GetPieceValue(move.GetCapturedPiece()) - GetPieceValue(move.GetMovingPiece());
 				}
 			}
-			else if (move.GetFlags() & MOVE_PROMOTION)
+			else if (move.IsPromotion())
 			{
 				score = SCORE_PROMOTION + GetPieceValue(move.GetPromotionPiece());
 			}
 			else if (m_OrderingInfo.KillerMoves)
 			{
-				if (move == m_OrderingInfo.KillerMoves[0] || move == m_OrderingInfo.KillerMoves[1])
-				{
+				if (move == m_OrderingInfo.KillerMoves[1])
+					score = SCORE_KILLER - 1;
+				else if (move == m_OrderingInfo.KillerMoves[0])
 					score = SCORE_KILLER;
-				}
 			}
 
 			// Counter move
-			if (m_OrderingInfo.CounterMove != MOVE_NONE && move == m_OrderingInfo.CounterMove)
+			if (move == m_OrderingInfo.CounterMove)
 			{
 				score += 20;
 			}
@@ -139,7 +139,7 @@ namespace Boxfish
 		{
 			const Move& move = m_LegalMoves.Moves[index];
 			Centipawns value = move.GetValue();
-			if (value > bestScore && (m_InCheck || ((move.GetFlags() & MOVE_CAPTURE) || ((move.GetFlags() & MOVE_PROMOTION) && (move.GetPromotionPiece() == PIECE_QUEEN || move.GetPromotionPiece() == PIECE_KNIGHT)))))
+			if (value > bestScore && (m_InCheck || ((move.IsCapture()) || ((move.IsPromotion()) && (move.GetPromotionPiece() == PIECE_QUEEN || move.GetPromotionPiece() == PIECE_KNIGHT)))))
 			{
 				bestScore = value;
 				bestIndex = index;

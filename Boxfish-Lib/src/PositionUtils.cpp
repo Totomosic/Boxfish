@@ -301,7 +301,7 @@ namespace Boxfish
 		result.TotalTurns = position.TotalTurns;
 		
 		result.Teams[TEAM_WHITE] = position.Teams[TEAM_BLACK];
-		result.Teams[TEAM_BLACK] = position.Teams[TEAM_BLACK];
+		result.Teams[TEAM_BLACK] = position.Teams[TEAM_WHITE];
 		for (Piece piece = PIECE_PAWN; piece < PIECE_MAX; piece++)
 		{
 			result.Teams[TEAM_WHITE].Pieces[piece] = FlipVertically(result.Teams[TEAM_WHITE].Pieces[piece]);
