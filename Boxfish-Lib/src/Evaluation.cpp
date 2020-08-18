@@ -68,15 +68,15 @@ namespace Boxfish
 		500, 500, 500, 500, 500, 500, 500, 500, 500, 500
 	};
 
-	// Pawns can never be on the 8th rank (1st rank used as a centinal for when there is pawn)
+	// Pawns can never be on the 8th rank (1st rank used as a centinal for when there is no pawn)
 	static constexpr Centipawns s_KingShieldStength[FILE_MAX / 2][RANK_MAX] = {
 		{ -3, 40, 45, 26, 20, 9, 13 },
 		{ -21, 29, 17, -25, -14, -5, -32 },
 		{ -5, 36, 12, -1, 16, 1, -22 },
-		{ -20, -7, -14, -25, -24, -33, -88 },
+		{ -20, -7, -14, -16, -24, -33, -88 },
 	};
 
-	// Pawns can never be on the 8th rank (1st rank used as a centinal for when there is pawn)
+	// Pawns can never be on the 8th rank (1st rank used as a centinal for when there is no pawn)
 	static constexpr Centipawns s_PawnStormStrength[FILE_MAX / 2][RANK_MAX] = {
 		{ 45, 52, 61, 45, 27, 23, 25 },
 		{ 22, -9, 62, 23, 18, -3, 11 },
@@ -921,8 +921,8 @@ namespace Boxfish
 		}
 		if (kingDanger > 0)
 		{
-			mg -= kingDanger * kingDanger / 4096;
-			eg -= kingDanger / 16;
+			mg -= kingDanger * kingDanger / 8192;
+			eg -= kingDanger / 32;
 		}
 
 		// King Shield
@@ -979,12 +979,12 @@ namespace Boxfish
 		BitBoard safe = spaceMask & ~position.GetTeamPieces(team, PIECE_PAWN) & ~result.Data.AttackedBy[otherTeam][PIECE_PAWN];
 		BitBoard behind = position.GetTeamPieces(team, PIECE_PAWN);
 		behind |= ((team == TEAM_WHITE) ? behind >> 8 : behind << 8);
-		behind |= ((team == TEAM_WHITE) ? behind >> 16 : behind << 16);
+		behind |= ((team == TEAM_WHITE) ? behind >> 8 : behind << 8);
 
 		int count = safe.GetCount() + (behind & safe).GetCount();
 		int weight = position.GetTeamPieces(team).GetCount();
 
-		result.Space[MIDGAME][team] = count * weight * weight / 16;
+		result.Space[MIDGAME][team] = count * weight / 2;
 		result.Space[ENDGAME][team] = 0;
 	}
 
