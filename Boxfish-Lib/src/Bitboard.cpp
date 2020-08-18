@@ -68,7 +68,7 @@ namespace Boxfish
 	{
 		unsigned long lsb;
 		_BitScanForward64(&lsb, board.Board);
-		board &= board.Board - 1;
+		board.Board &= board.Board - 1;
 		return (SquareIndex)lsb;
 	}
 

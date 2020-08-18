@@ -24,8 +24,8 @@ namespace Boxfish
 		BitBoard KingAttackZone[TEAM_MAX];
 		int AttackUnits[TEAM_MAX] = { 0 };
 		int Attackers[TEAM_MAX] = { 0 };
-		bool HasQueenAttacker[TEAM_MAX] = { false };
-		BitBoard PawnAttacks[TEAM_MAX];
+		BitBoard AttackedBy[TEAM_MAX][PIECE_ALL + 1];
+		BitBoard AttackedByTwice[TEAM_MAX];
 	};
 
 	struct BOX_API EvaluationResult

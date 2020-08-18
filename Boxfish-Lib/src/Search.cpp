@@ -777,13 +777,15 @@ namespace Boxfish
 		MoveGenerator generator(position);
 		MoveList legalMoves = m_MovePool.GetList();
 		generator.GetPseudoLegalMoves(legalMoves);
-		QuiescenceMoveSelector selector(position, legalMoves);
+
 		if (legalMoves.MoveCount <= 0)
 		{
 			if (inCheck)
 				return MatedIn(stack->Ply);
 			return EvaluateDraw(position, stack->Contempt);
 		}
+
+		QuiescenceMoveSelector selector(position, legalMoves);
 		while (!selector.Empty())
 		{
 			Move move = selector.GetNextMove();

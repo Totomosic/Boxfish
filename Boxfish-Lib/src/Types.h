@@ -95,6 +95,7 @@ namespace Boxfish
 		PIECE_QUEEN,
 		PIECE_KING, // King must be last piece for material eval
 		PIECE_MAX,
+		PIECE_ALL,
 		PIECE_INVALID
 	};
 
