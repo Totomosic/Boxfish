@@ -49,7 +49,7 @@ namespace Boxfish
 		const BitBoard& GetAllPieces() const;
 		inline BitBoard GetNotOccupied() const { return ~GetAllPieces(); }
 
-		inline SquareIndex GetKingSquare(Team team) const { return ForwardBitScan(Teams[team].Pieces[PIECE_KING]); }
+		inline SquareIndex GetKingSquare(Team team) const { return ForwardBitScan(GetTeamPieces(team, PIECE_KING)); }
 
 		inline const BitBoard& GetTeamPieces(Team team, Piece piece) const { return Teams[team].Pieces[piece]; }
 		inline BitBoard GetTeamPieces(Team team, Piece piece, Piece piece2) const { return GetTeamPieces(team, piece) | GetTeamPieces(team, piece2); }

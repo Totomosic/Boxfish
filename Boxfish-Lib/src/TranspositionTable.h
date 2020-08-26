@@ -38,8 +38,7 @@ namespace Boxfish
 	public:
 		TranspositionTable(size_t sizeBytes = TABLE_SIZE);
 
-		const TranspositionTableEntry* GetEntry(const ZobristHash& hash) const;
-		void AddEntry(const TranspositionTableEntry& entry);
+		TranspositionTableEntry* GetEntry(const ZobristHash& hash, bool* found) const;
 		void Clear();
 
 	private:

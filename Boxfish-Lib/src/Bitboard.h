@@ -22,12 +22,22 @@ namespace Boxfish
 		{
 		}
 
-		int GetCount() const;
+#ifdef BOX_PLATFORM_WINDOWS
+		inline int GetCount() const
+		{
+			return (int)__popcnt64(Board);
+		}
+#else
+		inline int GetCount() const
+		{
+			return (int)__builtin_popcountll(Board);
+		}
+#endif
 		// Methods only used when getting/setting from FEN
 		bool GetAt(const Square& square) const;
 		void SetAt(const Square& square);
 
-		inline operator bool() const { return Board != 0ULL; }
+		inline constexpr operator bool() const { return Board != 0ULL; }
 		inline constexpr friend BitBoard operator&(const BitBoard& left, const BitBoard& right) { return left.Board & right.Board; }
 		inline constexpr friend BitBoard operator|(const BitBoard& left, const BitBoard& right) { return left.Board | right.Board; }
 		inline constexpr friend BitBoard operator^(const BitBoard& left, const BitBoard& right) { return left.Board ^ right.Board; }
@@ -57,13 +67,69 @@ namespace Boxfish
 	constexpr BitBoard ZERO_BB = 0ULL;
 	constexpr BitBoard ALL_SQUARES_BB = 0xFFFFFFFFFFFFFFFF;
 
-	bool MoreThanOne(const BitBoard& board);
-	SquareIndex ForwardBitScan(const BitBoard& board);
-	SquareIndex BackwardBitScan(const BitBoard& board);
-	SquareIndex PopLeastSignificantBit(BitBoard& board);
+#ifdef BOX_PLATFORM_WINDOWS
+	inline SquareIndex ForwardBitScan(const BitBoard& board)
+	{
+		unsigned long lsb;
+		_BitScanForward64(&lsb, board.Board);
+		return (SquareIndex)lsb;
+	}
+
+	inline SquareIndex BackwardBitScan(const BitBoard& board)
+	{
+		unsigned long msb;
+		_BitScanReverse64(&msb, board.Board);
+		return (SquareIndex)msb;
+	}
+
+	inline SquareIndex PopLeastSignificantBit(BitBoard& board)
+	{
+		unsigned long lsb;
+		_BitScanForward64(&lsb, board.Board);
+		board.Board &= board.Board - 1;
+		return (SquareIndex)lsb;
+	}
+
+	inline BitBoard FlipVertically(const BitBoard& board)
+	{
+		return _byteswap_uint64(board.Board);
+	}
+
+#else
+
+	inline SquareIndex ForwardBitScan(const BitBoard& board)
+	{
+		return (SquareIndex)(__builtin_ffsll(board.Board) - 1);
+	}
+
+	inline SquareIndex BackwardBitScan(const BitBoard& board)
+	{
+		return (SquareIndex)(63 - __builtin_clzll(board.Board));
+	}
+
+	inline SquareIndex PopLeastSignificantBit(BitBoard& board)
+	{
+		int lsbIndex = __builtin_ffsll(board.Board) - 1;
+		board.Board &= board.Board - 1;
+		return (SquareIndex)lsbIndex;
+	}
+
+	inline BitBoard FlipVertically(const BitBoard& board)
+	{
+		return __bswap_64(board.Board);
+	}
+
+#endif
+
+	inline bool MoreThanOne(const BitBoard& board)
+	{
+		if (!board)
+			return false;
+		return ForwardBitScan(board) != BackwardBitScan(board);
+	}
+
 	BitBoard ShiftEast(const BitBoard& board, int count);
 	BitBoard ShiftWest(const BitBoard& board, int count);
-	BitBoard FlipVertically(const BitBoard& board);
 
 	int GetForwardShift(Team team);
 
@@ -145,17 +211,17 @@ namespace Boxfish
 		1ULL << a8, 1ULL << b8, 1ULL << c8, 1ULL << d8, 1ULL << e8, 1ULL << f8, 1ULL << g8, 1ULL << h8,
 	};
 
-	inline BitBoard operator&(const BitBoard& left, SquareIndex right) { return left & SQUARE_BITBOARDS[right]; };
-	inline BitBoard operator|(const BitBoard& left, SquareIndex right) { return left | SQUARE_BITBOARDS[right]; };
-	inline BitBoard operator^(const BitBoard& left, SquareIndex right) { return left ^ SQUARE_BITBOARDS[right]; };
-	inline BitBoard operator~(SquareIndex square) { return ~SQUARE_BITBOARDS[square]; }
-	inline BitBoard& operator&=(BitBoard& left, SquareIndex right) { left.Board &= SQUARE_BITBOARDS[right].Board; return left; };
-	inline BitBoard& operator|=(BitBoard& left, SquareIndex right) { left.Board |= SQUARE_BITBOARDS[right].Board; return left; };
-	inline BitBoard& operator^=(BitBoard& left, SquareIndex right) { left.Board ^= SQUARE_BITBOARDS[right].Board; return left; };
+	inline constexpr BitBoard operator&(const BitBoard& left, SquareIndex right) { return left & SQUARE_BITBOARDS[right]; };
+	inline constexpr BitBoard operator|(const BitBoard& left, SquareIndex right) { return left | SQUARE_BITBOARDS[right]; };
+	inline constexpr BitBoard operator^(const BitBoard& left, SquareIndex right) { return left ^ SQUARE_BITBOARDS[right]; };
+	inline constexpr BitBoard operator~(SquareIndex square) { return ~SQUARE_BITBOARDS[square]; }
+	inline constexpr BitBoard& operator&=(BitBoard& left, SquareIndex right) { left.Board &= SQUARE_BITBOARDS[right].Board; return left; };
+	inline constexpr BitBoard& operator|=(BitBoard& left, SquareIndex right) { left.Board |= SQUARE_BITBOARDS[right].Board; return left; };
+	inline constexpr BitBoard& operator^=(BitBoard& left, SquareIndex right) { left.Board ^= SQUARE_BITBOARDS[right].Board; return left; };
 
-	inline BitBoard operator<<(SquareIndex left, int right) { return SQUARE_BITBOARDS[left] << right; };
-	inline BitBoard operator>>(SquareIndex left, int right) { return SQUARE_BITBOARDS[left] >> right; };
+	inline constexpr BitBoard operator<<(SquareIndex left, int right) { return SQUARE_BITBOARDS[left] << right; };
+	inline constexpr BitBoard operator>>(SquareIndex left, int right) { return SQUARE_BITBOARDS[left] >> right; };
 
-	inline BitBoard operator|(SquareIndex left, SquareIndex right) { return SQUARE_BITBOARDS[left] | SQUARE_BITBOARDS[right]; }
+	inline constexpr BitBoard operator|(SquareIndex left, SquareIndex right) { return SQUARE_BITBOARDS[left] | SQUARE_BITBOARDS[right]; }
 
 }

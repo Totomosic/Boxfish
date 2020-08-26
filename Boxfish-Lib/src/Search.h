@@ -16,23 +16,9 @@ namespace Boxfish
 	{
 	public:
 		bool Infinite = false;
+		int Depth = -1;
 		int64_t Nodes = -1;
 		int Milliseconds = -1;
-	};
-
-	class BOX_API PositionHistory
-	{
-	private:
-		std::vector<ZobristHash> m_Hashes;
-
-	public:
-		PositionHistory();
-
-		const std::vector<ZobristHash>& GetPositions() const;
-
-		bool Contains(const Position& position, int searchIndex) const;
-		void Push(const Position& position);
-		void Clear();
 	};
 
 	struct BOX_API SearchStack
@@ -57,31 +43,31 @@ namespace Boxfish
 		Move BestMove;
 	};
 
-	class RootMove
-	{
-	public:
-		Centipawns Score;
-		std::vector<Move> PV;
-
-	public:
-		inline bool operator==(const Move& move) const
-		{
-			return move == PV[0];
-		}
-
-		inline friend bool operator<(const RootMove& left, const RootMove& right)
-		{
-			return right.Score < left.Score;
-		}
-	};
-
 	class BOX_API Search
 	{
 	private:
-		enum class NodeType
+		enum NodeType
 		{
 			PV,
 			NonPV
+		};
+
+		class RootMove
+		{
+		public:
+			Centipawns Score;
+			std::vector<Move> PV;
+
+		public:
+			inline bool operator==(const Move& move) const
+			{
+				return move == PV[0];
+			}
+
+			inline friend bool operator<(const RootMove& left, const RootMove& right)
+			{
+				return right.Score < left.Score;
+			}
 		};
 
 		struct BOX_API RootInfo
@@ -94,10 +80,9 @@ namespace Boxfish
 
 	private:
 		TranspositionTable m_TranspositionTable;
-		Position m_CurrentPosition;
-		PositionHistory m_PositionHistory;
 		BoxfishSettings m_Settings;
 		SearchLimits m_Limits;
+		std::vector<ZobristHash> m_PositionHistory;
 
 		MovePool m_MovePool;
 
@@ -109,34 +94,30 @@ namespace Boxfish
 		std::atomic<bool> m_ShouldStop;
 		bool m_Log;
 
-		Move m_CounterMoves[FILE_MAX * RANK_MAX][FILE_MAX * RANK_MAX];
-		Centipawns m_HistoryTable[TEAM_MAX][FILE_MAX * RANK_MAX][FILE_MAX * RANK_MAX];
-		Centipawns m_ButterflyTable[TEAM_MAX][FILE_MAX * RANK_MAX][FILE_MAX * RANK_MAX];
+		OrderingTables m_OrderingTables;
 
 	public:
 		Search(size_t transpositionTableSize = TranspositionTable::TABLE_SIZE, bool log = true);
 
-		PositionHistory& GetHistory();
 		void SetSettings(const BoxfishSettings& settings);
 		void SetLimits(const SearchLimits& limits);
-
-		void SetCurrentPosition(const Position& position);
-		void SetCurrentPosition(Position&& position);
-		size_t Perft(int depth);
-		Move Go(int depth, const std::function<void(SearchResult)>& callback = {});
-		void Ponder(const std::function<void(SearchResult)>& callback = {});
+		void PushPosition(const Position& position);
 		void Reset();
+
+		size_t Perft(const Position& position, int depth);
+		Move SearchBestMove(const Position& position, const SearchLimits& limits, const std::function<void(SearchResult)>& callback = {});
+		void Ponder(const Position& position, const std::function<void(SearchResult)>& callback = {});
 
 		void Stop();
 
 	private:
-		size_t Perft(Position& position, int depth);
+		size_t PerftPosition(Position& position, int depth);
 
 		RootMove SearchRoot(Position& position, int depth, const std::function<void(SearchResult)>& callback);
 		template<NodeType type>
 		Centipawns SearchPosition(Position& position, SearchStack* stack, int depth, Centipawns alpha, Centipawns beta, const RootInfo& rootInfo);
 		template<NodeType type>
-		Centipawns QuiescenceSearch(Position& position, SearchStack* stack, Centipawns alpha, Centipawns beta);
+		Centipawns QuiescenceSearch(Position& position, SearchStack* stack, int depth, Centipawns alpha, Centipawns beta);
 
 		bool CheckLimits() const;
 
@@ -146,9 +127,6 @@ namespace Boxfish
 		Centipawns MatedIn(int ply) const;
 		bool IsMateScore(Centipawns score) const;
 		Centipawns StaticEvalPosition(const Position& position, Centipawns alpha, Centipawns beta, int ply) const;
-
-		void ClearCounterMoves();
-		void ClearTable(Centipawns (&table)[TEAM_MAX][FILE_MAX * RANK_MAX][FILE_MAX * RANK_MAX]);
 
 		std::vector<RootMove> GenerateRootMoves(const Position& position, SearchStack* stack);
 		int ChooseBestMove(const std::vector<RootMove>& moves, int skillLevel, int maxPVs) const;

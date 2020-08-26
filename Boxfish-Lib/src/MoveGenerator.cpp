@@ -256,6 +256,7 @@ namespace Boxfish
 		if (flags & MOVE_CAPTURE)
 		{
 			promotion.SetCapturedPiece(capturedPiece);
+			BOX_ASSERT(promotion.GetCapturedPiece() != PIECE_KING, "Cannot capture king");
 		}
 		Move queenPromotion = promotion;
 		queenPromotion.SetPromotionPiece(PIECE_QUEEN);
@@ -284,7 +285,7 @@ namespace Boxfish
 		while (movedPawns)
 		{
 			SquareIndex index = PopLeastSignificantBit(movedPawns);
-			moveList.Moves[moveList.MoveCount++] = Move({ (SquareIndex)(index - GetForwardShift(team)), index, PIECE_PAWN });
+			moveList.Moves[moveList.MoveCount++] = Move((SquareIndex)(index - GetForwardShift(team)), index, PIECE_PAWN, MOVE_NORMAL);
 		}
 		while (promotions)
 		{
@@ -302,25 +303,25 @@ namespace Boxfish
 		while (movedPawns)
 		{
 			SquareIndex index = PopLeastSignificantBit(movedPawns);
-			moveList.Moves[moveList.MoveCount++] = Move({ (SquareIndex)(index - 2 * GetForwardShift(team)), index, PIECE_PAWN, MOVE_DOUBLE_PAWN_PUSH });
+			moveList.Moves[moveList.MoveCount++] = Move((SquareIndex)(index - 2 * GetForwardShift(team)), index, PIECE_PAWN, MOVE_DOUBLE_PAWN_PUSH);
 		}
 	}
 
 	void MoveGenerator::GeneratePawnLeftAttacks(MoveList& moveList, Team team, const Position& position)
 	{
-		BitBoard pawns = position.Teams[team].Pieces[PIECE_PAWN];
+		BitBoard pawns = position.GetTeamPieces(team, PIECE_PAWN);
 		BitBoard fileMask = (team == TEAM_WHITE) ? (~FILE_H_MASK) : (~FILE_A_MASK);
-		BitBoard movedPawns = ((team == TEAM_WHITE) ? (pawns << 7) : (pawns >> 7));
+		BitBoard movedPawns = ((team == TEAM_WHITE) ? (pawns << 7) : (pawns >> 7)) & fileMask;
 		if (position.EnpassantSquare != INVALID_SQUARE)
 		{
-			BitBoard enPassant = movedPawns & BitBoard::SquareToBitIndex(position.EnpassantSquare) & fileMask;
+			BitBoard enPassant = movedPawns & BitBoard::SquareToBitIndex(position.EnpassantSquare);
 			if (enPassant)
 			{
 				SquareIndex index = PopLeastSignificantBit(enPassant);
-				moveList.Moves[moveList.MoveCount++] = Move({ (SquareIndex)(index - ((team == TEAM_WHITE) ? 7 : -7)), index, PIECE_PAWN, MOVE_EN_PASSANT });
+				moveList.Moves[moveList.MoveCount++] = Move((SquareIndex)(index - ((team == TEAM_WHITE) ? 7 : -7)), index, PIECE_PAWN, MOVE_EN_PASSANT);
 			}
 		}
-		movedPawns &= fileMask & position.GetTeamPieces(OtherTeam(team));
+		movedPawns &= position.GetTeamPieces(OtherTeam(team));
 		BitBoard promotionMask = ((team == TEAM_WHITE) ? RANK_8_MASK : RANK_1_MASK);
 		BitBoard promotions = movedPawns & promotionMask;
 		movedPawns &= ~promotionMask;
@@ -329,6 +330,7 @@ namespace Boxfish
 			SquareIndex index = PopLeastSignificantBit(movedPawns);
 			Move move({ (SquareIndex)(index - ((team == TEAM_WHITE) ? 7 : -7)), index, PIECE_PAWN, MOVE_CAPTURE });
 			move.SetCapturedPiece(GetPieceAtSquare(position, OtherTeam(team), index));
+			BOX_ASSERT(move.GetCapturedPiece() != PIECE_KING, "Cannot capture king");
 			moveList.Moves[moveList.MoveCount++] = move;
 		}
 		while (promotions)
@@ -340,19 +342,19 @@ namespace Boxfish
 
 	void MoveGenerator::GeneratePawnRightAttacks(MoveList& moveList, Team team, const Position& position)
 	{
-		BitBoard pawns = position.Teams[team].Pieces[PIECE_PAWN];
+		BitBoard pawns = position.GetTeamPieces(team, PIECE_PAWN);
 		BitBoard fileMask = (team == TEAM_WHITE) ? (~FILE_A_MASK) : (~FILE_H_MASK);
-		BitBoard movedPawns = ((team == TEAM_WHITE) ? (pawns << 9) : (pawns >> 9));
+		BitBoard movedPawns = ((team == TEAM_WHITE) ? (pawns << 9) : (pawns >> 9)) & fileMask;
 		if (position.EnpassantSquare != INVALID_SQUARE)
 		{
-			BitBoard enPassant = movedPawns & BitBoard::SquareToBitIndex(position.EnpassantSquare) & fileMask;
+			BitBoard enPassant = movedPawns & BitBoard::SquareToBitIndex(position.EnpassantSquare);
 			if (enPassant)
 			{
 				SquareIndex index = PopLeastSignificantBit(enPassant);
-				moveList.Moves[moveList.MoveCount++] = Move({ (SquareIndex)(index - ((team == TEAM_WHITE) ? 9 : -9)), index, PIECE_PAWN, MOVE_EN_PASSANT });
+				moveList.Moves[moveList.MoveCount++] = Move((SquareIndex)(index - ((team == TEAM_WHITE) ? 9 : -9)), index, PIECE_PAWN, MOVE_EN_PASSANT);
 			}
 		}
-		movedPawns &= fileMask & position.GetTeamPieces(OtherTeam(team));
+		movedPawns &= position.GetTeamPieces(OtherTeam(team));
 		BitBoard promotionMask = ((team == TEAM_WHITE) ? RANK_8_MASK : RANK_1_MASK);
 		BitBoard promotions = movedPawns & promotionMask;
 		movedPawns &= ~promotionMask;
@@ -361,6 +363,7 @@ namespace Boxfish
 			SquareIndex index = PopLeastSignificantBit(movedPawns);
 			Move move({ (SquareIndex)(index - ((team == TEAM_WHITE) ? 9 : -9)), index, PIECE_PAWN, MOVE_CAPTURE });
 			move.SetCapturedPiece(GetPieceAtSquare(position, OtherTeam(team), index));
+			BOX_ASSERT(move.GetCapturedPiece() != PIECE_KING, "Cannot capture king");
 			moveList.Moves[moveList.MoveCount++] = move;
 		}
 		while (promotions)
@@ -424,22 +427,22 @@ namespace Boxfish
 		{
 			if (position.Teams[TEAM_WHITE].CastleKingSide)
 			{
-				BitBoard passThrough = f1 | g1;
+				constexpr BitBoard passThrough = f1 | g1;
 				bool squaresOccupied = passThrough & occupied;
 				bool underAttack = IsSquareUnderAttack(position, OtherTeam(team), f1) | IsSquareUnderAttack(position, OtherTeam(team), g1) | IsInCheck(position, team);
 				if (!squaresOccupied && !underAttack)
 				{
-					moveList.Moves[moveList.MoveCount++] = Move({ e1, g1, PIECE_KING, MOVE_KINGSIDE_CASTLE });
+					moveList.Moves[moveList.MoveCount++] = Move(e1, g1, PIECE_KING, MOVE_KINGSIDE_CASTLE);
 				}
 			}
 			if (position.Teams[TEAM_WHITE].CastleQueenSide)
 			{
-				BitBoard passThrough = b1 | c1 | d1;
+				constexpr BitBoard passThrough = b1 | c1 | d1;
 				bool squaresOccupied = passThrough & occupied;
 				bool underAttack = IsSquareUnderAttack(position, OtherTeam(team), c1) | IsSquareUnderAttack(position, OtherTeam(team), d1) | IsInCheck(position, team);
 				if (!squaresOccupied && !underAttack)
 				{
-					moveList.Moves[moveList.MoveCount++] = Move({ e1, c1, PIECE_KING, MOVE_QUEENSIDE_CASTLE });
+					moveList.Moves[moveList.MoveCount++] = Move(e1, c1, PIECE_KING, MOVE_QUEENSIDE_CASTLE);
 				}
 			}
 		}
@@ -447,22 +450,22 @@ namespace Boxfish
 		{
 			if (position.Teams[TEAM_BLACK].CastleKingSide)
 			{
-				BitBoard passThrough = f8 | g8;
+				constexpr BitBoard passThrough = f8 | g8;
 				bool squaresOccupied = passThrough & occupied;
 				bool underAttack = IsSquareUnderAttack(position, OtherTeam(team), f8) | IsSquareUnderAttack(position, OtherTeam(team), g8) | IsInCheck(position, team);
 				if (!squaresOccupied && !underAttack)
 				{
-					moveList.Moves[moveList.MoveCount++] = Move({ e8, g8, PIECE_KING, MOVE_KINGSIDE_CASTLE });
+					moveList.Moves[moveList.MoveCount++] = Move(e8, g8, PIECE_KING, MOVE_KINGSIDE_CASTLE);
 				}
 			}
 			if (position.Teams[TEAM_BLACK].CastleQueenSide)
 			{
-				BitBoard passThrough = b8 | c8 | d8;
+				constexpr BitBoard passThrough = b8 | c8 | d8;
 				bool squaresOccupied = passThrough & occupied;
 				bool underAttack = IsSquareUnderAttack(position, OtherTeam(team), c8) | IsSquareUnderAttack(position, OtherTeam(team), d8) | IsInCheck(position, team);
 				if (!squaresOccupied && !underAttack)
 				{
-					moveList.Moves[moveList.MoveCount++] = Move({ e8, c8, PIECE_KING, MOVE_QUEENSIDE_CASTLE });
+					moveList.Moves[moveList.MoveCount++] = Move(e8, c8, PIECE_KING, MOVE_QUEENSIDE_CASTLE);
 				}
 			}
 		}
@@ -474,7 +477,7 @@ namespace Boxfish
 		while (nonAttacks)
 		{
 			SquareIndex toIndex = PopLeastSignificantBit(nonAttacks);
-			moveList.Moves[moveList.MoveCount++] = Move({ fromSquare, toIndex, pieceType });
+			moveList.Moves[moveList.MoveCount++] = Move(fromSquare, toIndex, pieceType, MOVE_NORMAL);
 		}
 		BitBoard attacks = moves & attackablePieces;
 		Team otherTeam = OtherTeam(team);
@@ -483,6 +486,7 @@ namespace Boxfish
 			SquareIndex toIndex = PopLeastSignificantBit(attacks);
 			Move move({ fromSquare, toIndex, pieceType, MOVE_CAPTURE });
 			move.SetCapturedPiece(GetPieceAtSquare(position, otherTeam, toIndex));
+			BOX_ASSERT(move.GetCapturedPiece() != PIECE_KING, "Cannot capture king");
 			moveList.Moves[moveList.MoveCount++] = std::move(move);
 		}
 	}

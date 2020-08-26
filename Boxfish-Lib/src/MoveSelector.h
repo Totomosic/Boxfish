@@ -6,15 +6,37 @@
 namespace Boxfish
 {
 
+	struct BOX_API OrderingTables
+	{
+	public:
+		Move CounterMoves[SQUARE_MAX][SQUARE_MAX];
+		Centipawns History[TEAM_MAX][SQUARE_MAX][SQUARE_MAX];
+		Centipawns Butterfly[TEAM_MAX][SQUARE_MAX][SQUARE_MAX];
+
+	public:
+		inline void Clear()
+		{
+			for (int i = 0; i < SQUARE_MAX; i++)
+			{
+				for (int j = 0; j < SQUARE_MAX; j++)
+				{
+					CounterMoves[i][j] = MOVE_NONE;
+					History[TEAM_WHITE][i][j] = 0;
+					History[TEAM_BLACK][i][j] = 0;
+					Butterfly[TEAM_WHITE][i][j] = 0;
+					Butterfly[TEAM_BLACK][i][j] = 0;
+				}
+			}
+		}
+	};
+
 	struct BOX_API MoveOrderingInfo
 	{
 	public:
 		const Position* CurrentPosition = nullptr;
 		const Move* KillerMoves = nullptr;
 		Move PreviousMove = MOVE_NONE;
-		Move CounterMove = MOVE_NONE;
-		Centipawns (*HistoryTable)[TEAM_MAX][FILE_MAX * RANK_MAX][FILE_MAX * RANK_MAX];
-		Centipawns (*ButterflyTable)[TEAM_MAX][FILE_MAX * RANK_MAX][FILE_MAX * RANK_MAX];
+		const OrderingTables* Tables = nullptr;
 	};
 
 	class BOX_API MoveSelector

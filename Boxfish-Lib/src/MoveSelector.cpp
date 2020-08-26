@@ -12,6 +12,8 @@ namespace Boxfish
 	MoveSelector::MoveSelector(const MoveOrderingInfo& info, MoveList* legalMoves)
 		: m_OrderingInfo(info), m_LegalMoves(legalMoves), m_CurrentIndex(0)
 	{
+		Move counterMove = (info.Tables) ? info.Tables->CounterMoves[info.PreviousMove.GetFromSquareIndex()][info.PreviousMove.GetToSquareIndex()] : MOVE_NONE;
+
 		for (int index = m_CurrentIndex; index < m_LegalMoves->MoveCount; index++)
 		{
 			Centipawns score = 0;
@@ -40,19 +42,15 @@ namespace Boxfish
 			}
 
 			// Counter move
-			if (move == m_OrderingInfo.CounterMove)
+			if (move == counterMove)
 			{
-				score += 20;
+				score += 50;
 			}
 			// History Heuristic
-			if (m_OrderingInfo.HistoryTable && m_OrderingInfo.ButterflyTable)
+			if (m_OrderingInfo.Tables)
 			{
-				Centipawns history = (*m_OrderingInfo.HistoryTable)[m_OrderingInfo.CurrentPosition->TeamToPlay][move.GetFromSquareIndex()][move.GetToSquareIndex()];
-				Centipawns butterfly = (*m_OrderingInfo.ButterflyTable)[m_OrderingInfo.CurrentPosition->TeamToPlay][move.GetFromSquareIndex()][move.GetToSquareIndex()];
-				if (history != 0 && butterfly != 0)
-				{
-					score += history / butterfly;
-				}
+				Centipawns history = m_OrderingInfo.Tables->History[m_OrderingInfo.CurrentPosition->TeamToPlay][move.GetFromSquareIndex()][move.GetToSquareIndex()];
+				score += history;
 			}
 			move.SetValue(score);
 		}

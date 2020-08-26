@@ -25,30 +25,11 @@ namespace Boxfish
 		Clear();
 	}
 
-	const TranspositionTableEntry* TranspositionTable::GetEntry(const ZobristHash& hash) const
+	TranspositionTableEntry* TranspositionTable::GetEntry(const ZobristHash& hash, bool* found) const
 	{
-		const TranspositionTableEntry* entry = &m_Entries[GetIndexFromHash(hash)];
-		if (entry->Age >= 0)
-			return entry;
-		return nullptr;
-	}
-
-	void TranspositionTable::AddEntry(const TranspositionTableEntry& entry)
-	{
-		size_t index = GetIndexFromHash(entry.Hash);
-		if (m_Entries[index].Age < 0)
-		{
-			m_Entries[index] = entry;
-		}
-		else
-		{
-			TranspositionTableEntry& existingEntry = m_Entries[index];
-			// Decide whether to replace the entry
-			if (existingEntry.Depth < entry.Depth)
-			{
-				existingEntry = entry;
-			}
-		}
+		TranspositionTableEntry* entry = &m_Entries[GetIndexFromHash(hash)];
+		*found = entry->Age >= 0 && hash == entry->Hash;
+		return entry;
 	}
 
 	void TranspositionTable::Clear()

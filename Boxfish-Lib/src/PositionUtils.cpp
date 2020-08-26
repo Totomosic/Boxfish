@@ -295,7 +295,10 @@ namespace Boxfish
 	Position MirrorPosition(const Position& position)
 	{
 		Position result;
-		result.EnpassantSquare = { position.EnpassantSquare.File, (Rank)(RANK_MAX - position.EnpassantSquare.Rank - 1) };
+		if (position.EnpassantSquare != INVALID_SQUARE)
+			result.EnpassantSquare = { position.EnpassantSquare.File, (Rank)(RANK_MAX - position.EnpassantSquare.Rank - 1) };
+		else
+			result.EnpassantSquare = INVALID_SQUARE;
 		result.TeamToPlay = OtherTeam(position.TeamToPlay);
 		result.HalfTurnsSinceCaptureOrPush = position.HalfTurnsSinceCaptureOrPush;
 		result.TotalTurns = position.TotalTurns;
@@ -400,7 +403,7 @@ namespace Boxfish
 			return PIECE_ROOK;
 		if (position.Teams[team].Pieces[PIECE_QUEEN] & square)
 			return PIECE_QUEEN;
-		if (position.Teams[team].Pieces[PIECE_KING] & square)
+		if (position.GetKingSquare(team) == square)
 			return PIECE_KING;
 		return PIECE_INVALID;
 	}
@@ -475,7 +478,7 @@ namespace Boxfish
 
 			// Assume they capture piece for free
 			balance -= GetPieceValue(nextVictim);
-			if (balance > 0)
+			if (balance >= 0)
 				return true;
 
 			BitBoard occupied = position.GetAllPieces() ^ from ^ to;
@@ -609,6 +612,7 @@ namespace Boxfish
 
 	void ApplyMove(Position& position, const Move& move, UndoInfo* outUndoInfo)
 	{
+		BOX_ASSERT(!(move.IsCapture() && move.GetCapturedPiece() == PIECE_KING), "Cannot capture king");
 		if (outUndoInfo)
 		{
 			outUndoInfo->InfoCache = position.InfoCache;
@@ -627,7 +631,7 @@ namespace Boxfish
 		
 		MoveFlag flags = move.GetFlags();
 		Team currentTeam = position.TeamToPlay;
-		if (!(flags & MOVE_NULL))
+		if (move != MOVE_NONE)
 		{
 			if (!flags)
 			{
@@ -819,12 +823,7 @@ namespace Boxfish
 
 	Move CreateMove(const Position& position, const Square& from, const Square& to, Piece promotionPiece)
 	{
-		MoveDefinition definition;
-		definition.FromSquare = BitBoard::SquareToBitIndex(from);
-		definition.ToSquare = BitBoard::SquareToBitIndex(to);
-		definition.MovingPiece = GetPieceAtSquare(position, position.TeamToPlay, definition.FromSquare);
-		Move move(definition);
-
+		Move move(BitBoard::SquareToBitIndex(from), BitBoard::SquareToBitIndex(to), GetPieceAtSquare(position, position.TeamToPlay, from), MOVE_NORMAL);
 		SquareIndex toIndex = BitBoard::SquareToBitIndex(to);
 
 		bool occupied = position.GetTeamPieces(OtherTeam(position.TeamToPlay)) & toIndex;
@@ -832,6 +831,7 @@ namespace Boxfish
 		{
 			move.SetFlags(MOVE_CAPTURE);
 			move.SetCapturedPiece(GetPieceAtSquare(position, OtherTeam(position.TeamToPlay), to));
+			BOX_ASSERT(move.GetCapturedPiece() != PIECE_KING, "Cannot capture king");
 		}
 
 		if (move.GetMovingPiece() == PIECE_PAWN)
@@ -844,13 +844,13 @@ namespace Boxfish
 			}
 		}
 
-		if (abs(to.Rank - from.Rank) == 2 && definition.MovingPiece == PIECE_PAWN)
+		if (abs(to.Rank - from.Rank) == 2 && move.GetMovingPiece() == PIECE_PAWN)
 			move.SetFlags(MOVE_DOUBLE_PAWN_PUSH);
 
-		if (definition.MovingPiece == PIECE_KING && from.File == FILE_E && to.File == FILE_C)
+		if (move.GetMovingPiece() == PIECE_KING && from.File == FILE_E && to.File == FILE_C)
 			move.SetFlags(MOVE_QUEENSIDE_CASTLE);
 
-		if (definition.MovingPiece == PIECE_KING && from.File == FILE_E && to.File == FILE_G)
+		if (move.GetMovingPiece() == PIECE_KING && from.File == FILE_E && to.File == FILE_G)
 			move.SetFlags(MOVE_KINGSIDE_CASTLE);
 		
 		if (to == position.EnpassantSquare && move.GetMovingPiece() == PIECE_PAWN)

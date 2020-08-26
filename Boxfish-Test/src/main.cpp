@@ -157,60 +157,56 @@ namespace Test
 		Init();
 		Position position = CreateStartingPosition();
 		Search search(50 * 1024, false);
-		search.SetCurrentPosition(position);
 
-		REQUIRE(search.Perft(1) == 20);
-		REQUIRE(search.Perft(2) == 400);
-		REQUIRE(search.Perft(3) == 8902);
-		REQUIRE(search.Perft(4) == 197281);
-		REQUIRE(search.Perft(5) == 4865609);
-		REQUIRE(search.Perft(6) == 119060324);
+		size_t checks = 0;
+
+		REQUIRE(search.Perft(position, 1) == 20);
+		REQUIRE(search.Perft(position, 2) == 400);
+		REQUIRE(search.Perft(position, 3) == 8902);
+		REQUIRE(search.Perft(position, 4) == 197281);
+		REQUIRE(search.Perft(position, 5) == 4865609);
+		REQUIRE(search.Perft(position, 6) == 119060324);
 
 		position = CreatePositionFromFEN("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -");
-		search.SetCurrentPosition(position);
 
-		REQUIRE(search.Perft(1) == 48);
-		REQUIRE(search.Perft(2) == 2039);
-		REQUIRE(search.Perft(3) == 97862);
-		REQUIRE(search.Perft(4) == 4085603);
-		REQUIRE(search.Perft(5) == 193690690);
+		REQUIRE(search.Perft(position, 1) == 48);
+		REQUIRE(search.Perft(position, 2) == 2039);
+		REQUIRE(search.Perft(position, 3) == 97862);
+		REQUIRE(search.Perft(position, 4) == 4085603);
+		REQUIRE(search.Perft(position, 5) == 193690690);
 
 		position = CreatePositionFromFEN("8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - -");
-		search.SetCurrentPosition(position);
 
-		REQUIRE(search.Perft(1) == 14);
-		REQUIRE(search.Perft(2) == 191);
-		REQUIRE(search.Perft(3) == 2812);
-		REQUIRE(search.Perft(4) == 43238);
-		REQUIRE(search.Perft(5) == 674624);
-		REQUIRE(search.Perft(6) == 11030083);
+		REQUIRE(search.Perft(position, 1) == 14);
+		REQUIRE(search.Perft(position, 2) == 191);
+		REQUIRE(search.Perft(position, 3) == 2812);
+		REQUIRE(search.Perft(position, 4) == 43238);
+		REQUIRE(search.Perft(position, 5) == 674624);
+		REQUIRE(search.Perft(position, 6) == 11030083);
 
 		position = CreatePositionFromFEN("r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1");
-		search.SetCurrentPosition(position);
 
-		REQUIRE(search.Perft(1) == 6);
-		REQUIRE(search.Perft(2) == 264);
-		REQUIRE(search.Perft(3) == 9467);
-		REQUIRE(search.Perft(4) == 422333);
-		REQUIRE(search.Perft(5) == 15833292);
+		REQUIRE(search.Perft(position, 1) == 6);
+		REQUIRE(search.Perft(position, 2) == 264);
+		REQUIRE(search.Perft(position, 3) == 9467);
+		REQUIRE(search.Perft(position, 4) == 422333);
+		REQUIRE(search.Perft(position, 5) == 15833292);
 
 		position = CreatePositionFromFEN("rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8");
-		search.SetCurrentPosition(position);
 
-		REQUIRE(search.Perft(1) == 44);
-		REQUIRE(search.Perft(2) == 1486);
-		REQUIRE(search.Perft(3) == 62379);
-		REQUIRE(search.Perft(4) == 2103487);
-		REQUIRE(search.Perft(5) == 89941194);
+		REQUIRE(search.Perft(position, 1) == 44);
+		REQUIRE(search.Perft(position, 2) == 1486);
+		REQUIRE(search.Perft(position, 3) == 62379);
+		REQUIRE(search.Perft(position, 4) == 2103487);
+		REQUIRE(search.Perft(position, 5) == 89941194);
 
 		position = CreatePositionFromFEN("r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10");
-		search.SetCurrentPosition(position);
 
-		REQUIRE(search.Perft(1) == 46);
-		REQUIRE(search.Perft(2) == 2079);
-		REQUIRE(search.Perft(3) == 89890);
-		REQUIRE(search.Perft(4) == 3894594);
-		REQUIRE(search.Perft(5) == 164075551);
+		REQUIRE(search.Perft(position, 1) == 46);
+		REQUIRE(search.Perft(position, 2) == 2079);
+		REQUIRE(search.Perft(position, 3) == 89890);
+		REQUIRE(search.Perft(position, 4) == 3894594);
+		REQUIRE(search.Perft(position, 5) == 164075551);
 	}
 
 	TEST_CASE("Checks", "[Check]")

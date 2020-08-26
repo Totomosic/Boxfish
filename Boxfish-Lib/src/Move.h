@@ -6,6 +6,7 @@ namespace Boxfish
 
 	enum MoveFlag : int
 	{
+		MOVE_NORMAL = 0,
 		MOVE_NULL = 1 << 0,
 		MOVE_CAPTURE = 1 << 1,
 		MOVE_DOUBLE_PAWN_PUSH = 1 << 2,
@@ -20,15 +21,6 @@ namespace Boxfish
 		return (MoveFlag)((int)left | (int)right);
 	}
 
-	struct BOX_API MoveDefinition
-	{
-	public:
-		SquareIndex FromSquare;
-		SquareIndex ToSquare;
-		Piece MovingPiece;
-		MoveFlag Flags = (MoveFlag)0;
-	};
-
 	class BOX_API Move
 	{
 	private:
@@ -37,7 +29,11 @@ namespace Boxfish
 
 	public:
 		Move();
-		Move(const MoveDefinition& definition);
+		constexpr Move(SquareIndex from, SquareIndex to, Piece piece, MoveFlag flags)
+			: m_Move(((flags & 0x7f) << 21) | ((to & 0x3f) << 15) | ((from & 0x3f) << 9) | (piece & 0x7)), m_Value(0)
+		{
+		}
+
 		constexpr Move(uint32_t move)
 			: m_Move(move), m_Value(0)
 		{
@@ -46,19 +42,17 @@ namespace Boxfish
 		inline int GetValue() const { return m_Value; }
 		inline void SetValue(int value) { m_Value = value; }
 
-		MoveDefinition GetDefinition() const;
 		Square GetFromSquare() const;
 		Square GetToSquare() const;
-		SquareIndex GetFromSquareIndex() const;
-		SquareIndex GetToSquareIndex() const;
-		Piece GetMovingPiece() const;
-
-		MoveFlag GetFlags() const;
+		inline SquareIndex GetFromSquareIndex() const { return (SquareIndex)((m_Move >> 9) & 0x3f); }
+		inline SquareIndex GetToSquareIndex() const { return (SquareIndex)((m_Move >> 15) & 0x3f); }
+		inline Piece GetMovingPiece() const { return (Piece)(m_Move & 0x7); }
+		inline MoveFlag GetFlags() const { return (MoveFlag)((m_Move >> 21) & 0x7f); }
 		void SetFlags(MoveFlag flags);
 
-		Piece GetCapturedPiece() const;
+		inline Piece GetCapturedPiece() const { return (Piece)((m_Move >> 6) & 0x7); }
 		void SetCapturedPiece(Piece piece);
-		Piece GetPromotionPiece() const;
+		inline Piece GetPromotionPiece() const { return (Piece)((m_Move >> 3) & 0x7); }
 		void SetPromotionPiece(Piece piece);
 
 		inline bool IsCapture() const { return GetFlags() & MOVE_CAPTURE; }
@@ -71,6 +65,6 @@ namespace Boxfish
 		inline friend bool operator!=(const Move& left, const Move& right) { return left.m_Move != right.m_Move; }
 	};
 
-	constexpr Move MOVE_NONE = 0U | ((MOVE_NULL & 0x7f) << 21);
+	constexpr Move MOVE_NONE = Move({ a1, a1, PIECE_PAWN, MOVE_NULL });
 
 }

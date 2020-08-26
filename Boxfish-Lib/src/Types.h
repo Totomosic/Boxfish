@@ -46,6 +46,8 @@ namespace Boxfish
 		RANK_INVALID = -1
 	};
 
+	constexpr int SQUARE_MAX = FILE_MAX * RANK_MAX;
+
 	constexpr Rank INVERSE_RANK[RANK_MAX] = {
 		RANK_8,
 		RANK_7,

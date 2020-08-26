@@ -19,7 +19,7 @@ namespace Boxfish
 	}
 
 	CommandManager::CommandManager()
-		: m_CommandMap(), m_CurrentPosition(CreateStartingPosition()), m_Search(256 * 1024 * 1024), m_Settings(), m_Searching(false), m_SearchThread()
+		: m_CommandMap(), m_CurrentPosition(CreateStartingPosition()), m_Search(512 * 1024 * 1024), m_Settings(), m_Searching(false), m_SearchThread()
 	{
 		m_CommandMap["help"] = [this](const std::vector<std::string>& args)
 		{
@@ -223,7 +223,7 @@ namespace Boxfish
 	{
 		if (!m_Searching)
 		{
-			m_Search.GetHistory().Clear();
+			m_Search.Reset();
 			m_CurrentPosition = CreateStartingPosition();
 		}
 	}
@@ -253,7 +253,7 @@ namespace Boxfish
 	{
 		if (!m_Searching)
 		{
-			m_Search.GetHistory().Clear();
+			m_Search.Reset();
 			m_CurrentPosition = CreatePositionFromFEN(fen);
 		}
 	}
@@ -264,7 +264,7 @@ namespace Boxfish
 		{
 			for (const std::string& moveString : moves)
 			{
-				m_Search.GetHistory().Push(m_CurrentPosition);
+				m_Search.PushPosition(m_CurrentPosition);
 				Move move = CreateMoveFromString(m_CurrentPosition, moveString);
 				ApplyMove(m_CurrentPosition, move);
 			}
@@ -281,8 +281,7 @@ namespace Boxfish
 	{
 		if (!m_Searching)
 		{
-			m_Search.SetCurrentPosition(m_CurrentPosition);
-			m_Search.Perft(depth);
+			m_Search.Perft(m_CurrentPosition, depth);
 		}
 	}
 
@@ -291,14 +290,13 @@ namespace Boxfish
 		if (!m_Searching)
 		{
 			m_Searching = true;
-			m_Search.SetCurrentPosition(m_CurrentPosition);
 			if (m_SearchThread.joinable())
 				m_SearchThread.join();
 			m_SearchThread = std::thread([this, depth]()
 			{
 				SearchLimits limits;
-				m_Search.SetLimits(limits);
-				Move bestMove = m_Search.Go(depth);
+				limits.Depth = depth;
+				Move bestMove = m_Search.SearchBestMove(m_CurrentPosition, limits);
 				std::cout << "bestmove " << UCI::FormatMove(bestMove) << std::endl;
 				m_Searching = false;
 			});
@@ -310,15 +308,13 @@ namespace Boxfish
 		if (!m_Searching)
 		{
 			m_Searching = true;
-			m_Search.SetCurrentPosition(m_CurrentPosition);
 			if (m_SearchThread.joinable())
 				m_SearchThread.join();
 			m_SearchThread = std::thread([this, milliseconds]()
 			{
 				SearchLimits limits;
 				limits.Milliseconds = milliseconds;
-				m_Search.SetLimits(limits);
-				Move bestMove = m_Search.Go(MAX_PLY);
+				Move bestMove = m_Search.SearchBestMove(m_CurrentPosition, limits);
 				std::cout << "bestmove " << UCI::FormatMove(bestMove) << std::endl;
 				m_Searching = false;
 			});
@@ -330,12 +326,11 @@ namespace Boxfish
 		if (!m_Searching)
 		{
 			m_Searching = true;
-			m_Search.SetCurrentPosition(m_CurrentPosition);
 			if (m_SearchThread.joinable())
 				m_SearchThread.join();
 			m_SearchThread = std::thread([this]()
 			{
-				m_Search.Ponder();
+				m_Search.Ponder(m_CurrentPosition);
 				m_Searching = false;
 			});
 		}
