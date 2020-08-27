@@ -40,6 +40,11 @@ project "Boxfish-Lib"
             "BOX_BUILD_STATIC"
         }
 
+        links
+        {
+            "pthread"
+        }
+
     filter "system:macosx"
         systemversion "latest"
 

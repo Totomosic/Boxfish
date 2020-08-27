@@ -136,28 +136,6 @@ namespace Boxfish
 	inline SquareIndex FrontmostSquare(const BitBoard& board, Team team) { return (team == TEAM_WHITE) ? BackwardBitScan(board) : ForwardBitScan(board); }
 	inline SquareIndex BackmostSquare(const BitBoard& board, Team team) { return (team == TEAM_WHITE) ? ForwardBitScan(board) : BackwardBitScan(board); }
 
-	enum Direction
-	{
-		NORTH,
-		SOUTH,
-		EAST,
-		WEST,
-		NORTH_EAST,
-		NORTH_WEST,
-		SOUTH_EAST,
-		SOUTH_WEST
-	};
-
-	template<Direction D>
-	constexpr BitBoard Shift(const BitBoard& b)
-	{
-		return  D == NORTH ? b << 8 : D == SOUTH ? b >> 8
-			: D == EAST ? (b & ~FILE_H_MASK) << 1 : D == WEST ? (b & ~FILE_A_MASK) >> 1
-			: D == NORTH_EAST ? (b & ~FILE_H_MASK) << 9 : D == NORTH_WEST ? (b & ~FILE_A_MASK) << 7
-			: D == SOUTH_EAST ? (b & ~FILE_H_MASK) >> 7 : D == SOUTH_WEST ? (b & ~FILE_A_MASK) >> 9
-			: 0;
-	}
-
 	constexpr BitBoard RANK_1_MASK = 0xffull;
 	constexpr BitBoard RANK_2_MASK = 0xff00ull;
 	constexpr BitBoard RANK_3_MASK = 0xff0000ull;
@@ -199,6 +177,28 @@ namespace Boxfish
 
 	constexpr BitBoard DARK_SQUARES_MASK = 0xAA55AA55AA55AA55;
 	constexpr BitBoard LIGHT_SQUARES_MASK = 0x55AA55AA55AA55AA;
+
+	enum Direction
+	{
+		NORTH,
+		SOUTH,
+		EAST,
+		WEST,
+		NORTH_EAST,
+		NORTH_WEST,
+		SOUTH_EAST,
+		SOUTH_WEST
+	};
+
+	template<Direction D>
+	constexpr BitBoard Shift(const BitBoard& b)
+	{
+		return  D == NORTH ? b << 8 : D == SOUTH ? b >> 8
+			: D == EAST ? (b & ~FILE_H_MASK) << 1 : D == WEST ? (b & ~FILE_A_MASK) >> 1
+			: D == NORTH_EAST ? (b & ~FILE_H_MASK) << 9 : D == NORTH_WEST ? (b & ~FILE_A_MASK) << 7
+			: D == SOUTH_EAST ? (b & ~FILE_H_MASK) >> 7 : D == SOUTH_WEST ? (b & ~FILE_A_MASK) >> 9
+			: ZERO_BB;
+	}
 
 	constexpr BitBoard SQUARE_BITBOARDS[FILE_MAX * RANK_MAX] = {
 		1ULL << a1, 1ULL << b1, 1ULL << c1, 1ULL << d1, 1ULL << e1, 1ULL << f1, 1ULL << g1, 1ULL << h1,

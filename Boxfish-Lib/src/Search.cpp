@@ -377,11 +377,6 @@ namespace Boxfish
 		return mv;
 	}
 
-	inline void Prefetch(void* address)
-	{
-		_mm_prefetch((char*)address, _MM_HINT_T0);
-	}
-
 	template<Search::NodeType NT>
 	Centipawns Search::SearchPosition(Position& position, SearchStack* stack, int depth, Centipawns alpha, Centipawns beta, const Search::RootInfo& rootInfo)
 	{
