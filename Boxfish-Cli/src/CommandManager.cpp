@@ -271,17 +271,22 @@ namespace Boxfish
 				generator.FilterLegalMoves(moves);
 				Move move = CreateMoveFromString(m_CurrentPosition, moveString);
 
+				bool legal = false;
 				for (int i = 0; i < moves.MoveCount; i++)
 				{
 					if (move == moves.Moves[i])
 					{
 						ApplyMove(m_CurrentPosition, move);
 						m_Search.PushPosition(m_CurrentPosition);
-						continue;
+						legal = true;
+						break;
 					}
 				}
-				std::cout << "Move " << moveString << " is not valid." << std::endl;
-				break;
+				if (!legal)
+				{
+					std::cout << "Move " << moveString << " is not valid." << std::endl;
+					break;
+				}
 			}
 		}
 	}
