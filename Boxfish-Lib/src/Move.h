@@ -65,6 +65,11 @@ namespace Boxfish
 		inline friend bool operator!=(const Move& left, const Move& right) { return left.m_Move != right.m_Move; }
 	};
 
+	inline bool operator<(const Move& left, const Move& right)
+	{
+		return left.GetValue() < right.GetValue();
+	}
+
 	constexpr Move MOVE_NONE = Move({ a1, a1, PIECE_PAWN, MOVE_NULL });
 
 }

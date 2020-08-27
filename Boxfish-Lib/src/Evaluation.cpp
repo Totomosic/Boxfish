@@ -981,7 +981,7 @@ namespace Boxfish
 		EvaluatePieceSquareTables(result, position);
 			
 		Centipawns current = result.GetTotal(team);
-		constexpr Centipawns delta = 200;
+		constexpr Centipawns delta = 250;
 		if (current > alpha - delta && current < beta + delta)
 		{
 			result.Data.KingAttackZone[TEAM_WHITE] = CalculateKingAttackRegion<TEAM_WHITE>(position);

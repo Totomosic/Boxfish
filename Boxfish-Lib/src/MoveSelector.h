@@ -30,28 +30,37 @@ namespace Boxfish
 		}
 	};
 
-	struct BOX_API MoveOrderingInfo
-	{
-	public:
-		const Position* CurrentPosition = nullptr;
-		const Move* KillerMoves = nullptr;
-		Move PreviousMove = MOVE_NONE;
-		const OrderingTables* Tables = nullptr;
-	};
-
 	class BOX_API MoveSelector
 	{
+	public:
+		enum SelectorStage
+		{
+			TTMove,
+			Any
+		};
+
 	private:
-		const MoveOrderingInfo m_OrderingInfo;
-		MoveList* m_LegalMoves;
+		MoveList* m_Moves;
+		const Position* m_CurrentPosition;
+		Move m_ttMove;
+		Move m_CounterMove;
+		const OrderingTables* m_Tables;
+		const Move* m_Killers;
+
 		int m_CurrentIndex;
+		SelectorStage m_CurrentStage;
 
 	public:
-		MoveSelector(const MoveOrderingInfo& info, MoveList* legalMoves);
-		
-		bool Empty() const;
+		MoveSelector(MoveList* moves, const Position* currentPosition, const Move& ttMove, const Move& counterMove, const OrderingTables* tables, const Move* killers);
 		Move GetNextMove();
 	};
+
+	inline MoveSelector::SelectorStage operator++(MoveSelector::SelectorStage& stage, int)
+	{
+		MoveSelector::SelectorStage result = stage;
+		stage = (MoveSelector::SelectorStage)(stage + 1);
+		return result;
+	}
 
 	class BOX_API QuiescenceMoveSelector
 	{

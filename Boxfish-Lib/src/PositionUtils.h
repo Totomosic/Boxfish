@@ -38,7 +38,7 @@ namespace Boxfish
 	bool IsSquareOccupied(const Position& position, Team team, SquareIndex square);
 	Piece GetPieceAtSquare(const Position& position, Team team, const Square& square);
 	Piece GetPieceAtSquare(const Position& position, Team team, SquareIndex square);
-	bool IsPieceOnSquare(const Position& position, Team team, Piece piece, SquareIndex square);
+	inline bool IsPieceOnSquare(const Position& position, Team team, Piece piece, SquareIndex square) { return position.GetTeamPieces(team, piece) & square; }
 
 	inline bool IsInCheck(const Position& position, Team team) { return position.InfoCache.InCheck[team]; }
 	inline bool IsInCheck(const Position& position) { return IsInCheck(position, position.TeamToPlay); }

@@ -19,7 +19,7 @@ namespace Boxfish
 	}
 
 	CommandManager::CommandManager()
-		: m_CommandMap(), m_CurrentPosition(CreateStartingPosition()), m_Search(512 * 1024 * 1024), m_Settings(), m_Searching(false), m_SearchThread()
+		: m_CommandMap(), m_CurrentPosition(CreateStartingPosition()), m_Search(50 * 1024 * 1024), m_Settings(), m_Searching(false), m_SearchThread()
 	{
 		m_CommandMap["help"] = [this](const std::vector<std::string>& args)
 		{
@@ -260,13 +260,28 @@ namespace Boxfish
 
 	void CommandManager::ApplyMoves(const std::vector<std::string>& moves)
 	{
+		Move moveBuffer[MAX_MOVES];
 		if (!m_Searching)
 		{
 			for (const std::string& moveString : moves)
 			{
-				m_Search.PushPosition(m_CurrentPosition);
+				MoveList moves(moveBuffer);
+				MoveGenerator generator(m_CurrentPosition);
+				generator.GetPseudoLegalMoves(moves);
+				generator.FilterLegalMoves(moves);
 				Move move = CreateMoveFromString(m_CurrentPosition, moveString);
-				ApplyMove(m_CurrentPosition, move);
+
+				for (int i = 0; i < moves.MoveCount; i++)
+				{
+					if (move == moves.Moves[i])
+					{
+						ApplyMove(m_CurrentPosition, move);
+						m_Search.PushPosition(m_CurrentPosition);
+						continue;
+					}
+				}
+				std::cout << "Move " << moveString << " is not valid." << std::endl;
+				break;
 			}
 		}
 	}

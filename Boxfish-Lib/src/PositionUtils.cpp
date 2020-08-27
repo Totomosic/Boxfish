@@ -408,11 +408,6 @@ namespace Boxfish
 		return PIECE_INVALID;
 	}
 
-	bool IsPieceOnSquare(const Position& position, Team team, Piece piece, SquareIndex square)
-	{
-		return position.GetTeamPieces(team, piece) & square;
-	}
-
 	bool IsSquareUnderAttack(const Position& position, Team byTeam, const Square& square)
 	{
 		return IsSquareUnderAttack(position, byTeam, BitBoard::SquareToBitIndex(square));

@@ -28,7 +28,7 @@ namespace Boxfish
 	TranspositionTableEntry* TranspositionTable::GetEntry(const ZobristHash& hash, bool* found) const
 	{
 		TranspositionTableEntry* entry = &m_Entries[GetIndexFromHash(hash)];
-		*found = entry->Age >= 0 && hash == entry->Hash;
+		*found = entry->Age >= 0;
 		return entry;
 	}
 
