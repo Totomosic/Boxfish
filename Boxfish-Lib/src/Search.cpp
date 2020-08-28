@@ -171,14 +171,14 @@ namespace Boxfish
 		SearchStack stack[MAX_PLY + 1];
 		Move pv[MAX_PLY + 1];
 		// 50 move rule => 100 plies + MAX_PLY potential search
-		ZobristHash positionHistory[2 * MAX_PLY + 1];
+		std::unique_ptr<ZobristHash[]> positionHistory = std::make_unique<ZobristHash[]>(m_PositionHistory.size() + MAX_PLY + 1);
 		m_Nodes = 0;
 		Centipawns alpha = -SCORE_MATE;
 		Centipawns beta = SCORE_MATE;
 		Centipawns delta = -SCORE_MATE;
 		Centipawns bestScore = SCORE_NONE;
 
-		ZobristHash* historyPtr = positionHistory;
+		ZobristHash* historyPtr = positionHistory.get();
 		const std::vector<ZobristHash>& history = m_PositionHistory;
 		for (size_t i = 0; i < history.size(); i++)
 		{
@@ -372,9 +372,9 @@ namespace Boxfish
 		}
 		if (rootMoveCache.size() > 0)
 			return rootMoveCache[0];
-		RootMove mv;
-		mv.PV = { MOVE_NONE };
-		return mv;
+		RootMove nullMove;
+		nullMove.PV = { MOVE_NONE };
+		return nullMove;
 	}
 
 	template<Search::NodeType NT>
@@ -445,7 +445,7 @@ namespace Boxfish
 			(IsPvNode && stack->PV[0] != MOVE_NONE) ? stack->PV[0] :
 			(ttFound && ttEntryMove != MOVE_NONE && SanityCheckMove(position, ttEntryMove)) ? ttEntryMove : MOVE_NONE;
 
-		if (stack->StaticEvaluation == SCORE_NONE)
+		if (stack->StaticEvaluation == SCORE_NONE && !inCheck)
 			stack->StaticEvaluation = StaticEvalPosition(position, alpha, beta, stack->Ply);
 
 		// Eval pruning
@@ -709,12 +709,10 @@ namespace Boxfish
 				return ttEntry->Score;
 		}
 
-		stack->PositionHistory[0] = position.Hash;
 		(stack + 1)->Ply = stack->Ply + 1;
-		(stack + 1)->PositionHistory = stack->PositionHistory + 1;
 		(stack + 1)->Contempt = -stack->Contempt;
 
-		if (IsDraw(position, stack))
+		if (IsDraw(position, nullptr))
 			return EvaluateDraw(position, stack->Contempt);
 
 		Centipawns evaluation = 0;
@@ -771,12 +769,7 @@ namespace Boxfish
 				Position movedPosition = position;
 				ApplyMove(movedPosition, move);
 				m_Nodes++;
-
-				// Irreversible move was played
-				if (movedPosition.HalfTurnsSinceCaptureOrPush == 0)
-					(stack + 1)->PlySinceCaptureOrPawnPush = 0;
-				else
-					(stack + 1)->PlySinceCaptureOrPawnPush = stack->PlySinceCaptureOrPawnPush + 1;
+				(stack + 1)->PlySinceCaptureOrPawnPush = 0;
 
 				Centipawns score = -QuiescenceSearch<NT>(movedPosition, stack + 1, depth -1, -beta, -alpha);
 				if (score > bestValue)
@@ -844,18 +837,21 @@ namespace Boxfish
 		// 50 move rule => 100 half moves
 		if (position.HalfTurnsSinceCaptureOrPush >= 100)
 			return true;
-		int ply = 2;
-		ZobristHash hash = position.Hash;
-		int count = 0;
-		while (ply < stack->PlySinceCaptureOrPawnPush)
+		if (stack)
 		{
-			if (*(stack->PositionHistory - ply) == hash)
+			int ply = 2;
+			ZobristHash hash = position.Hash;
+			int count = 0;
+			while (ply < stack->PlySinceCaptureOrPawnPush)
 			{
-				count++;
-				if (count >= 2)
-					return true;
+				if (*(stack->PositionHistory - ply) == hash)
+				{
+					count++;
+					if (count >= 2)
+						return true;
+				}
+				ply += 2;
 			}
-			ply += 2;
 		}
 		return false;
 	}
