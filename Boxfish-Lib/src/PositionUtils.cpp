@@ -456,7 +456,7 @@ namespace Boxfish
 
 	bool SeeGE(const Position& position, const Move& move, Centipawns threshold)
 	{
-		if (move.GetFlags() & MOVE_CAPTURE)
+		if (move.IsCapture())
 		{
 			BitBoard stmAttackers;
 			SquareIndex from = move.GetFromSquareIndex();

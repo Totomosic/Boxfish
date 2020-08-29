@@ -484,10 +484,10 @@ namespace Boxfish
 		while (attacks)
 		{
 			SquareIndex toIndex = PopLeastSignificantBit(attacks);
-			Move move({ fromSquare, toIndex, pieceType, MOVE_CAPTURE });
+			Move move(fromSquare, toIndex, pieceType, MOVE_CAPTURE);
 			move.SetCapturedPiece(GetPieceAtSquare(position, otherTeam, toIndex));
 			BOX_ASSERT(move.GetCapturedPiece() != PIECE_KING, "Cannot capture king");
-			moveList.Moves[moveList.MoveCount++] = std::move(move);
+			moveList.Moves[moveList.MoveCount++] = move;
 		}
 	}
 

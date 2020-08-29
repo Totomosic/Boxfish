@@ -396,6 +396,9 @@ namespace Boxfish
 
 		int originalAlpha = alpha;
 
+		if (stack->Ply >= MAX_PLY)
+			return 0;
+
 		if (depth <= 0)
 		{
 			return QuiescenceSearch<NT>(position, stack, depth, alpha, beta);
@@ -548,7 +551,8 @@ namespace Boxfish
 			int depthExtension = 0;
 			Centipawns value = -SCORE_MATE;
 
-			if (move.IsCastle() || ((inCheck || givesCheck) && SeeGE(position, move, -50)))
+			const bool givesGoodCheck = givesCheck && SeeGE(position, move, -50);
+			if (move.IsCastle() || inCheck || givesGoodCheck)
 				depthExtension++;
 
 			int extendedDepth = depth - 1 + depthExtension;
