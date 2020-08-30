@@ -21,9 +21,29 @@ namespace Boxfish
 		Move BestMove;
 		int Depth;
 		Centipawns Score;
+		int Age;
 		EntryFlag Flag;
-		int Age = -1; // Half move clock
-	};
+
+	public:
+		inline ZobristHash GetHash() const { return Hash; }
+		inline Move GetMove() const { return BestMove; }
+		inline int GetDepth() const { return Depth; }
+		inline Centipawns GetScore() const { return Score; }
+		inline EntryFlag GetFlag() const { return Flag; }
+		inline int GetAge() const { return Age; }
+
+		inline void Update(ZobristHash hash, Move move, int depth, Centipawns score, EntryFlag flag, int age)
+		{
+			Hash = hash;
+			BestMove = move;
+			Depth = depth;
+			Score = score;
+			Age = age;
+			Flag = flag;
+		}
+	}
+		
+	;
 
 	class BOX_API TranspositionTable
 	{
@@ -38,7 +58,7 @@ namespace Boxfish
 	public:
 		TranspositionTable(size_t sizeBytes = TABLE_SIZE);
 
-		TranspositionTableEntry* GetEntry(const ZobristHash& hash, bool* found) const;
+		TranspositionTableEntry* GetEntry(const ZobristHash& hash, bool& found) const;
 		void Clear();
 
 	private:

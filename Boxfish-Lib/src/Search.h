@@ -128,6 +128,8 @@ namespace Boxfish
 		bool IsMateScore(Centipawns score) const;
 		Centipawns StaticEvalPosition(const Position& position, Centipawns alpha, Centipawns beta, int ply) const;
 
+		void UpdateQuietStats(const Position& position, SearchStack* stack, int depth, Move move);
+
 		std::vector<RootMove> GenerateRootMoves(const Position& position, SearchStack* stack);
 		int ChooseBestMove(const std::vector<RootMove>& moves, int skillLevel, int maxPVs) const;
 	};
