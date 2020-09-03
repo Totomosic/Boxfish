@@ -367,7 +367,7 @@ namespace Boxfish
 
 	void CalculateCheckers(Position& position, Team team)
 	{
-		position.InfoCache.CheckedBy[team] = GetAttackers(position, OtherTeam(team), position.InfoCache.KingSquare[team], position.InfoCache.AllPieces);
+		position.InfoCache.CheckedBy[team] = GetAttackers(position, OtherTeam(team), position.InfoCache.KingSquare[team], position.GetAllPieces());
 		position.InfoCache.InCheck[team] = (bool)position.InfoCache.CheckedBy[team];
 	}
 
@@ -503,7 +503,7 @@ namespace Boxfish
 			}
 			return sideToMove != team;
 		}
-		return false;
+		return threshold <= 0;
 	}
 
 	void MovePiece(Position& position, Team team, Piece piece, SquareIndex from, SquareIndex to)
@@ -794,6 +794,31 @@ namespace Boxfish
 			position.Hash.AddEnPassant(undo.EnpassantSquare.File);
 		}
 		position.InfoCache = undo.InfoCache;
+	}
+
+	void ApplyNullMove(Position& position, UndoInfo* outUndoInfo)
+	{
+		outUndoInfo->EnpassantSquare = position.EnpassantSquare;
+		if (position.EnpassantSquare != INVALID_SQUARE)
+		{
+			position.Hash.RemoveEnPassant(position.EnpassantSquare.File);
+			position.EnpassantSquare = INVALID_SQUARE;
+		}
+		position.TeamToPlay = OtherTeam(position.TeamToPlay);
+		position.Hash.FlipTeamToPlay();
+		position.HalfTurnsSinceCaptureOrPush++;
+	}
+
+	void UndoNullMove(Position& position, const UndoInfo& undo)
+	{
+		if (undo.EnpassantSquare != INVALID_SQUARE)
+		{
+			position.EnpassantSquare = undo.EnpassantSquare;
+			position.Hash.AddEnPassant(position.EnpassantSquare.File);
+		}
+		position.TeamToPlay = OtherTeam(position.TeamToPlay);
+		position.Hash.FlipTeamToPlay();
+		position.HalfTurnsSinceCaptureOrPush--;
 	}
 
 	bool SanityCheckMove(const Position& position, const Move& move)

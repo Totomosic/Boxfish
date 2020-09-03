@@ -121,11 +121,9 @@ namespace Boxfish
 
 #endif
 
-	inline bool MoreThanOne(const BitBoard& board)
+	constexpr bool MoreThanOne(const BitBoard& board)
 	{
-		if (!board)
-			return false;
-		return ForwardBitScan(board) != BackwardBitScan(board);
+		return board.Board & (board.Board - 1);
 	}
 
 	BitBoard ShiftEast(const BitBoard& board, int count);

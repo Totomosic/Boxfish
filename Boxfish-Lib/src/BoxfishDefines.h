@@ -3,5 +3,3 @@
 #pragma warning( disable : 26812 )
 
 #define BOX_API
-
-#define BOX_BIT(x) (1ULL << ((int)(x)))

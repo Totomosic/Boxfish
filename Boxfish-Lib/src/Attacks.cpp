@@ -303,7 +303,7 @@ namespace Boxfish
         default:
             BOX_ASSERT(false, "Not a sliding piece");
         }
-        return BitBoard();
+        return ZERO_BB;
     }
 
     BitBoard GetBitBoardBetween(SquareIndex a, SquareIndex b)

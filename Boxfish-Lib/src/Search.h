@@ -12,6 +12,8 @@
 namespace Boxfish
 {
 
+	void InitSearch();
+
 	struct BOX_API SearchLimits
 	{
 	public:
@@ -45,7 +47,7 @@ namespace Boxfish
 
 	class BOX_API Search
 	{
-	private:
+	public:
 		enum NodeType
 		{
 			PV,
@@ -125,6 +127,7 @@ namespace Boxfish
 		Centipawns EvaluateDraw(const Position& postion, Centipawns contempt) const;
 		Centipawns MateIn(int ply) const;
 		Centipawns MatedIn(int ply) const;
+		int GetPliesFromMateScore(Centipawns score) const;
 		bool IsMateScore(Centipawns score) const;
 		Centipawns StaticEvalPosition(const Position& position, Centipawns alpha, Centipawns beta, int ply) const;
 

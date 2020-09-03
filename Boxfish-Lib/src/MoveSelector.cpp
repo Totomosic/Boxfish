@@ -4,10 +4,10 @@
 namespace Boxfish
 {
 
-	constexpr Centipawns SCORE_GOOD_CAPTURE = 100000000;
-	constexpr Centipawns SCORE_PROMOTION = 90000000;
-	constexpr Centipawns SCORE_KILLER = 80000000;
-	constexpr Centipawns SCORE_BAD_CAPTURE = 50000000;
+	constexpr Centipawns SCORE_GOOD_CAPTURE = 500;
+	constexpr Centipawns SCORE_PROMOTION = 600;
+	constexpr Centipawns SCORE_KILLER = 300;
+	constexpr Centipawns SCORE_BAD_CAPTURE = -1000;
 
 	MoveSelector::MoveSelector(MoveList* moves, const Position* currentPosition, const Move& ttMove, const Move& counterMove, const OrderingTables* tables, const Move* killers)
 		: m_Moves(moves), m_CurrentPosition(currentPosition), m_ttMove(ttMove), m_CounterMove(counterMove), m_Tables(tables), m_Killers(killers), m_CurrentIndex(0), m_CurrentStage(TTMove)
@@ -20,9 +20,9 @@ namespace Boxfish
 			Move& move = m_Moves->Moves[index];
 			if (move.IsCapture())
 			{
-				if (SeeGE(*currentPosition, move))
+				if (SeeGE(*currentPosition, move, -30))
 				{
-					score = SCORE_GOOD_CAPTURE + GetPieceValue(move.GetCapturedPiece()) - GetPieceValue(move.GetMovingPiece());
+					score = SCORE_GOOD_CAPTURE + GetPieceValue(move.GetCapturedPiece());
 				}
 				else
 				{
@@ -44,7 +44,7 @@ namespace Boxfish
 			// Counter move
 			if (move == counterMove)
 			{
-				score += 20;
+				score += 100;
 			}
 			// History Heuristic
 			if (m_Tables->History && m_Tables->Butterfly)
@@ -53,7 +53,7 @@ namespace Boxfish
 				Centipawns butterfly = (m_Tables->Butterfly)[currentPosition->TeamToPlay][move.GetFromSquareIndex()][move.GetToSquareIndex()];
 				if (history != 0 && butterfly != 0)
 				{
-					score += history / butterfly;
+					score += history / butterfly * 10;
 				}
 			}
 			move.SetValue(score);

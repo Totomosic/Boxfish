@@ -21,7 +21,7 @@ namespace Boxfish
 		Move BestMove;
 		int Depth;
 		Centipawns Score;
-		int Age;
+		int Age = -1;
 		EntryFlag Flag;
 
 	public:

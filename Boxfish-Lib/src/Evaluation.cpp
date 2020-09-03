@@ -215,7 +215,7 @@ namespace Boxfish
 			50, 50, 50, 50, 50, 50, 50, 50,
 			10, 10, 20, 30, 30, 20, 10, 10,
 			 5,  5, 10, 25, 25, 10,  5,  5,
-			 0,  0,  0, 23, 23,  0,  0,  0,
+			 0,  0,  0, 22, 22,  0,  0,  0,
 			 5, -5,-10,  5,  5,-10, -5,  5,
 			 5, 10, 10,-20,-20, 10, 10,  5,
 			 0,  0,  0,  0,  0,  0,  0,  0
@@ -448,11 +448,9 @@ namespace Boxfish
 		// Don't evaluate material of king pieces
 		for (Piece piece = PIECE_PAWN; piece < PIECE_KING; piece++)
 		{
-			Centipawns midgame = s_MaterialValues[MIDGAME][piece];
-			Centipawns endgame = s_MaterialValues[ENDGAME][piece];
 			int count = position.GetTeamPieces(team, piece).GetCount();
-			mg += midgame * count;
-			eg += endgame * count;
+			mg += s_MaterialValues[MIDGAME][piece] * count;
+			eg += s_MaterialValues[ENDGAME][piece] * count;
 		}
 		result.Material[MIDGAME][team] = mg;
 		result.Material[ENDGAME][team] = eg;
@@ -783,7 +781,7 @@ namespace Boxfish
 			int pawnCountOnFile = (FILE_MASKS[BitBoard::FileOfIndex(square)] & pawns).GetCount();
 			if (pawnCountOnFile < 2)
 			{
-				mg += 10 * (2 - pawnCountOnFile);
+				mg += 20 * (2 - pawnCountOnFile);
 				eg += 15 * (2 - pawnCountOnFile);
 			}
 
@@ -873,20 +871,19 @@ namespace Boxfish
 	{
 		constexpr Team otherTeam = OtherTeam(team);
 
-		SquareIndex kngSq = position.InfoCache.KingSquare[team];
+		SquareIndex kngSq = position.GetKingSquare(team);
 		Square kingSquare = BitBoard::BitIndexToSquare(kngSq);
 
 		result.Data.Attackers[otherTeam] += (result.Data.KingAttackZone[team] & result.Data.AttackedBy[otherTeam][PIECE_PAWN]).GetCount();
 
 		Centipawns mg = 0;
-		Centipawns eg = 0;
 
 		if (result.Data.Attackers[otherTeam] > 2 && position.GetTeamPieces(otherTeam, PIECE_QUEEN).GetCount() > 0)
 		{
 			mg -= s_KingSafetyTable[std::min(result.Data.AttackUnits[otherTeam], MAX_ATTACK_UNITS - 1)];
 		}
 
-		// King Shield		
+		// King Shield
 		File kingFileCenter = std::min(std::max(kingSquare.File, FILE_B), FILE_G);
 		for (File file = (File)(kingFileCenter - 1); file <= kingFileCenter + 1; file++)
 		{
@@ -910,7 +907,7 @@ namespace Boxfish
 		}
 
 		result.KingSafety[MIDGAME][team] = mg;
-		result.KingSafety[ENDGAME][team] = eg;
+		result.KingSafety[ENDGAME][team] = 0;
 	}
 
 	void EvaluateKingSafety(EvaluationResult& result, const Position& position)

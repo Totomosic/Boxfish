@@ -5,6 +5,35 @@
 namespace Boxfish
 {
 
+	// DepthReductions[NodeType][Improving][Depth][MoveIndex];
+	static int DepthReductions[2][2][32][64];
+
+	void InitSearch()
+	{
+		for (int improving = 0; improving <= 1; improving++)
+		{
+			for (int depth = 1; depth < 32; depth++)
+			{
+				for (int moveIndex = 1; moveIndex < 64; moveIndex++)
+				{
+					double reduction = std::log(depth) * std::log(moveIndex) / 2.0;
+					DepthReductions[Search::NodeType::NonPV][improving][depth][moveIndex] = (int)std::round(reduction);
+					DepthReductions[Search::NodeType::PV][improving][depth][moveIndex] = std::max(DepthReductions[Search::NodeType::NonPV][improving][depth][moveIndex] - 1, 0);
+
+					if (!improving && reduction > 1.0)
+						DepthReductions[Search::NodeType::NonPV][improving][depth][moveIndex]++;
+				}
+			}
+		}
+	}
+
+	template<Search::NodeType NT>
+	int GetReduction(bool improving, int depth, int moveIndex)
+	{
+		BOX_ASSERT(depth > 0 && moveIndex > 0, "Invalid depth or MoveIndex");
+		return DepthReductions[NT][improving][std::min(depth, 31)][std::min(moveIndex, 63)];
+	}
+
 	void UpdatePV(Move* pv, const Move& move, Move* childPV)
 	{
 		for (*pv++ = move; childPV && *childPV != MOVE_NONE; )
@@ -250,14 +279,14 @@ namespace Boxfish
 				if (rootDepth >= 5)
 				{
 					Centipawns prevMaxScore = bestScore;
-					delta = 23;
+					delta = 20;
 					alpha = std::max(prevMaxScore - delta, -SCORE_MATE);
 					beta = std::min(prevMaxScore + delta, SCORE_MATE);
 				}
 
 				while (true)
 				{
-					int adjustedRootDepth = std::max(1, rootDepth - failedHighCount);
+					int adjustedRootDepth = std::max(1, rootDepth);
 					Centipawns newBestScore = SearchPosition<PV>(position, stackPtr, adjustedRootDepth, alpha, beta, RootInfo{ rootMoves, pvIndex, (int)rootMoves.size() });
 
 					std::stable_sort(rootMoves.begin() + pvIndex, rootMoves.end());
@@ -309,9 +338,9 @@ namespace Boxfish
 					else
 					{
 						if (rootMove.Score > 0)
-							std::cout << "mate " << ((int)rootPV.size()) / 2 + 1;
+							std::cout << "mate " << (GetPliesFromMateScore(rootMove.Score) / 2 + 1);
 						else
-							std::cout << "mate " << -((int)rootPV.size()) / 2 - 1;
+							std::cout << "mate " << -(GetPliesFromMateScore(rootMove.Score) / 2 - 1);
 					}
 					std::cout << " nodes " << m_Nodes;
 					std::cout << " nps " << (size_t)(m_Nodes / (elapsed.count() / 1e9f));
@@ -396,6 +425,7 @@ namespace Boxfish
 		(stack + 1)->Ply = stack->Ply + 1;
 		(stack + 2)->KillerMoves[0] = (stack + 2)->KillerMoves[1] = MOVE_NONE;
 		(stack + 1)->Contempt = -stack->Contempt;
+		(stack + 1)->PV = nullptr;
 
 		int originalAlpha = alpha;
 
@@ -454,32 +484,15 @@ namespace Boxfish
 		const bool improving = stack->StaticEvaluation >= (stack - 2)->StaticEvaluation || (stack - 2)->StaticEvaluation == SCORE_NONE;
 
 		// Eval pruning
-		if (!IsPvNode && !inCheck && !IsEndgame(position) && depth <= 6)
+		if (!isRoot && !inCheck && !IsEndgame(position) && depth <= 6)
 		{
 			Centipawns margin = (150 - 50 * improving) * depth;
 			if (stack->StaticEvaluation - margin >= beta)
-				return stack->StaticEvaluation - margin;
-		}
-
-		// Null move pruning
-		if (!IsPvNode && !inCheck && depth >= 3 && stack->CanNull && !IsEndgame(position) && stack->StaticEvaluation >= beta)
-		{
-			(stack + 1)->CanNull = false;
-			stack->CurrentMove = MOVE_NONE;
-			Position movedPosition = position;
-			ApplyMove(movedPosition, MOVE_NONE);
-
-			int r = 2;
-			if (depth > 6)
-				r = 3;
-
-			Centipawns value = -SearchPosition<NonPV>(movedPosition, stack + 1, std::max(1, depth - r - 1), -beta, -beta + 1, rootInfo);
-			if (value >= beta)
-				return beta;
+				return stack->StaticEvaluation;
 		}
 
 		// Razoring
-		if (!IsPvNode && !inCheck && stack->CanNull && depth <= 2)
+		if (!isRoot && !inCheck && stack->CanNull && depth <= 3)
 		{
 			Centipawns threshold = alpha - 300 - (depth - 1) * 60;
 			if (stack->StaticEvaluation < threshold)
@@ -490,10 +503,29 @@ namespace Boxfish
 			}
 		}
 
+		// Null move pruning
+		if (!isRoot && !inCheck && depth >= 3 && stack->CanNull && !IsEndgame(position) && stack->StaticEvaluation >= beta)
+		{
+			(stack + 1)->CanNull = false;
+			stack->CurrentMove = MOVE_NONE;
+
+			UndoInfo undo;
+			ApplyNullMove(position, &undo);
+
+			int r = 2;
+			if (depth > 6)
+				r = 3;
+
+			Centipawns value = -SearchPosition<NonPV>(position, stack + 1, std::max(1, depth - r - 1), -beta, -beta + 1, rootInfo);
+			UndoNullMove(position, undo);
+			if (value >= beta)
+				return beta;
+		}
+
 		// Futility pruning
 		bool futilityPrune = false;
 		constexpr Centipawns FutilityMargins[4] = { 0, 200, 300, 500 };
-		if (false && !IsPvNode && !inCheck && depth <= 3 && !IsMateScore(alpha))
+		if (!IsPvNode && !inCheck && depth <= 3 && !IsMateScore(alpha))
 		{
 			if (stack->StaticEvaluation + FutilityMargins[depth] <= alpha)
 				futilityPrune = true;
@@ -531,13 +563,13 @@ namespace Boxfish
 		Centipawns bestValue = -SCORE_MATE;
 
 		Move move = MOVE_NONE;
- 		while ((move = selector.GetNextMove()) != MOVE_NONE)
+		while ((move = selector.GetNextMove()) != MOVE_NONE)
 		{
 			moveIndex++;
 			if (isRoot && std::count(rootInfo.Moves.begin() + rootInfo.PVIndex, rootInfo.Moves.begin() + rootInfo.PVLast, move) == 0)
 				continue;
 
-			BOX_ASSERT(moveIndex > FIRST_MOVE_INDEX || move == ttMove || ttMove == MOVE_NONE, "Invalid");
+			BOX_ASSERT(moveIndex > FIRST_MOVE_INDEX || move == ttMove || ttMove == MOVE_NONE, "Invalid move ordering");
 
 			const bool isCaptureOrPromotion = move.IsCaptureOrPromotion();
 			stack->CurrentMove = move;
@@ -552,6 +584,35 @@ namespace Boxfish
 			if (!IsPvNode && futilityPrune && !givesCheck && !inCheck && !move.IsCaptureOrPromotion())
 				continue;
 
+			int depthExtension = 0;
+
+			const bool givesGoodCheck = givesCheck && SeeGE(position, move, -50);
+			if (move.IsCastle() || givesGoodCheck)
+				depthExtension++;
+
+			int extendedDepth = depth - 1 + depthExtension;
+
+			// Shallow depth pruning
+			if (!isRoot && position.GetNonPawnMaterial(position.TeamToPlay) > 0 && !IsMateScore(beta))
+			{
+				if (!isCaptureOrPromotion && !givesCheck && (!move.IsAdvancedPawnPush(position.TeamToPlay) || position.GetNonPawnMaterial() >= 2300))
+				{
+					int lmrDepth = std::max(depth - 1 - GetReduction<PV>(improving, depth, moveIndex), 0);
+					if (lmrDepth < 7 && !inCheck && stack->StaticEvaluation + 150 + 150 * lmrDepth <= alpha)
+					{
+						continue;
+					}
+					if (!SeeGE(position, move, -30 * lmrDepth * lmrDepth))
+					{
+						continue;
+					}
+				}
+				else if (depthExtension <= 0 && !SeeGE(position, move, -GetPieceValue(PIECE_PAWN) * depth))
+				{
+					continue;
+				}
+			}
+
 			// Irreversible move was played
 			if (movedPosition.HalfTurnsSinceCaptureOrPush == 0)
 				(stack + 1)->PlySinceCaptureOrPawnPush = 0;
@@ -560,24 +621,19 @@ namespace Boxfish
 
 			bool fullDepthSearch = false;
 			int depthReduction = 0;
-			int depthExtension = 0;
 			Centipawns value = -SCORE_MATE;
 
-			const bool givesGoodCheck = givesCheck && SeeGE(position, move, -50);
-			if (move.IsCastle() || inCheck || givesGoodCheck)
-				depthExtension++;
-
-			int extendedDepth = depth - 1 + depthExtension;
-
 			// Late move reduction
-			if (!IsPvNode && depth >= 4 && moveIndex > 4 + FIRST_MOVE_INDEX && !inCheck && !isCaptureOrPromotion && !givesCheck)
+			if (depth >= 3 && moveIndex > FIRST_MOVE_INDEX && !inCheck && !isCaptureOrPromotion && !givesCheck)
 			{
-				depthReduction = 1;
-				if (moveIndex > 6 + FIRST_MOVE_INDEX)
-					depthReduction++;
-				int d = extendedDepth - depthReduction;
+				int reduction = GetReduction<NT>(improving, depth, moveIndex);
+				if ((stack - 1)->MoveCount > 15)
+					reduction--;
+
+				int d = std::max(extendedDepth - std::max(reduction, 0), 1);
+
 				value = -SearchPosition<NonPV>(movedPosition, stack + 1, d, -(alpha + 1), -alpha, rootInfo);
-				fullDepthSearch = value >= alpha && d != extendedDepth;
+				fullDepthSearch = value > alpha && d != extendedDepth;
 			}
 			else
 			{
@@ -625,13 +681,13 @@ namespace Boxfish
 			{
 				bestMove = move;
 				bestValue = value;
-				if (IsPvNode && !isRoot)
+				if (IsPvNode && !isRoot && (stack + 1)->PV)
 					UpdatePV(stack->PV, move, (stack + 1)->PV);
 				if (value > alpha && IsPvNode)
 				{
 					alpha = value;
 				}
-				if (IsMateScore(value) && value > 0)
+				if (value >= MateIn(stack->Ply))
 					break;
 			}
 
@@ -647,17 +703,12 @@ namespace Boxfish
 				{
 					ttEntry->Update(position.Hash, move, depth, value, LOWER_BOUND, position.GetTotalHalfMoves());
 				}
-				return beta;
+				return value;
 			}
 			else if (!isCaptureOrPromotion && rootInfo.PVIndex == 0)
 			{
 				m_OrderingTables.Butterfly[position.TeamToPlay][move.GetFromSquareIndex()][move.GetToSquareIndex()] += depth * depth;
 			}
-		}
-
-		if (bestMove == MOVE_NONE)
-		{
-			return alpha;
 		}
 
 		if (rootInfo.PVIndex == 0 && (!ttFound || depth >= ttEntry->GetDepth()))
@@ -671,7 +722,7 @@ namespace Boxfish
 	{
 		if (move.GetMovingPiece() == PIECE_PAWN)
 			return false;
-		return !SeeGE(position, move);
+		return !SeeGE(position, move, -50);
 	}
 
 	template<Search::NodeType NT>
@@ -836,6 +887,13 @@ namespace Boxfish
 	Centipawns Search::MatedIn(int ply) const
 	{
 		return -SCORE_MATE + ply;
+	}
+
+	int Search::GetPliesFromMateScore(Centipawns score) const
+	{
+		if (score > 0)
+			return SCORE_MATE - score;
+		return score + SCORE_MATE;
 	}
 
 	bool Search::IsMateScore(Centipawns score) const

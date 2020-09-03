@@ -45,8 +45,8 @@ namespace Boxfish
 		PositionInfo InfoCache;
 
 	public:
-		const BitBoard& GetTeamPieces(Team team) const;
-		const BitBoard& GetAllPieces() const;
+		inline const BitBoard& GetTeamPieces(Team team) const { return InfoCache.TeamPieces[team]; }
+		inline const BitBoard& GetAllPieces() const { return InfoCache.AllPieces; }
 		inline BitBoard GetNotOccupied() const { return ~GetAllPieces(); }
 
 		inline SquareIndex GetKingSquare(Team team) const { return InfoCache.KingSquare[team]; }

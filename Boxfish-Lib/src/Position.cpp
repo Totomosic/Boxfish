@@ -4,16 +4,6 @@
 namespace Boxfish
 {
 
-	const BitBoard& Position::GetTeamPieces(Team team) const
-	{
-		return InfoCache.TeamPieces[team];
-	}
-
-	const BitBoard& Position::GetAllPieces() const
-	{
-		return InfoCache.AllPieces;
-	}
-
 	void Position::InvalidateTeam(Team team)
 	{
 		InfoCache.TeamPieces[team] = 0;
