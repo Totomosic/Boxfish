@@ -15,7 +15,9 @@ namespace Boxfish
 		Square EnpassantSquare = INVALID_SQUARE;
 		bool CastleKingSide[TEAM_MAX];
 		bool CastleQueenSide[TEAM_MAX];
-		PositionInfo InfoCache;
+		
+		BitBoard CheckedBy[TEAM_MAX];
+		bool InCheck[TEAM_MAX];
 	};
 
 	Position CreateStartingPosition();

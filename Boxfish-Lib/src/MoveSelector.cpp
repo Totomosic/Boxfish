@@ -26,7 +26,7 @@ namespace Boxfish
 				}
 				else
 				{
-					score = SCORE_BAD_CAPTURE + GetPieceValue(move.GetCapturedPiece()) - GetPieceValue(move.GetMovingPiece());
+					score = SCORE_BAD_CAPTURE - GetPieceValue(move.GetMovingPiece());
 				}
 			}
 			else if (move.IsPromotion())
@@ -44,16 +44,16 @@ namespace Boxfish
 			// Counter move
 			if (move == counterMove)
 			{
-				score += 100;
+				score += 25;
 			}
 			// History Heuristic
 			if (m_Tables->History && m_Tables->Butterfly)
 			{
-				Centipawns history = (m_Tables->History)[currentPosition->TeamToPlay][move.GetFromSquareIndex()][move.GetToSquareIndex()];
-				Centipawns butterfly = (m_Tables->Butterfly)[currentPosition->TeamToPlay][move.GetFromSquareIndex()][move.GetToSquareIndex()];
-				if (history != 0 && butterfly != 0)
+				Centipawns history = m_Tables->History[currentPosition->TeamToPlay][move.GetFromSquareIndex()][move.GetToSquareIndex()];
+				Centipawns butterfly = m_Tables->Butterfly[currentPosition->TeamToPlay][move.GetFromSquareIndex()][move.GetToSquareIndex()];
+				if (butterfly != 0 && history > butterfly)
 				{
-					score += history / butterfly * 10;
+					score += history / butterfly;
 				}
 			}
 			move.SetValue(score);
@@ -97,17 +97,20 @@ namespace Boxfish
 		for (int i = 0; i < moves.MoveCount; i++)
 		{
 			Move& move = moves.Moves[i];
-			if (move.GetFlags() & MOVE_CAPTURE)
+			if (move.IsCapture())
 			{
-				move.SetValue(SCORE_GOOD_CAPTURE + GetPieceValue(move.GetCapturedPiece()) - GetPieceValue(move.GetMovingPiece()));
+				if (SeeGE(position, move, -30))
+					move.SetValue(SCORE_GOOD_CAPTURE + GetPieceValue(move.GetCapturedPiece()));
+				else
+					move.SetValue(SCORE_NONE);
 			}
-			else if (move.GetFlags() & MOVE_PROMOTION)
+			else if (move.IsPromotion() && (move.GetPromotionPiece() == PIECE_QUEEN || move.GetPromotionPiece() == PIECE_KNIGHT))
 			{
 				move.SetValue(SCORE_PROMOTION + GetPieceValue(move.GetPromotionPiece()));
 			}
 			else
 			{
-				move.SetValue(0);
+				move.SetValue(SCORE_NONE);
 			}
 		}
 	}
@@ -125,7 +128,7 @@ namespace Boxfish
 			for (int i = 0; i < m_LegalMoves.MoveCount; i++)
 			{
 				const Move& m = m_LegalMoves.Moves[i];
-				if (m.GetFlags() & MOVE_CAPTURE)
+				if (m.IsCaptureOrPromotion() && m.GetValue() > SCORE_NONE)
 					m_NumberOfCaptures++;
 			}
 		}
@@ -140,12 +143,12 @@ namespace Boxfish
 	{
 		BOX_ASSERT(!Empty(), "Move list is empty");
 		size_t bestIndex = 0;
-		Centipawns bestScore = -SCORE_MATE;
+		Centipawns bestScore = SCORE_NONE;
 		for (int index = m_CurrentIndex; index < m_LegalMoves.MoveCount; index++)
 		{
 			const Move& move = m_LegalMoves.Moves[index];
 			Centipawns value = move.GetValue();
-			if (value > bestScore && (m_InCheck || ((move.IsCapture()) || ((move.IsPromotion()) && (move.GetPromotionPiece() == PIECE_QUEEN || move.GetPromotionPiece() == PIECE_KNIGHT)))))
+			if (value > bestScore)
 			{
 				bestScore = value;
 				bestIndex = index;

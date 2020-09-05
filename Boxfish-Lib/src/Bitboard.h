@@ -53,19 +53,16 @@ namespace Boxfish
 		friend std::ostream& operator<<(std::ostream& stream, const BitBoard& board);
 
 	public:
-		inline static SquareIndex SquareToBitIndex(const Square& square)
+		constexpr static SquareIndex SquareToBitIndex(const Square& square)
 		{
-			BOX_ASSERT(square.File >= 0 && square.File < FILE_MAX && square.Rank >= 0 && square.Rank < RANK_MAX, "Invalid square");
+			BOX_ASSERT(square.File >= 0 && square.File < FILE_MAX&& square.Rank >= 0 && square.Rank < RANK_MAX, "Invalid square");
 			return (SquareIndex)(square.File + square.Rank * FILE_MAX);
 		}
 
-		inline static Square BitIndexToSquare(SquareIndex index) { return { FileOfIndex(index), RankOfIndex(index) }; }
-		inline static Rank RankOfIndex(int index) { return (Rank)(index >> 3); }
-		inline static File FileOfIndex(int index) { return (File)(index & 7); }
+		constexpr static Square BitIndexToSquare(SquareIndex index) { return { FileOfIndex(index), RankOfIndex(index) }; }
+		constexpr static Rank RankOfIndex(int index) { return (Rank)(index >> 3); }
+		constexpr static File FileOfIndex(int index) { return (File)(index & 7); }
 	};
-
-	constexpr BitBoard ZERO_BB = 0ULL;
-	constexpr BitBoard ALL_SQUARES_BB = 0xFFFFFFFFFFFFFFFF;
 
 #ifdef BOX_PLATFORM_WINDOWS
 	inline SquareIndex ForwardBitScan(const BitBoard& board)
@@ -80,14 +77,6 @@ namespace Boxfish
 		unsigned long msb;
 		_BitScanReverse64(&msb, board.Board);
 		return (SquareIndex)msb;
-	}
-
-	inline SquareIndex PopLeastSignificantBit(BitBoard& board)
-	{
-		unsigned long lsb;
-		_BitScanForward64(&lsb, board.Board);
-		board.Board &= board.Board - 1;
-		return (SquareIndex)lsb;
 	}
 
 	inline BitBoard FlipVertically(const BitBoard& board)
@@ -107,19 +96,19 @@ namespace Boxfish
 		return (SquareIndex)(63 - __builtin_clzll(board.Board));
 	}
 
-	inline SquareIndex PopLeastSignificantBit(BitBoard& board)
-	{
-		int lsbIndex = __builtin_ffsll(board.Board) - 1;
-		board.Board &= board.Board - 1;
-		return (SquareIndex)lsbIndex;
-	}
-
 	inline BitBoard FlipVertically(const BitBoard& board)
 	{
 		return __bswap_64(board.Board);
 	}
 
 #endif
+
+	inline SquareIndex PopLeastSignificantBit(BitBoard& board)
+	{
+		const SquareIndex sq = ForwardBitScan(board);
+		board.Board &= board.Board - 1;
+		return sq;
+	}
 
 	constexpr bool MoreThanOne(const BitBoard& board)
 	{
@@ -133,6 +122,9 @@ namespace Boxfish
 
 	inline SquareIndex FrontmostSquare(const BitBoard& board, Team team) { return (team == TEAM_WHITE) ? BackwardBitScan(board) : ForwardBitScan(board); }
 	inline SquareIndex BackmostSquare(const BitBoard& board, Team team) { return (team == TEAM_WHITE) ? ForwardBitScan(board) : BackwardBitScan(board); }
+
+	constexpr BitBoard ZERO_BB = 0ULL;
+	constexpr BitBoard ALL_SQUARES_BB = 0xFFFFFFFFFFFFFFFFULL;
 
 	constexpr BitBoard RANK_1_MASK = 0xffull;
 	constexpr BitBoard RANK_2_MASK = 0xff00ull;
@@ -150,6 +142,9 @@ namespace Boxfish
 	constexpr BitBoard FILE_C_MASK = 0x404040404040404ull;
 	constexpr BitBoard FILE_B_MASK = 0x202020202020202ull;
 	constexpr BitBoard FILE_A_MASK = 0x101010101010101ull;
+
+	constexpr BitBoard DARK_SQUARES_MASK = 0xAA55AA55AA55AA55;
+	constexpr BitBoard LIGHT_SQUARES_MASK = 0x55AA55AA55AA55AA;
 
 	constexpr BitBoard FILE_MASKS[FILE_MAX] = {
 		FILE_A_MASK,
@@ -173,8 +168,41 @@ namespace Boxfish
 		RANK_8_MASK,
 	};
 
-	constexpr BitBoard DARK_SQUARES_MASK = 0xAA55AA55AA55AA55;
-	constexpr BitBoard LIGHT_SQUARES_MASK = 0x55AA55AA55AA55AA;
+	// From white perspective
+	constexpr BitBoard INFRONT_BB[RANK_MAX] = {
+		RANK_1_MASK | RANK_2_MASK | RANK_3_MASK | RANK_4_MASK | RANK_5_MASK | RANK_6_MASK | RANK_7_MASK | RANK_8_MASK,
+		RANK_2_MASK | RANK_3_MASK | RANK_4_MASK | RANK_5_MASK | RANK_6_MASK | RANK_7_MASK | RANK_8_MASK,
+		RANK_3_MASK | RANK_4_MASK | RANK_5_MASK | RANK_6_MASK | RANK_7_MASK | RANK_8_MASK,
+		RANK_4_MASK | RANK_5_MASK | RANK_6_MASK | RANK_7_MASK | RANK_8_MASK,
+		RANK_5_MASK | RANK_6_MASK | RANK_7_MASK | RANK_8_MASK,
+		RANK_6_MASK | RANK_7_MASK | RANK_8_MASK,
+		RANK_7_MASK | RANK_8_MASK,
+		RANK_8_MASK,
+	};
+
+	// From white perspective
+	constexpr BitBoard BEHIND_BB[RANK_MAX] = {
+		RANK_1_MASK,
+		RANK_1_MASK | RANK_2_MASK,
+		RANK_1_MASK | RANK_2_MASK | RANK_3_MASK,
+		RANK_1_MASK | RANK_2_MASK | RANK_3_MASK | RANK_4_MASK,
+		RANK_1_MASK | RANK_2_MASK | RANK_3_MASK | RANK_4_MASK | RANK_5_MASK,
+		RANK_1_MASK | RANK_2_MASK | RANK_3_MASK | RANK_4_MASK | RANK_5_MASK | RANK_6_MASK,
+		RANK_1_MASK | RANK_2_MASK | RANK_3_MASK | RANK_4_MASK | RANK_5_MASK | RANK_6_MASK | RANK_7_MASK,
+		RANK_1_MASK | RANK_2_MASK | RANK_3_MASK | RANK_4_MASK | RANK_5_MASK | RANK_6_MASK | RANK_7_MASK | RANK_8_MASK,
+	};
+
+	// Includes rank
+	constexpr BitBoard InFront(Rank rank, Team team)
+	{
+		return (team == TEAM_WHITE) ? INFRONT_BB[rank] : BEHIND_BB[rank];
+	}
+
+	// Includes rank
+	constexpr BitBoard Behind(Rank rank, Team team)
+	{
+		return (team == TEAM_WHITE) ? BEHIND_BB[rank] : INFRONT_BB[rank];
+	}
 
 	enum Direction
 	{

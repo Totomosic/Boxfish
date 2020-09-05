@@ -102,12 +102,14 @@ namespace Boxfish
 		movegen.FilterLegalMoves(moves);
 
 		auto startTime = std::chrono::high_resolution_clock::now();
+#if BOX_UNDO_MOVES
+		UndoInfo undo;
+#endif
 		for (int i = 0; i < moves.MoveCount; i++)
 		{
 #if BOX_UNDO_MOVES
-			UndoInfo undo;
 			ApplyMove(position, moves.Moves[i], &undo);
-			uint64_t perft = PerftPosition(position, depth - 1);
+			size_t perft = PerftPosition(position, depth - 1);
 			UndoMove(position, moves.Moves[i], undo);
 #else
 			Position movedPosition = position;
@@ -234,6 +236,7 @@ namespace Boxfish
 		stackPtr->PositionHistory = historyPtr;
 		stackPtr->PlySinceCaptureOrPawnPush = history.size() > 0 ? history.size() - 1 : 0;
 		stackPtr->Ply = -1;
+		stackPtr->MoveCount = 0;
 		stackPtr->CurrentMove = MOVE_NONE;
 		stackPtr->StaticEvaluation = SCORE_NONE;
 		stackPtr->CanNull = true;
@@ -247,6 +250,7 @@ namespace Boxfish
 		stackPtr->PositionHistory = historyPtr + 1;
 		stackPtr->PlySinceCaptureOrPawnPush = history.size();
 		stackPtr->Ply = 0;
+		stackPtr->MoveCount = 0;
 		stackPtr->CurrentMove = MOVE_NONE;
 		stackPtr->StaticEvaluation = SCORE_NONE;
 		stackPtr->CanNull = true;
@@ -421,6 +425,7 @@ namespace Boxfish
 		Move* pv = pvMoveList.Moves;
 
 		stack->StaticEvaluation = SCORE_NONE;
+		(stack + 1)->MoveCount = 0;
 		(stack + 1)->PositionHistory = stack->PositionHistory + 1;
 		(stack + 1)->Ply = stack->Ply + 1;
 		(stack + 2)->KillerMoves[0] = (stack + 2)->KillerMoves[1] = MOVE_NONE;
@@ -504,7 +509,7 @@ namespace Boxfish
 		}
 
 		// Null move pruning
-		if (!isRoot && !inCheck && depth >= 3 && stack->CanNull && !IsEndgame(position) && stack->StaticEvaluation >= beta)
+		if (!IsPvNode && !inCheck && depth >= 3 && stack->CanNull && !IsEndgame(position) && stack->StaticEvaluation >= beta)
 		{
 			(stack + 1)->CanNull = false;
 			stack->CurrentMove = MOVE_NONE;
@@ -512,11 +517,9 @@ namespace Boxfish
 			UndoInfo undo;
 			ApplyNullMove(position, &undo);
 
-			int r = 2;
-			if (depth > 6)
-				r = 3;
+			int r = ((820 + 70 * depth) / 256 + std::min((stack->StaticEvaluation - beta) / 200, 3));
 
-			Centipawns value = -SearchPosition<NonPV>(position, stack + 1, std::max(1, depth - r - 1), -beta, -beta + 1, rootInfo);
+			Centipawns value = -SearchPosition<NonPV>(position, stack + 1, depth - r, -beta, -beta + 1, rootInfo);
 			UndoNullMove(position, undo);
 			if (value >= beta)
 				return beta;
@@ -586,7 +589,7 @@ namespace Boxfish
 
 			int depthExtension = 0;
 
-			const bool givesGoodCheck = givesCheck && SeeGE(position, move, -50);
+			const bool givesGoodCheck = givesCheck && SeeGE(position, move, -30);
 			if (move.IsCastle() || givesGoodCheck)
 				depthExtension++;
 
@@ -595,19 +598,19 @@ namespace Boxfish
 			// Shallow depth pruning
 			if (!isRoot && position.GetNonPawnMaterial(position.TeamToPlay) > 0 && !IsMateScore(beta))
 			{
-				if (!isCaptureOrPromotion && !givesCheck && (!move.IsAdvancedPawnPush(position.TeamToPlay) || position.GetNonPawnMaterial() >= 2300))
+				if (!isCaptureOrPromotion && !givesCheck && (!move.IsAdvancedPawnPush(position.TeamToPlay) || position.GetNonPawnMaterial() >= 2750))
 				{
 					int lmrDepth = std::max(depth - 1 - GetReduction<PV>(improving, depth, moveIndex), 0);
-					if (lmrDepth < 7 && !inCheck && stack->StaticEvaluation + 150 + 150 * lmrDepth <= alpha)
+					if (lmrDepth <= 6 && !inCheck && stack->StaticEvaluation + 150 + 150 * lmrDepth <= alpha)
 					{
 						continue;
 					}
-					if (!SeeGE(position, move, -30 * lmrDepth * lmrDepth))
+					if (!SeeGE(position, move, -40 * lmrDepth * lmrDepth))
 					{
 						continue;
 					}
 				}
-				else if (depthExtension <= 0 && !SeeGE(position, move, -GetPieceValue(PIECE_PAWN) * depth))
+				else if (depthExtension <= 0 && !SeeGE(position, move, -GetPieceValue(PIECE_PAWN, ENDGAME) * depth))
 				{
 					continue;
 				}
@@ -628,6 +631,8 @@ namespace Boxfish
 			{
 				int reduction = GetReduction<NT>(improving, depth, moveIndex);
 				if ((stack - 1)->MoveCount > 15)
+					reduction--;
+				if (IsEndgame(position))
 					reduction--;
 
 				int d = std::max(extendedDepth - std::max(reduction, 0), 1);
@@ -718,13 +723,6 @@ namespace Boxfish
 		return bestValue;
 	}
 
-	bool IsBadCapture(const Position& position, const Move& move)
-	{
-		if (move.GetMovingPiece() == PIECE_PAWN)
-			return false;
-		return !SeeGE(position, move, -50);
-	}
-
 	template<Search::NodeType NT>
 	Centipawns Search::QuiescenceSearch(Position& position, SearchStack* stack, int depth, Centipawns alpha, Centipawns beta)
 	{
@@ -794,9 +792,6 @@ namespace Boxfish
 
 			if (generator.IsLegal(move))
 			{
-				if (!inCheck && move.IsCapture() && IsBadCapture(position, move))
-					continue;
-
 				Position movedPosition = position;
 				ApplyMove(movedPosition, move);
 				m_Nodes++;

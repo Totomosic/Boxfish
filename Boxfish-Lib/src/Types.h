@@ -59,7 +59,7 @@ namespace Boxfish
 		RANK_1
 	};
 
-	inline Rank RelativeRank(Team team, Rank whiteRank)
+	constexpr Rank RelativeRank(Team team, Rank whiteRank)
 	{
 		return (team == TEAM_WHITE) ? whiteRank : INVERSE_RANK[whiteRank];
 	}

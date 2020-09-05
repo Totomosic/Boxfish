@@ -13,6 +13,7 @@ namespace Boxfish
 
 	constexpr BitBoard QueenSide = FILE_A_MASK | FILE_B_MASK | FILE_C_MASK | FILE_D_MASK;
 	constexpr BitBoard CenterFiles = FILE_C_MASK | FILE_D_MASK | FILE_E_MASK | FILE_F_MASK;
+	constexpr BitBoard CenterRanks = RANK_3_MASK | RANK_4_MASK | RANK_5_MASK | RANK_6_MASK;
 	constexpr BitBoard KingSide = FILE_E_MASK | FILE_F_MASK | FILE_G_MASK | FILE_H_MASK;
 	constexpr BitBoard Center = (FILE_D_MASK | FILE_E_MASK) & (RANK_4_MASK | RANK_5_MASK);
 
@@ -204,7 +205,7 @@ namespace Boxfish
 		s_MaterialValues[ENDGAME][PIECE_KNIGHT] = 325;
 		s_MaterialValues[ENDGAME][PIECE_BISHOP] = 340;
 		s_MaterialValues[ENDGAME][PIECE_ROOK] = 500;
-		s_MaterialValues[ENDGAME][PIECE_QUEEN] = 925;
+		s_MaterialValues[ENDGAME][PIECE_QUEEN] = 975;
 		s_MaterialValues[ENDGAME][PIECE_KING] = 20000;
 	}
 
@@ -215,7 +216,7 @@ namespace Boxfish
 			50, 50, 50, 50, 50, 50, 50, 50,
 			10, 10, 20, 30, 30, 20, 10, 10,
 			 5,  5, 10, 25, 25, 10,  5,  5,
-			 0,  0,  0, 22, 22,  0,  0,  0,
+			 0,  0,  0, 24, 24,  0,  0,  0,
 			 5, -5,-10,  5,  5,-10, -5,  5,
 			 5, 10, 10,-20,-20, 10, 10,  5,
 			 0,  0,  0,  0,  0,  0,  0,  0
@@ -247,7 +248,7 @@ namespace Boxfish
 			-10,  5,  5, 10, 10,  5,  5,-10,
 			-10,  0, 10, 10, 10, 10,  0,-10,
 			-10, 10, 10, 10, 10, 10, 10,-10,
-			-10,  5,  0,  0,  0,  0,  5,-10,
+			-10, 15,  0,  0,  0,  0, 15,-10,
 			-20,-10,-10,-10,-10,-10,-10,-20,
 		};
 		MirrorTable(s_PieceSquareTables[MIDGAME][TEAM_WHITE][PIECE_BISHOP], whiteBishopsTable);
@@ -358,8 +359,8 @@ namespace Boxfish
 		s_AttackUnits[PIECE_PAWN] = 0;
 		s_AttackUnits[PIECE_KNIGHT] = 7;
 		s_AttackUnits[PIECE_BISHOP] = 3;
-		s_AttackUnits[PIECE_ROOK] = 5;
-		s_AttackUnits[PIECE_QUEEN] = 6;
+		s_AttackUnits[PIECE_ROOK] = 4;
+		s_AttackUnits[PIECE_QUEEN] = 5;
 		s_AttackUnits[PIECE_KING] = 0;
 	}
 
@@ -399,7 +400,7 @@ namespace Boxfish
 	template<Team team>
 	BitBoard CalculateKingAttackRegion(const Position& position)
 	{
-		SquareIndex kingSquare = position.InfoCache.KingSquare[team];
+		SquareIndex kingSquare = position.GetKingSquare(team);
 		const BitBoard& kingRing = s_KingRings[team][kingSquare];
 		if (BitBoard::FileOfIndex(kingSquare) == FILE_H)
 			return kingRing | Shift<WEST>(kingRing);
@@ -428,11 +429,8 @@ namespace Boxfish
 		}
 	}
 
-	int CalculateTropism(SquareIndex a, SquareIndex b)
+	inline int CalculateTropism(SquareIndex a, SquareIndex b)
 	{
-		/*Square sqA = BitBoard::BitIndexToSquare(a);
-		Square sqB = BitBoard::BitIndexToSquare(b);
-		return 7 - (std::abs(sqA.Rank - sqB.Rank) + std::abs(sqA.File - sqB.File));*/
 		return s_DistanceTable[a][b];
 	}
 
@@ -445,7 +443,7 @@ namespace Boxfish
 	{
 		Centipawns mg = 0;
 		Centipawns eg = 0;
-		// Don't evaluate material of king pieces
+		// Don't evaluate material of kings
 		for (Piece piece = PIECE_PAWN; piece < PIECE_KING; piece++)
 		{
 			int count = position.GetTeamPieces(team, piece).GetCount();
@@ -509,8 +507,8 @@ namespace Boxfish
 				egValue += s_PassedPawnRankWeights[ENDGAME][team][rank];
 				if (IsPawnSupported(position, square, team))
 				{
-					mgValue += supportedBonus;
-					egValue += supportedBonus;
+					mgValue += supportedBonus * 1;
+					egValue += supportedBonus * 2;
 				}
 			}
 		}
@@ -677,6 +675,17 @@ namespace Boxfish
 			mg += 4 * (safeSquaresReachable - 4);
 			eg += 4 * (safeSquaresReachable - 4);
 
+			// Outpost
+			File file = BitBoard::FileOfIndex(square);
+			Rank rank = BitBoard::RankOfIndex(square);
+
+			// Knight supported by a pawn and no enemy pawns on neighbour files
+			if ((result.Data.AttackedBy[team][PIECE_PAWN] & square & CenterRanks) && !(FILE_MASKS[file] & result.Data.AttackedBy[otherTeam][PIECE_PAWN] & InFront(rank, team)))
+			{
+				mg += 30;
+				eg += 15;
+			}
+			
 			// King safety
 			int kingSquaresAttacked = (attacks & result.Data.KingAttackZone[otherTeam]).GetCount();
 			if (kingSquaresAttacked > 0)
@@ -685,7 +694,7 @@ namespace Boxfish
 				result.Data.AttackUnits[team] += s_AttackUnits[PIECE_KNIGHT] * kingSquaresAttacked;
 			}
 
-			int tropism = CalculateTropism(square, position.InfoCache.KingSquare[otherTeam]);
+			int tropism = CalculateTropism(square, position.GetKingSquare(otherTeam));
 			mg += 3 * tropism;
 			eg += 3 * tropism;
 		}
@@ -721,12 +730,12 @@ namespace Boxfish
 			result.Data.AttackedBy[team][PIECE_ALL] |= attacks;
 
 			if (MoreThanOne(GetSlidingAttacks(PIECE_BISHOP, square, position.GetPieces(PIECE_PAWN)) & Center))
-				mg += 20;
+				mg += 30;
 
 			// Mobility
 			int safeReachableSquares = (attacks & ~result.Data.AttackedBy[otherTeam][PIECE_PAWN]).GetCount();
-			mg += 3 * (safeReachableSquares - 5);
-			eg += 3 * (safeReachableSquares - 5);
+			mg += 3 * (safeReachableSquares - 6);
+			eg += 3 * (safeReachableSquares - 6);
 
 			// King safety
 			int kingSquaresAttacked = (attacks & result.Data.KingAttackZone[otherTeam]).GetCount();
@@ -798,7 +807,7 @@ namespace Boxfish
 				result.Data.AttackUnits[team] += s_AttackUnits[PIECE_ROOK] * kingSquaresAttacked;
 			}
 
-			int tropism = CalculateTropism(square, position.InfoCache.KingSquare[otherTeam]);
+			int tropism = CalculateTropism(square, position.GetKingSquare(otherTeam));
 			mg += 2 * tropism;
 			eg += 1 * tropism;
 		}
@@ -841,8 +850,8 @@ namespace Boxfish
 
 			// Mobility
 			int reachableSquares = (attacks & ~result.Data.AttackedBy[otherTeam][PIECE_PAWN]).GetCount();
-			mg += 1 * (reachableSquares - 12);
-			eg += 2 * (reachableSquares - 12);
+			mg += 1 * (reachableSquares - 13);
+			eg += 2 * (reachableSquares - 13);
 
 			// King safety
 			int kingSquaresAttacked = (attacks & result.Data.KingAttackZone[otherTeam]).GetCount();
@@ -852,7 +861,7 @@ namespace Boxfish
 				result.Data.AttackUnits[team] += s_AttackUnits[PIECE_QUEEN] * kingSquaresAttacked;
 			}
 
-			int tropism = CalculateTropism(square, position.InfoCache.KingSquare[otherTeam]);
+			int tropism = CalculateTropism(square, position.GetKingSquare(otherTeam));
 			mg += 2 * tropism;
 			eg += 4 * tropism;
 		}
@@ -877,17 +886,19 @@ namespace Boxfish
 		result.Data.Attackers[otherTeam] += (result.Data.KingAttackZone[team] & result.Data.AttackedBy[otherTeam][PIECE_PAWN]).GetCount();
 
 		Centipawns mg = 0;
-
 		if (result.Data.Attackers[otherTeam] > 2 && position.GetTeamPieces(otherTeam, PIECE_QUEEN).GetCount() > 0)
 		{
 			mg -= s_KingSafetyTable[std::min(result.Data.AttackUnits[otherTeam], MAX_ATTACK_UNITS - 1)];
 		}
 
+		const BitBoard pawnMask = InFront(kingSquare.Rank, team) & ~RANK_MASKS[kingSquare.Rank];
+
 		// King Shield
 		File kingFileCenter = std::min(std::max(kingSquare.File, FILE_B), FILE_G);
 		for (File file = (File)(kingFileCenter - 1); file <= kingFileCenter + 1; file++)
 		{
-			BitBoard ourPawns = FILE_MASKS[file] & position.GetTeamPieces(team, PIECE_PAWN);
+			// Only include pawns in front of our king
+			BitBoard ourPawns = FILE_MASKS[file] & position.GetTeamPieces(team, PIECE_PAWN) & pawnMask;
 			BitBoard theirPawns = FILE_MASKS[file] & position.GetTeamPieces(otherTeam, PIECE_PAWN);
 
 			int ourRank = (ourPawns) ? RelativeRank(team, BitBoard::RankOfIndex(BackmostSquare(ourPawns, team))) : 0;
@@ -929,7 +940,7 @@ namespace Boxfish
 
 		constexpr BitBoard spaceMask =
 			(team == TEAM_WHITE) ? (FILE_C_MASK | FILE_D_MASK | FILE_E_MASK | FILE_F_MASK) & (RANK_2_MASK | RANK_3_MASK | RANK_4_MASK)
-			: (FILE_C_MASK | FILE_D_MASK | FILE_E_MASK | FILE_F_MASK) & (RANK_7_MASK | RANK_6_MASK | RANK_5_MASK);
+								 : (FILE_C_MASK | FILE_D_MASK | FILE_E_MASK | FILE_F_MASK) & (RANK_7_MASK | RANK_6_MASK | RANK_5_MASK);
 
 		BitBoard safe = spaceMask & ~position.GetTeamPieces(team, PIECE_PAWN) & ~result.Data.AttackedBy[otherTeam][PIECE_PAWN];
 		BitBoard behind = position.GetTeamPieces(team, PIECE_PAWN);
@@ -1025,9 +1036,7 @@ namespace Boxfish
 
 	bool IsEndgame(const Position& position)
 	{
-		EvaluationResult result;
-		EvaluateMaterial(result, position);
-		return result.Material[MIDGAME][TEAM_WHITE] + result.Material[MIDGAME][TEAM_BLACK] <= 1300;
+		return position.GetNonPawnMaterial() <= 2000;
 	}
 
 	Centipawns GetPieceValue(const Position& position, Piece piece)
@@ -1038,9 +1047,9 @@ namespace Boxfish
 		return InterpolateGameStage(gameStage, mg, eg);
 	}
 
-	Centipawns GetPieceValue(Piece piece)
+	Centipawns GetPieceValue(Piece piece, GameStage stage)
 	{
-		return s_MaterialValues[MIDGAME][piece];
+		return s_MaterialValues[stage][piece];
 	}
 
 	// =================================================================================================================================

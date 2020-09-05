@@ -610,7 +610,10 @@ namespace Boxfish
 		BOX_ASSERT(!(move.IsCapture() && move.GetCapturedPiece() == PIECE_KING), "Cannot capture king");
 		if (outUndoInfo)
 		{
-			outUndoInfo->InfoCache = position.InfoCache;
+			outUndoInfo->CheckedBy[TEAM_WHITE] = position.InfoCache.CheckedBy[TEAM_WHITE];
+			outUndoInfo->CheckedBy[TEAM_BLACK] = position.InfoCache.CheckedBy[TEAM_BLACK];
+			outUndoInfo->InCheck[TEAM_WHITE] = position.InfoCache.InCheck[TEAM_WHITE];
+			outUndoInfo->InCheck[TEAM_BLACK] = position.InfoCache.InCheck[TEAM_BLACK];
 			outUndoInfo->EnpassantSquare = position.EnpassantSquare;
 			outUndoInfo->HalfTurnsSinceCaptureOrPush = position.HalfTurnsSinceCaptureOrPush;
 			outUndoInfo->CastleKingSide[TEAM_WHITE] = position.Teams[TEAM_WHITE].CastleKingSide;
@@ -684,7 +687,7 @@ namespace Boxfish
 				UpdateCastleInfoFromMove(position, currentTeam, move);
 
 			if (move.GetMovingPiece() == PIECE_KING)
-				CalculateKingSquare(position, currentTeam);
+				position.InfoCache.KingSquare[currentTeam] = move.GetToSquareIndex();
 
 			CalculateKingBlockers(position, TEAM_WHITE);
 			CalculateKingBlockers(position, TEAM_BLACK);
@@ -714,7 +717,7 @@ namespace Boxfish
 		position.HalfTurnsSinceCaptureOrPush = undo.HalfTurnsSinceCaptureOrPush;
 
 		Team currentTeam = position.TeamToPlay;
-		if (!(flags & MOVE_NULL))
+		if (move != MOVE_NONE)
 		{
 			if (!flags)
 			{
@@ -793,7 +796,13 @@ namespace Boxfish
 			position.EnpassantSquare = undo.EnpassantSquare;
 			position.Hash.AddEnPassant(undo.EnpassantSquare.File);
 		}
-		position.InfoCache = undo.InfoCache;
+		position.InfoCache.CheckedBy[TEAM_WHITE] = undo.CheckedBy[TEAM_WHITE];
+		position.InfoCache.CheckedBy[TEAM_BLACK] = undo.CheckedBy[TEAM_BLACK];
+		position.InfoCache.InCheck[TEAM_WHITE] = undo.InCheck[TEAM_WHITE];
+		position.InfoCache.InCheck[TEAM_BLACK] = undo.InCheck[TEAM_BLACK];
+
+		CalculateKingBlockers(position, TEAM_WHITE);
+		CalculateKingBlockers(position, TEAM_BLACK);
 	}
 
 	void ApplyNullMove(Position& position, UndoInfo* outUndoInfo)

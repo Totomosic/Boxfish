@@ -93,7 +93,7 @@ namespace Boxfish
 	bool IsEndgame(const Position& position);
 
 	Centipawns GetPieceValue(const Position& position, Piece piece);
-	Centipawns GetPieceValue(Piece piece);
+	Centipawns GetPieceValue(Piece piece, GameStage stage = MIDGAME);
 
 	std::string FormatEvaluation(const EvaluationResult& evaluation);
 
