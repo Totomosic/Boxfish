@@ -53,6 +53,16 @@ namespace Boxfish
 	static BitBoard s_SupportedPawnMasks[TEAM_MAX][FILE_MAX * RANK_MAX];
 
 	static BitBoard s_KingRings[TEAM_MAX][FILE_MAX * RANK_MAX];
+	static constexpr BitBoard s_KingFlanks[FILE_MAX] = {
+		QueenSide & ~FILE_D_MASK,
+		QueenSide,
+		QueenSide,
+		CenterFiles,
+		CenterFiles,
+		KingSide,
+		KingSide,
+		KingSide & ~FILE_E_MASK
+	};
 
 	// Indexed by attack units
 	static constexpr int MAX_ATTACK_UNITS = 100;
@@ -194,6 +204,7 @@ namespace Boxfish
 
 	void InitMaterialTable()
 	{
+		// For now only pawns can have different endgame value
 		s_MaterialValues[MIDGAME][PIECE_PAWN] = 100;
 		s_MaterialValues[MIDGAME][PIECE_KNIGHT] = 325;
 		s_MaterialValues[MIDGAME][PIECE_BISHOP] = 335;
@@ -203,9 +214,9 @@ namespace Boxfish
 
 		s_MaterialValues[ENDGAME][PIECE_PAWN] = 140;
 		s_MaterialValues[ENDGAME][PIECE_KNIGHT] = 325;
-		s_MaterialValues[ENDGAME][PIECE_BISHOP] = 340;
+		s_MaterialValues[ENDGAME][PIECE_BISHOP] = 335;
 		s_MaterialValues[ENDGAME][PIECE_ROOK] = 500;
-		s_MaterialValues[ENDGAME][PIECE_QUEEN] = 975;
+		s_MaterialValues[ENDGAME][PIECE_QUEEN] = 925;
 		s_MaterialValues[ENDGAME][PIECE_KING] = 20000;
 	}
 
@@ -216,7 +227,7 @@ namespace Boxfish
 			50, 50, 50, 50, 50, 50, 50, 50,
 			10, 10, 20, 30, 30, 20, 10, 10,
 			 5,  5, 10, 25, 25, 10,  5,  5,
-			 0,  0,  0, 24, 24,  0,  0,  0,
+			 0,  0,  0, 25, 25,  0,  0,  0,
 			 5, -5,-10,  5,  5,-10, -5,  5,
 			 5, 10, 10,-20,-20, 10, 10,  5,
 			 0,  0,  0,  0,  0,  0,  0,  0
@@ -441,17 +452,9 @@ namespace Boxfish
 	template<Team team>
 	void EvaluateMaterial(EvaluationResult& result, const Position& position)
 	{
-		Centipawns mg = 0;
-		Centipawns eg = 0;
-		// Don't evaluate material of kings
-		for (Piece piece = PIECE_PAWN; piece < PIECE_KING; piece++)
-		{
-			int count = position.GetTeamPieces(team, piece).GetCount();
-			mg += s_MaterialValues[MIDGAME][piece] * count;
-			eg += s_MaterialValues[ENDGAME][piece] * count;
-		}
-		result.Material[MIDGAME][team] = mg;
-		result.Material[ENDGAME][team] = eg;
+		int pawnCount = position.GetTeamPieces(team, PIECE_PAWN).GetCount();
+		result.Material[MIDGAME][team] = pawnCount * s_MaterialValues[MIDGAME][PIECE_PAWN] + position.GetNonPawnMaterial(team);
+		result.Material[ENDGAME][team] = pawnCount * s_MaterialValues[ENDGAME][PIECE_PAWN] + position.GetNonPawnMaterial(team);
 	}
 
 	void EvaluateMaterial(EvaluationResult& result, const Position& position)
@@ -665,7 +668,7 @@ namespace Boxfish
 		while (knights)
 		{
 			SquareIndex square = PopLeastSignificantBit(knights);
-			BitBoard attacks = GetNonSlidingAttacks(PIECE_KNIGHT, square, team) & notTeamPieces;
+			BitBoard attacks = GetNonSlidingAttacks<PIECE_KNIGHT>(square, team) & notTeamPieces;
 			result.Data.AttackedBy[team][PIECE_KNIGHT] |= attacks;
 			result.Data.AttackedByTwice[team] |= result.Data.AttackedBy[team][PIECE_ALL] & attacks;
 			result.Data.AttackedBy[team][PIECE_ALL] |= attacks;
@@ -724,12 +727,12 @@ namespace Boxfish
 		while (bishops)
 		{
 			SquareIndex square = PopLeastSignificantBit(bishops);
-			BitBoard attacks = GetSlidingAttacks(PIECE_BISHOP, square, blockers) & notTeamPieces;
+			BitBoard attacks = GetSlidingAttacks<PIECE_BISHOP>(square, blockers) & notTeamPieces;
 			result.Data.AttackedBy[team][PIECE_BISHOP] |= attacks;
 			result.Data.AttackedByTwice[team] |= result.Data.AttackedBy[team][PIECE_ALL] & attacks;
 			result.Data.AttackedBy[team][PIECE_ALL] |= attacks;
 
-			if (MoreThanOne(GetSlidingAttacks(PIECE_BISHOP, square, position.GetPieces(PIECE_PAWN)) & Center))
+			if (MoreThanOne(GetSlidingAttacks<PIECE_BISHOP>(square, position.GetPieces(PIECE_PAWN)) & Center))
 				mg += 30;
 
 			// Mobility
@@ -782,7 +785,7 @@ namespace Boxfish
 		while (rooks)
 		{
 			SquareIndex square = PopLeastSignificantBit(rooks);
-			BitBoard attacks = GetSlidingAttacks(PIECE_ROOK, square, blockers) & notTeamPieces;
+			BitBoard attacks = GetSlidingAttacks<PIECE_ROOK>(square, blockers) & notTeamPieces;
 			result.Data.AttackedBy[team][PIECE_ROOK] |= attacks;
 			result.Data.AttackedByTwice[team] |= result.Data.AttackedBy[team][PIECE_ALL] & attacks;
 			result.Data.AttackedBy[team][PIECE_ALL] |= attacks;
@@ -837,7 +840,7 @@ namespace Boxfish
 		while (queens)
 		{
 			SquareIndex square = PopLeastSignificantBit(queens);
-			BitBoard attacks = GetSlidingAttacks(PIECE_QUEEN, square, blockers) & notTeamPieces;
+			BitBoard attacks = GetSlidingAttacks<PIECE_QUEEN>(square, blockers) & notTeamPieces;
 			result.Data.AttackedBy[team][PIECE_QUEEN] |= attacks;
 			result.Data.AttackedByTwice[team] |= result.Data.AttackedBy[team][PIECE_ALL] & attacks;
 			result.Data.AttackedBy[team][PIECE_ALL] |= attacks;
@@ -879,6 +882,9 @@ namespace Boxfish
 	void EvaluateKingSafety(EvaluationResult& result, const Position& position)
 	{
 		constexpr Team otherTeam = OtherTeam(team);
+		constexpr BitBoard OurSide =
+			(team == TEAM_WHITE) ? ALL_SQUARES_BB & ~RANK_6_MASK & ~RANK_7_MASK & ~RANK_8_MASK
+								 : ALL_SQUARES_BB & ~RANK_1_MASK & ~RANK_2_MASK & ~RANK_3_MASK;
 
 		SquareIndex kngSq = position.GetKingSquare(team);
 		Square kingSquare = BitBoard::BitIndexToSquare(kngSq);
@@ -916,6 +922,12 @@ namespace Boxfish
 				mg -= s_PawnStormStrength[distance][theirRank];
 			}
 		}
+
+		const BitBoard attackMask = result.Data.AttackedBy[otherTeam][PIECE_ALL] & s_KingFlanks[kingSquare.File] & OurSide;
+		const BitBoard attack2Mask = attackMask & result.Data.AttackedByTwice[otherTeam];
+		int tropismCount = attackMask.GetCount() + attack2Mask.GetCount();
+
+		mg -= 2 * tropismCount;
 
 		result.KingSafety[MIDGAME][team] = mg;
 		result.KingSafety[ENDGAME][team] = 0;
@@ -983,39 +995,33 @@ namespace Boxfish
 	{
 		BOX_ASSERT(!IsInCheck(position, position.TeamToPlay), "Cannot evaluate position in check");
 		EvaluationResult result;
-		ClearResult(result);
 		result.GameStage = CalculateGameStage(position);
 		EvaluateMaterial(result, position);
 		EvaluatePieceSquareTables(result, position);
 			
-		Centipawns current = result.GetTotal(team);
-		constexpr Centipawns delta = 250;
-		if (current > alpha - delta && current < beta + delta)
-		{
-			result.Data.KingAttackZone[TEAM_WHITE] = CalculateKingAttackRegion<TEAM_WHITE>(position);
-			result.Data.KingAttackZone[TEAM_BLACK] = CalculateKingAttackRegion<TEAM_BLACK>(position);
+		result.Data.KingAttackZone[TEAM_WHITE] = CalculateKingAttackRegion<TEAM_WHITE>(position);
+		result.Data.KingAttackZone[TEAM_BLACK] = CalculateKingAttackRegion<TEAM_BLACK>(position);
 
-			result.Data.AttackedBy[TEAM_WHITE][PIECE_PAWN] = CalculatePawnAttacks<TEAM_WHITE>(position);
-			result.Data.AttackedBy[TEAM_BLACK][PIECE_PAWN] = CalculatePawnAttacks<TEAM_BLACK>(position);
-			result.Data.AttackedBy[TEAM_WHITE][PIECE_KING] = GetNonSlidingAttacks(PIECE_KING, position.GetKingSquare(TEAM_WHITE), TEAM_WHITE);
-			result.Data.AttackedBy[TEAM_BLACK][PIECE_KING] = GetNonSlidingAttacks(PIECE_KING, position.GetKingSquare(TEAM_BLACK), TEAM_BLACK);
-			result.Data.AttackedByTwice[TEAM_WHITE] = result.Data.AttackedBy[TEAM_WHITE][PIECE_PAWN] & result.Data.AttackedBy[TEAM_WHITE][PIECE_KING];
-			result.Data.AttackedByTwice[TEAM_BLACK] = result.Data.AttackedBy[TEAM_BLACK][PIECE_PAWN] & result.Data.AttackedBy[TEAM_BLACK][PIECE_KING];
+		result.Data.AttackedBy[TEAM_WHITE][PIECE_PAWN] = CalculatePawnAttacks<TEAM_WHITE>(position);
+		result.Data.AttackedBy[TEAM_BLACK][PIECE_PAWN] = CalculatePawnAttacks<TEAM_BLACK>(position);
+		result.Data.AttackedBy[TEAM_WHITE][PIECE_KING] = GetNonSlidingAttacks<PIECE_KING>(position.GetKingSquare(TEAM_WHITE), TEAM_WHITE);
+		result.Data.AttackedBy[TEAM_BLACK][PIECE_KING] = GetNonSlidingAttacks<PIECE_KING>(position.GetKingSquare(TEAM_BLACK), TEAM_BLACK);
+		result.Data.AttackedByTwice[TEAM_WHITE] = result.Data.AttackedBy[TEAM_WHITE][PIECE_PAWN] & result.Data.AttackedBy[TEAM_WHITE][PIECE_KING];
+		result.Data.AttackedByTwice[TEAM_BLACK] = result.Data.AttackedBy[TEAM_BLACK][PIECE_PAWN] & result.Data.AttackedBy[TEAM_BLACK][PIECE_KING];
 
-			// Do these first as they set AttackedBy data
-			EvaluateKnights(result, position);
-			EvaluateBishops(result, position);
-			EvaluateRooks(result, position);
-			EvaluateQueens(result, position);
+		// Do these first as they set AttackedBy data
+		EvaluateKnights(result, position);
+		EvaluateBishops(result, position);
+		EvaluateRooks(result, position);
+		EvaluateQueens(result, position);
 
-			EvaluatePassedPawns(result, position);
-			EvaluateDoubledPawns(result, position);
-			EvaluateWeakPawns(result, position);
-			EvaluateBlockedPieces(result, position);
-			EvaluateSpace(result, position);
-			EvaluateKingSafety(result, position);
-			EvaluateTempo(result, position);
-		}
+		EvaluatePassedPawns(result, position);
+		EvaluateDoubledPawns(result, position);
+		EvaluateWeakPawns(result, position);
+		EvaluateBlockedPieces(result, position);
+		EvaluateSpace(result, position);
+		EvaluateKingSafety(result, position);
+		EvaluateTempo(result, position);
 		return result;
 	}
 

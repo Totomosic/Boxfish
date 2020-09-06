@@ -19,7 +19,7 @@ namespace Boxfish
 	public:
 		ZobristHash Hash;
 		Move BestMove;
-		int Depth;
+		int8_t Depth;
 		Centipawns Score;
 		int Age = -1;
 		EntryFlag Flag;
@@ -27,7 +27,7 @@ namespace Boxfish
 	public:
 		inline ZobristHash GetHash() const { return Hash; }
 		inline Move GetMove() const { return BestMove; }
-		inline int GetDepth() const { return Depth; }
+		inline int GetDepth() const { return (int)Depth; }
 		inline Centipawns GetScore() const { return Score; }
 		inline EntryFlag GetFlag() const { return Flag; }
 		inline int GetAge() const { return Age; }
@@ -36,7 +36,7 @@ namespace Boxfish
 		{
 			Hash = hash;
 			BestMove = move;
-			Depth = depth;
+			Depth = (int8_t)depth;
 			Score = score;
 			Age = age;
 			Flag = flag;

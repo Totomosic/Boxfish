@@ -393,7 +393,7 @@ namespace Boxfish
 				callback(result);
 			}
 
-			if (IsMateScore(rootMove.Score) && rootMove.Score > 0)
+			if (IsMateScore(rootMove.Score) && rootMove.Score > 0 && !m_Limits.Infinite)
 				break;
 
 			if (rootDepth >= depth)
@@ -401,6 +401,11 @@ namespace Boxfish
 				break;
 			}
 		}
+
+		// Don't return if pondering (exceeded max ply)
+		while (m_Limits.Infinite && !m_ShouldStop)
+			std::this_thread::yield();
+
 		if (result.size() > 0)
 		{
 			int chosenIndex = ChooseBestMove(result, m_Settings.SkillLevel, 4);
@@ -424,8 +429,8 @@ namespace Boxfish
 		MoveList pvMoveList = m_MovePool.GetList();
 		Move* pv = pvMoveList.Moves;
 
-		stack->StaticEvaluation = SCORE_NONE;
-		(stack + 1)->MoveCount = 0;
+		stack->MoveCount = 0;
+		(stack + 1)->StaticEvaluation = SCORE_NONE;
 		(stack + 1)->PositionHistory = stack->PositionHistory + 1;
 		(stack + 1)->Ply = stack->Ply + 1;
 		(stack + 2)->KillerMoves[0] = (stack + 2)->KillerMoves[1] = MOVE_NONE;
@@ -454,10 +459,11 @@ namespace Boxfish
 
 		bool ttFound;
 		TranspositionTableEntry* ttEntry = m_TranspositionTable.GetEntry(position.Hash, ttFound);
+		ttFound = ttFound && stack->ExcludedMove == MOVE_NONE;
 
 		Move ttMove =
 			(isRoot) ? rootInfo.Moves[rootInfo.PVIndex].PV[0] :
-			(IsPvNode && stack->PV[0] != MOVE_NONE) ? stack->PV[0] :
+			//(IsPvNode && stack->PV[0] != MOVE_NONE) ? stack->PV[0] :
 			(ttFound) ? ttEntry->GetMove() : MOVE_NONE;
 
 		if (!IsPvNode && ttFound && ttEntry->GetDepth() >= depth)
@@ -509,7 +515,7 @@ namespace Boxfish
 		}
 
 		// Null move pruning
-		if (!IsPvNode && !inCheck && depth >= 3 && stack->CanNull && !IsEndgame(position) && stack->StaticEvaluation >= beta)
+		if (!IsPvNode && !inCheck && depth >= 3 && stack->CanNull && stack->ExcludedMove == MOVE_NONE && !IsEndgame(position) && stack->StaticEvaluation >= beta)
 		{
 			(stack + 1)->CanNull = false;
 			stack->CurrentMove = MOVE_NONE;
@@ -568,30 +574,43 @@ namespace Boxfish
 		Move move = MOVE_NONE;
 		while ((move = selector.GetNextMove()) != MOVE_NONE)
 		{
-			moveIndex++;
+			if (move == stack->ExcludedMove)
+				continue;
 			if (isRoot && std::count(rootInfo.Moves.begin() + rootInfo.PVIndex, rootInfo.Moves.begin() + rootInfo.PVLast, move) == 0)
 				continue;
+
+			moveIndex++;
 
 			BOX_ASSERT(moveIndex > FIRST_MOVE_INDEX || move == ttMove || ttMove == MOVE_NONE, "Invalid move ordering");
 
 			const bool isCaptureOrPromotion = move.IsCaptureOrPromotion();
-			stack->CurrentMove = move;
-			stack->MoveCount++;
+			int depthExtension = 0;
+
+			// Singular extension
+			if (depth >= 8 && move == ttMove && !isRoot && stack->ExcludedMove == MOVE_NONE && ttFound && (ttEntry->GetFlag() == LOWER_BOUND || ttEntry->GetFlag() == EXACT) && ttEntry->GetDepth() >= depth - 3)
+			{
+				Centipawns newBeta = std::max(ttEntry->GetScore() - 2 * depth, -SCORE_MATE);
+				stack->ExcludedMove = move;
+				Centipawns score = SearchPosition<NonPV>(position, stack, depth / 2, newBeta - 1, newBeta, rootInfo);
+				stack->ExcludedMove = MOVE_NONE;
+				if (score < newBeta)
+					depthExtension = 1;
+			}
 
 			Position movedPosition = position;
 			ApplyMove(movedPosition, move);
 			m_Nodes++;
 
+			stack->CurrentMove = move;
+			stack->MoveCount = moveIndex;
+
 			const bool givesCheck = IsInCheck(movedPosition);
 
-			if (!IsPvNode && futilityPrune && !givesCheck && !inCheck && !move.IsCaptureOrPromotion())
-				continue;
-
-			int depthExtension = 0;
-
-			const bool givesGoodCheck = givesCheck && SeeGE(position, move, -30);
-			if (move.IsCastle() || givesGoodCheck)
+			if (move.IsCastle() || (givesCheck && SeeGE(position, move, -30)))
 				depthExtension++;
+
+			if (!IsPvNode && futilityPrune && !givesCheck && !inCheck && !move.IsCaptureOrPromotion() && depthExtension <= 0)
+				continue;
 
 			int extendedDepth = depth - 1 + depthExtension;
 
@@ -780,9 +799,10 @@ namespace Boxfish
 		Centipawns bestValue = -SCORE_MATE;
 
 		QuiescenceMoveSelector selector(position, legalMoves);
+		Move move;
 		while (!selector.Empty())
 		{
-			Move move = selector.GetNextMove();
+			move = selector.GetNextMove();
 
 			// TODO: Also find moves that give check
 

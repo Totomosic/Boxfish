@@ -5,11 +5,6 @@
 namespace Boxfish
 {
 
-	// Don't Initialize
-	Move::Move()
-	{
-	}
-
 	Square Move::GetFromSquare() const
 	{
 		return BitBoard::BitIndexToSquare(GetFromSquareIndex());

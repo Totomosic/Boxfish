@@ -322,11 +322,11 @@ namespace Boxfish
 
 	BitBoard GetAttackers(const Position& position, Team team, SquareIndex square, const BitBoard& blockers)
 	{
-		return (GetNonSlidingAttacks(PIECE_PAWN, square, OtherTeam(team)) & position.Teams[team].Pieces[PIECE_PAWN]) |
-			(GetNonSlidingAttacks(PIECE_KNIGHT, square, team) & position.Teams[team].Pieces[PIECE_KNIGHT]) |
-			(GetNonSlidingAttacks(PIECE_KING, square, team) & position.Teams[team].Pieces[PIECE_KING]) |
-			(GetSlidingAttacks(PIECE_BISHOP, square, blockers) & (position.Teams[team].Pieces[PIECE_BISHOP] | position.Teams[team].Pieces[PIECE_QUEEN])) |
-			(GetSlidingAttacks(PIECE_ROOK, square, blockers) & (position.Teams[team].Pieces[PIECE_ROOK] | position.Teams[team].Pieces[PIECE_QUEEN]));
+		return (GetNonSlidingAttacks<PIECE_PAWN>(square, OtherTeam(team)) & position.GetTeamPieces(team, PIECE_PAWN)) |
+			(GetNonSlidingAttacks<PIECE_KNIGHT>(square, team) & position.GetTeamPieces(team, PIECE_KNIGHT)) |
+			(GetNonSlidingAttacks<PIECE_KING>(square, team) & position.GetTeamPieces(team, PIECE_KING)) |
+			(GetSlidingAttacks<PIECE_BISHOP>(square, blockers) & position.GetTeamPieces(team, PIECE_BISHOP, PIECE_QUEEN)) |
+			(GetSlidingAttacks<PIECE_ROOK>(square, blockers) & position.GetTeamPieces(team, PIECE_ROOK, PIECE_QUEEN));
 	}
 
 	BitBoard GetSliderBlockers(const Position& position, const BitBoard& sliders, SquareIndex square, BitBoard* pinners)
@@ -334,8 +334,8 @@ namespace Boxfish
 		BitBoard blockers = ZERO_BB;
 		if (pinners)
 			*pinners = ZERO_BB;
-		BitBoard snipers = ((GetSlidingAttacks(PIECE_ROOK, square, ZERO_BB) & position.GetPieces(PIECE_QUEEN, PIECE_ROOK))
-			| (GetSlidingAttacks(PIECE_BISHOP, square, ZERO_BB) & position.GetPieces(PIECE_QUEEN, PIECE_BISHOP))) & sliders;
+		BitBoard snipers = ((GetSlidingAttacks<PIECE_ROOK>(square, ZERO_BB) & position.GetPieces(PIECE_QUEEN, PIECE_ROOK))
+			| (GetSlidingAttacks<PIECE_BISHOP>(square, ZERO_BB) & position.GetPieces(PIECE_QUEEN, PIECE_BISHOP))) & sliders;
 		BitBoard occupancy = position.GetAllPieces() ^ snipers;
 		Team teamAtSquare = GetTeamAt(position, square);
 		while (snipers)
@@ -415,21 +415,16 @@ namespace Boxfish
 
 	bool IsSquareUnderAttack(const Position& position, Team byTeam, SquareIndex square)
 	{
-		if (GetNonSlidingAttacks(PIECE_PAWN, square, OtherTeam(byTeam)) & position.Teams[byTeam].Pieces[PIECE_PAWN])
+		if (GetNonSlidingAttacks<PIECE_PAWN>(square, OtherTeam(byTeam)) & position.GetTeamPieces(byTeam, PIECE_PAWN))
 			return true;
-		if (GetNonSlidingAttacks(PIECE_KNIGHT, square, OtherTeam(byTeam)) & position.Teams[byTeam].Pieces[PIECE_KNIGHT])
+		if (GetNonSlidingAttacks<PIECE_KNIGHT>(square, OtherTeam(byTeam)) & position.GetTeamPieces(byTeam, PIECE_KNIGHT))
 			return true;
-		if (GetNonSlidingAttacks(PIECE_KING, square, OtherTeam(byTeam)) & position.Teams[byTeam].Pieces[PIECE_KING])
+		if (GetNonSlidingAttacks<PIECE_KING>(square, OtherTeam(byTeam)) & position.GetTeamPieces(byTeam, PIECE_KING))
 			return true;
-
-		BitBoard bishopsAndQueens = position.Teams[byTeam].Pieces[PIECE_BISHOP] | position.Teams[byTeam].Pieces[PIECE_QUEEN];
-		if (GetSlidingAttacks(PIECE_BISHOP, square, position.GetAllPieces()) & bishopsAndQueens)
+		if (GetSlidingAttacks<PIECE_BISHOP>(square, position.GetAllPieces()) & position.GetTeamPieces(byTeam, PIECE_BISHOP, PIECE_QUEEN))
 			return true;
-
-		BitBoard rooksAndQueens = position.Teams[byTeam].Pieces[PIECE_ROOK] | position.Teams[byTeam].Pieces[PIECE_QUEEN];
-		if (GetSlidingAttacks(PIECE_ROOK, square, position.GetAllPieces()) & rooksAndQueens)
+		if (GetSlidingAttacks<PIECE_ROOK>(square, position.GetAllPieces()) & position.GetTeamPieces(byTeam, PIECE_ROOK, PIECE_QUEEN))
 			return true;
-		
 		return false;
 	}
 
@@ -444,11 +439,11 @@ namespace Boxfish
 		occupied ^= ForwardBitScan(b);
 		if (PIECE == PIECE_PAWN || PIECE == PIECE_BISHOP || PIECE == PIECE_QUEEN)
 		{
-			attackers |= GetSlidingAttacks(PIECE_BISHOP, to, occupied) & (position.GetPieces(PIECE_BISHOP) | position.GetPieces(PIECE_QUEEN));
+			attackers |= GetSlidingAttacks<PIECE_BISHOP>(to, occupied) & position.GetPieces(PIECE_BISHOP, PIECE_QUEEN);
 		}
 		if (PIECE == PIECE_ROOK || PIECE == PIECE_QUEEN)
 		{
-			attackers |= GetSlidingAttacks(PIECE_ROOK, to, occupied) & (position.GetPieces(PIECE_ROOK) | position.GetPieces(PIECE_QUEEN));
+			attackers |= GetSlidingAttacks<PIECE_ROOK>(to, occupied) & position.GetPieces(PIECE_ROOK, PIECE_QUEEN);
 		}
 		attackers &= occupied;
 		return PIECE;
@@ -628,7 +623,8 @@ namespace Boxfish
 		}
 		
 		MoveFlag flags = move.GetFlags();
-		Team currentTeam = position.TeamToPlay;
+		const Team currentTeam = position.TeamToPlay;
+		const Team otherTeam = OtherTeam(currentTeam);
 		if (move != MOVE_NONE)
 		{
 			if (!flags)
@@ -638,7 +634,7 @@ namespace Boxfish
 			else if ((flags & MOVE_CAPTURE) && (flags & MOVE_PROMOTION))
 			{
 				Piece capturedPiece = move.GetCapturedPiece();
-				RemovePiece(position, OtherTeam(currentTeam), capturedPiece, move.GetToSquareIndex());
+				RemovePiece(position, otherTeam, capturedPiece, move.GetToSquareIndex());
 				RemovePiece(position, currentTeam, move.GetMovingPiece(), move.GetFromSquareIndex());
 				Piece promotionPiece = move.GetPromotionPiece();
 				AddPiece(position, currentTeam, promotionPiece, move.GetToSquareIndex());
@@ -646,7 +642,7 @@ namespace Boxfish
 			else if (flags & MOVE_CAPTURE)
 			{
 				Piece capturedPiece = move.GetCapturedPiece();
-				RemovePiece(position, OtherTeam(currentTeam), capturedPiece, move.GetToSquareIndex());
+				RemovePiece(position, otherTeam, capturedPiece, move.GetToSquareIndex());
 				MovePiece(position, currentTeam, move.GetMovingPiece(), move.GetFromSquareIndex(), move.GetToSquareIndex());
 			}
 			else if (flags & MOVE_KINGSIDE_CASTLE)
@@ -679,7 +675,7 @@ namespace Boxfish
 			}
 			else if (flags & MOVE_EN_PASSANT)
 			{
-				RemovePiece(position, OtherTeam(currentTeam), PIECE_PAWN, (SquareIndex)(move.GetToSquareIndex() - GetForwardShift(currentTeam)));
+				RemovePiece(position, otherTeam, PIECE_PAWN, (SquareIndex)(move.GetToSquareIndex() - GetForwardShift(currentTeam)));
 				MovePiece(position, currentTeam, move.GetMovingPiece(), move.GetFromSquareIndex(), move.GetToSquareIndex());
 			}
 
@@ -689,10 +685,10 @@ namespace Boxfish
 			if (move.GetMovingPiece() == PIECE_KING)
 				position.InfoCache.KingSquare[currentTeam] = move.GetToSquareIndex();
 
-			CalculateKingBlockers(position, TEAM_WHITE);
-			CalculateKingBlockers(position, TEAM_BLACK);
-			CalculateCheckers(position, TEAM_WHITE);
-			CalculateCheckers(position, TEAM_BLACK);
+			CalculateKingBlockers(position, otherTeam);
+			//CalculateKingBlockers(position, TEAM_BLACK);
+			CalculateCheckers(position, otherTeam);
+			//CalculateCheckers(position, TEAM_BLACK);
 		}
 
 		if (move.GetMovingPiece() == PIECE_PAWN || (flags & MOVE_CAPTURE))
@@ -700,9 +696,9 @@ namespace Boxfish
 		else
 			position.HalfTurnsSinceCaptureOrPush++;
 		
-		if (position.TeamToPlay == TEAM_BLACK)
+		if (currentTeam == TEAM_BLACK)
 			position.TotalTurns++;
-		position.TeamToPlay = OtherTeam(position.TeamToPlay);
+		position.TeamToPlay = otherTeam;
 		position.Hash.FlipTeamToPlay();
 	}
 

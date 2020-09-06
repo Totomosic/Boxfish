@@ -14,7 +14,7 @@ namespace Boxfish
 	{
 		if (ttMove == MOVE_NONE)
 			m_CurrentStage++;
-		for (int index = m_CurrentIndex; index < m_Moves->MoveCount; index++)
+		for (int index = m_CurrentIndex; index < m_Moves->MoveCount; ++index)
 		{
 			Centipawns score = 0;
 			Move& move = m_Moves->Moves[index];
@@ -22,11 +22,11 @@ namespace Boxfish
 			{
 				if (SeeGE(*currentPosition, move, -30))
 				{
-					score = SCORE_GOOD_CAPTURE + GetPieceValue(move.GetCapturedPiece());
+					score = SCORE_GOOD_CAPTURE + GetPieceValue(move.GetCapturedPiece()) - GetPieceValue(move.GetMovingPiece());
 				}
 				else
 				{
-					score = SCORE_BAD_CAPTURE - GetPieceValue(move.GetMovingPiece());
+					score = SCORE_BAD_CAPTURE - GetPieceValue(move.GetMovingPiece()) + GetPieceValue(move.GetCapturedPiece());
 				}
 			}
 			else if (move.IsPromotion())
@@ -71,7 +71,7 @@ namespace Boxfish
 			return MOVE_NONE;
 		int bestIndex = m_CurrentIndex;
 		Centipawns bestScore = -SCORE_MATE;
-		for (int index = m_CurrentIndex; index < m_Moves->MoveCount; index++)
+		for (int index = m_CurrentIndex; index < m_Moves->MoveCount; ++index)
 		{
 			const Move& move = m_Moves->Moves[index];
 			if (move != m_ttMove && move.GetValue() > bestScore)
@@ -94,13 +94,13 @@ namespace Boxfish
 
 	void ScoreMovesQuiescence(const Position& position, MoveList& moves)
 	{
-		for (int i = 0; i < moves.MoveCount; i++)
+		for (int i = 0; i < moves.MoveCount; ++i)
 		{
 			Move& move = moves.Moves[i];
 			if (move.IsCapture())
 			{
 				if (SeeGE(position, move, -30))
-					move.SetValue(SCORE_GOOD_CAPTURE + GetPieceValue(move.GetCapturedPiece()));
+					move.SetValue(SCORE_GOOD_CAPTURE + GetPieceValue(move.GetCapturedPiece()) - GetPieceValue(move.GetMovingPiece()));
 				else
 					move.SetValue(SCORE_NONE);
 			}
@@ -125,7 +125,7 @@ namespace Boxfish
 		}
 		else
 		{
-			for (int i = 0; i < m_LegalMoves.MoveCount; i++)
+			for (int i = 0; i < m_LegalMoves.MoveCount; ++i)
 			{
 				const Move& m = m_LegalMoves.Moves[i];
 				if (m.IsCaptureOrPromotion() && m.GetValue() > SCORE_NONE)
@@ -144,7 +144,7 @@ namespace Boxfish
 		BOX_ASSERT(!Empty(), "Move list is empty");
 		size_t bestIndex = 0;
 		Centipawns bestScore = SCORE_NONE;
-		for (int index = m_CurrentIndex; index < m_LegalMoves.MoveCount; index++)
+		for (int index = m_CurrentIndex; index < m_LegalMoves.MoveCount; ++index)
 		{
 			const Move& move = m_LegalMoves.Moves[index];
 			Centipawns value = move.GetValue();

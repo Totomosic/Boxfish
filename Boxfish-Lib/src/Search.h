@@ -35,6 +35,7 @@ namespace Boxfish
 		Centipawns StaticEvaluation = -SCORE_MATE;
 		bool CanNull = true;
 		Centipawns Contempt = 0;
+		Move ExcludedMove = MOVE_NONE;
 	};
 
 	struct BOX_API SearchResult

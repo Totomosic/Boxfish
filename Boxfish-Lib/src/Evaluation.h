@@ -8,9 +8,9 @@ namespace Boxfish
 
 	extern int s_MaxPhaseValue;
 
-	constexpr Centipawns SCORE_MATE = 200000;
+	constexpr Centipawns SCORE_MATE = 30000;
 	constexpr Centipawns SCORE_DRAW = 0;
-	constexpr Centipawns SCORE_NONE = -SCORE_MATE * 2;
+	constexpr Centipawns SCORE_NONE = -SCORE_MATE - 1000;
 
 	inline Centipawns InterpolateGameStage(int stage, Centipawns midgame, Centipawns endgame)
 	{
