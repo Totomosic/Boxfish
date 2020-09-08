@@ -118,7 +118,7 @@ namespace Boxfish
 
 		RootMove SearchRoot(Position& position, int depth, const std::function<void(SearchResult)>& callback);
 		template<NodeType type>
-		Centipawns SearchPosition(Position& position, SearchStack* stack, int depth, Centipawns alpha, Centipawns beta, const RootInfo& rootInfo);
+		Centipawns SearchPosition(Position& position, SearchStack* stack, int depth, Centipawns alpha, Centipawns beta, int& selDepth, const RootInfo& rootInfo);
 		template<NodeType type>
 		Centipawns QuiescenceSearch(Position& position, SearchStack* stack, int depth, Centipawns alpha, Centipawns beta);
 
@@ -133,6 +133,7 @@ namespace Boxfish
 		Centipawns StaticEvalPosition(const Position& position, Centipawns alpha, Centipawns beta, int ply) const;
 
 		void UpdateQuietStats(const Position& position, SearchStack* stack, int depth, Move move);
+		bool ReplaceTT(int depth, int age, EntryFlag flag, const TranspositionTableEntry* entry);
 
 		std::vector<RootMove> GenerateRootMoves(const Position& position, SearchStack* stack);
 		int ChooseBestMove(const std::vector<RootMove>& moves, int skillLevel, int maxPVs) const;

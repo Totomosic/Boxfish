@@ -25,6 +25,18 @@ namespace Boxfish
 		Clear();
 	}
 
+	int TranspositionTable::GetFullProportion() const
+	{
+		int count = 0;
+		int samples = 1023 * 64;
+		for (uint64_t i = 0; i < samples; i++)
+		{
+			if (m_Entries[(i * 67) & m_Mask].Age >= 0)
+				count++;
+		}
+		return (int)(count * 1000 / samples);
+	}
+
 	TranspositionTableEntry* TranspositionTable::GetEntry(const ZobristHash& hash, bool& found) const
 	{
 		TranspositionTableEntry* entry = &m_Entries[GetIndexFromHash(hash)];

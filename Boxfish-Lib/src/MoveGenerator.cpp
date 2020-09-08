@@ -191,7 +191,7 @@ namespace Boxfish
 			SquareIndex captureSquare = (SquareIndex)(move.GetToSquareIndex() - GetForwardShift(m_Position.TeamToPlay));
 			BitBoard occupied = (m_Position.GetAllPieces() ^ move.GetFromSquareIndex() ^ captureSquare) | move.GetToSquareIndex();
 			return !(GetSlidingAttacks<PIECE_ROOK>(kingSquare, occupied) & m_Position.GetTeamPieces(OtherTeam(m_Position.TeamToPlay), PIECE_QUEEN, PIECE_ROOK))
-				&& !(GetSlidingAttacks<PIECE_QUEEN>(kingSquare, occupied) & m_Position.GetTeamPieces(OtherTeam(m_Position.TeamToPlay), PIECE_QUEEN, PIECE_BISHOP));
+				&& !(GetSlidingAttacks<PIECE_BISHOP>(kingSquare, occupied) & m_Position.GetTeamPieces(OtherTeam(m_Position.TeamToPlay), PIECE_QUEEN, PIECE_BISHOP));
 		}
 		if (checkers)
 		{
@@ -328,14 +328,14 @@ namespace Boxfish
 		{
 			SquareIndex index = PopLeastSignificantBit(movedPawns);
 			Move move({ (SquareIndex)(index - ((team == TEAM_WHITE) ? 7 : -7)), index, PIECE_PAWN, MOVE_CAPTURE });
-			move.SetCapturedPiece(GetPieceAtSquare(position, OtherTeam(team), index));
+			move.SetCapturedPiece(position.GetPieceOnSquare(index));
 			BOX_ASSERT(move.GetCapturedPiece() != PIECE_KING, "Cannot capture king");
 			moveList.Moves[moveList.MoveCount++] = move;
 		}
 		while (promotions)
 		{
 			SquareIndex index = PopLeastSignificantBit(promotions);
-			GeneratePawnPromotions(moveList, (SquareIndex)(index - ((team == TEAM_WHITE) ? 7 : -7)), index, MOVE_CAPTURE, GetPieceAtSquare(position, OtherTeam(team), index));
+			GeneratePawnPromotions(moveList, (SquareIndex)(index - ((team == TEAM_WHITE) ? 7 : -7)), index, MOVE_CAPTURE, position.GetPieceOnSquare(index));
 		}
 	}
 
@@ -361,14 +361,14 @@ namespace Boxfish
 		{
 			SquareIndex index = PopLeastSignificantBit(movedPawns);
 			Move move((SquareIndex)(index - ((team == TEAM_WHITE) ? 9 : -9)), index, PIECE_PAWN, MOVE_CAPTURE);
-			move.SetCapturedPiece(GetPieceAtSquare(position, OtherTeam(team), index));
+			move.SetCapturedPiece(position.GetPieceOnSquare(index));
 			BOX_ASSERT(move.GetCapturedPiece() != PIECE_KING, "Cannot capture king");
 			moveList.Moves[moveList.MoveCount++] = move;
 		}
 		while (promotions)
 		{
 			SquareIndex index = PopLeastSignificantBit(promotions);
-			GeneratePawnPromotions(moveList, (SquareIndex)(index - ((team == TEAM_WHITE) ? 9 : -9)), index, MOVE_CAPTURE, GetPieceAtSquare(position, OtherTeam(team), index));
+			GeneratePawnPromotions(moveList, (SquareIndex)(index - ((team == TEAM_WHITE) ? 9 : -9)), index, MOVE_CAPTURE, position.GetPieceOnSquare(index));
 		}
 	}
 
@@ -485,7 +485,7 @@ namespace Boxfish
 		{
 			SquareIndex toIndex = PopLeastSignificantBit(attacks);
 			Move move(fromSquare, toIndex, pieceType, MOVE_CAPTURE);
-			move.SetCapturedPiece(GetPieceAtSquare(position, otherTeam, toIndex));
+			move.SetCapturedPiece(position.GetPieceOnSquare(toIndex));
 			BOX_ASSERT(move.GetCapturedPiece() != PIECE_KING, "Cannot capture king");
 			moveList.Moves[moveList.MoveCount++] = move;
 		}

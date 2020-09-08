@@ -363,7 +363,6 @@ namespace Boxfish
 		MoveList moves(moveBuffer);
 		generator.GetPseudoLegalMoves(moves);
 		generator.FilterLegalMoves(moves);
-
 		for (int i = 0; i < moves.MoveCount; i++)
 		{
 			std::cout << UCI::FormatMove(moves.Moves[i]) << std::endl;

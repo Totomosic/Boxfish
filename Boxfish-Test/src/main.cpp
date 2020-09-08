@@ -279,7 +279,14 @@ namespace Test
 				"2r3k1/1pp1r1p1/p1q1R2p/1n6/3Q4/PPBR4/2P2PPP/6K1 w - - 1 31",
 				"r5k1/2p1r1p1/p1p4p/8/R7/PP4BP/2P2PP1/6K1 b - - 6 36",
 				"8/3kb3/1p1r4/p1p1Q3/2P4p/4P3/P4PP1/5K2 b - - 8 43",
-				"4n3/1p1q1kp1/1Q3p2/8/p4B1r/P7/1PP2P2/4R1K1 w - - 0 35"
+				"4n3/1p1q1kp1/1Q3p2/8/p4B1r/P7/1PP2P2/4R1K1 w - - 0 35",
+				"r1bqk2r/pppp1ppp/2n1p3/bB1nP3/3P4/2P2N2/PP3PPP/RNBQK2R w KQkq - 1 7",
+				"2k5/ppp3pp/4Kp2/2p5/2rn1r2/8/P4PPP/2R5 w - - 2 33",
+				"8/8/8/4Q2p/3PK3/2k3P1/8/8 w - - 5 68",
+				"4r1k1/3nbppp/bqr2B2/p7/2p5/6P1/P2N1PBP/1R1QR1K1 b - - 0 1",
+				"2r2knr/2P5/1R3pp1/p4p1p/3P1B2/5N2/PP1N1PPP/3QR1K1 w - - 0 20",
+				"r3r3/1ppq1ppk/p6p/3pP2Q/2bPnB1N/6R1/P1P2PPP/6RK w - - 1 30",
+				"8/3b1kb1/2p2p1p/p2p4/1p3RpN/4r3/PPP3PP/3R2K1 b - - 1 32",
 			})
 		{
 			Position position = CreatePositionFromFEN(fen);

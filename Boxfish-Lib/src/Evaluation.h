@@ -45,6 +45,7 @@ namespace Boxfish
 		Centipawns Queens[GAME_STAGE_MAX][TEAM_MAX];
 		Centipawns Space[GAME_STAGE_MAX][TEAM_MAX];
 		Centipawns KingSafety[GAME_STAGE_MAX][TEAM_MAX];
+		Centipawns Threats[GAME_STAGE_MAX][TEAM_MAX];
 		Centipawns Tempo[GAME_STAGE_MAX][TEAM_MAX];
 		int GameStage;
 
@@ -65,6 +66,7 @@ namespace Boxfish
 				(Queens[MIDGAME][team] - Queens[MIDGAME][other]) +
 				(Space[MIDGAME][team] - Space[MIDGAME][other]) +
 				(KingSafety[MIDGAME][team] - KingSafety[MIDGAME][other]) +
+				(Threats[MIDGAME][team] - Threats[MIDGAME][other]) +
 				(Tempo[MIDGAME][team] - Tempo[MIDGAME][other]);
 			Centipawns endgame = 
 				(Material[ENDGAME][team] - Material[ENDGAME][other]) +
@@ -79,6 +81,7 @@ namespace Boxfish
 				(Queens[ENDGAME][team] - Queens[ENDGAME][other]) +
 				(Space[ENDGAME][team] - Space[ENDGAME][other]) +
 				(KingSafety[ENDGAME][team] - KingSafety[ENDGAME][other]) +
+				(Threats[ENDGAME][team] - Threats[ENDGAME][other]) +
 				(Tempo[ENDGAME][team] - Tempo[ENDGAME][other]);
 			return InterpolateGameStage(this->GameStage, midgame, endgame);
 		}

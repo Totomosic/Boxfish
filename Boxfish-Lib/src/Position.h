@@ -20,6 +20,7 @@ namespace Boxfish
 
 		BitBoard BlockersForKing[TEAM_MAX];
 		BitBoard Pinners[TEAM_MAX];
+		Piece PieceOnSquare[SQUARE_MAX];
 
 		Centipawns NonPawnMaterial[TEAM_MAX];
 	};
@@ -50,6 +51,7 @@ namespace Boxfish
 		inline BitBoard GetNotOccupied() const { return ~GetAllPieces(); }
 
 		inline SquareIndex GetKingSquare(Team team) const { return InfoCache.KingSquare[team]; }
+		inline Piece GetPieceOnSquare(SquareIndex square) const { return InfoCache.PieceOnSquare[square]; }
 
 		inline const BitBoard& GetTeamPieces(Team team, Piece piece) const { return Teams[team].Pieces[piece]; }
 		inline BitBoard GetTeamPieces(Team team, Piece piece, Piece piece2) const { return GetTeamPieces(team, piece) | GetTeamPieces(team, piece2); }

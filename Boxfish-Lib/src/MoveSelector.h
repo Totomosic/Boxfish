@@ -51,7 +51,7 @@ namespace Boxfish
 		SelectorStage m_CurrentStage;
 
 	public:
-		MoveSelector(MoveList* moves, const Position* currentPosition, const Move& ttMove, const Move& counterMove, const OrderingTables* tables, const Move* killers);
+		MoveSelector(MoveList* moves, const Position* currentPosition, Move ttMove, Move counterMove, Move prevMove, const OrderingTables* tables, const Move* killers);
 		Move GetNextMove();
 	};
 

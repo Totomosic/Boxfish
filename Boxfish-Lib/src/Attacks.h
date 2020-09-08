@@ -71,6 +71,13 @@ namespace Boxfish
 
     void InitAttacks();
 
+    template<Team team>
+    inline BitBoard GetPawnAttacks(const BitBoard& pawns)
+    {
+        return (team == TEAM_WHITE) ? (Shift<NORTH_WEST>(pawns) | Shift<NORTH_EAST>(pawns))
+                                    : (Shift<SOUTH_EAST>(pawns) | Shift<SOUTH_WEST>(pawns));
+    }
+
     inline BitBoard GetBishopAttacks(SquareIndex squareIndex, BitBoard blockers)
     {
         blockers &= s_BishopMasks[squareIndex];

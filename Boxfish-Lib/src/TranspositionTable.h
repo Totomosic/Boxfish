@@ -58,6 +58,18 @@ namespace Boxfish
 	public:
 		TranspositionTable(size_t sizeBytes = TABLE_SIZE);
 
+		int GetFullProportion() const;
+
+		inline void Prefetch(const ZobristHash& hash) const
+		{
+			void* address = &m_Entries[GetIndexFromHash(hash)];
+#ifdef BOX_PLATFORM_WINDOWS
+			_mm_prefetch((const char*)address, _MM_HINT_T0);
+#elif
+			__builtin_prefetch(address);
+#endif
+		}
+
 		TranspositionTableEntry* GetEntry(const ZobristHash& hash, bool& found) const;
 		void Clear();
 

@@ -15,6 +15,11 @@ namespace Boxfish
 		position.InfoCache.NonPawnMaterial[TEAM_WHITE] = 0;
 		position.InfoCache.NonPawnMaterial[TEAM_BLACK] = 0;
 
+		for (SquareIndex square = a1; square < SQUARE_MAX; square++)
+		{
+			position.InfoCache.PieceOnSquare[square] = PIECE_INVALID;
+		}
+
 		for (Piece piece = PIECE_PAWN; piece < PIECE_MAX; piece++)
 		{
 			position.InfoCache.PiecesByType[piece] = position.GetTeamPieces(TEAM_WHITE, piece) | position.GetTeamPieces(TEAM_BLACK, piece);
@@ -22,6 +27,12 @@ namespace Boxfish
 			{
 				position.InfoCache.NonPawnMaterial[TEAM_WHITE] += position.GetTeamPieces(TEAM_WHITE, piece).GetCount() * GetPieceValue(piece);
 				position.InfoCache.NonPawnMaterial[TEAM_BLACK] += position.GetTeamPieces(TEAM_BLACK, piece).GetCount() * GetPieceValue(piece);
+			}
+			BitBoard pieces = position.GetPieces(piece);
+			while (pieces)
+			{
+				SquareIndex square = PopLeastSignificantBit(pieces);
+				position.InfoCache.PieceOnSquare[square] = piece;
 			}
 		}
 
@@ -386,28 +397,6 @@ namespace Boxfish
 		return position.GetTeamPieces(team) & square;
 	}
 
-	Piece GetPieceAtSquare(const Position& position, Team team, const Square& square)
-	{
-		return GetPieceAtSquare(position, team, BitBoard::SquareToBitIndex(square));
-	}
-
-	Piece GetPieceAtSquare(const Position& position, Team team, SquareIndex square)
-	{
-		if (position.Teams[team].Pieces[PIECE_PAWN] & square)
-			return PIECE_PAWN;
-		if (position.Teams[team].Pieces[PIECE_KNIGHT] & square)
-			return PIECE_KNIGHT;
-		if (position.Teams[team].Pieces[PIECE_BISHOP] & square)
-			return PIECE_BISHOP;
-		if (position.Teams[team].Pieces[PIECE_ROOK] & square)
-			return PIECE_ROOK;
-		if (position.Teams[team].Pieces[PIECE_QUEEN] & square)
-			return PIECE_QUEEN;
-		if (position.GetKingSquare(team) == square)
-			return PIECE_KING;
-		return PIECE_INVALID;
-	}
-
 	bool IsSquareUnderAttack(const Position& position, Team byTeam, const Square& square)
 	{
 		return IsSquareUnderAttack(position, byTeam, BitBoard::SquareToBitIndex(square));
@@ -508,6 +497,8 @@ namespace Boxfish
 		position.InfoCache.TeamPieces[team] ^= mask;
 		position.InfoCache.AllPieces ^= mask;
 		position.InfoCache.PiecesByType[piece] ^= mask;
+		position.InfoCache.PieceOnSquare[from] = PIECE_INVALID;
+		position.InfoCache.PieceOnSquare[to] = piece;
 
 		position.Hash.RemovePieceAt(team, piece, from);
 		position.Hash.AddPieceAt(team, piece, to);
@@ -519,6 +510,7 @@ namespace Boxfish
 		position.InfoCache.TeamPieces[team] ^= square;
 		position.InfoCache.AllPieces ^= square;
 		position.InfoCache.PiecesByType[piece] ^= square;
+		position.InfoCache.PieceOnSquare[square] = PIECE_INVALID;
 		if (piece != PIECE_PAWN && piece != PIECE_KING)
 		{
 			position.InfoCache.NonPawnMaterial[team] -= GetPieceValue(piece);
@@ -532,6 +524,7 @@ namespace Boxfish
 		position.InfoCache.TeamPieces[team] |= square;
 		position.InfoCache.AllPieces |= square;
 		position.InfoCache.PiecesByType[piece] |= square;
+		position.InfoCache.PieceOnSquare[square] = piece;
 		if (piece != PIECE_PAWN && piece != PIECE_KING)
 		{
 			position.InfoCache.NonPawnMaterial[team] += GetPieceValue(piece);
@@ -833,7 +826,7 @@ namespace Boxfish
 			// There is no piece at the position to move
 			return false;
 		}
-		if (GetPieceAtSquare(position, position.TeamToPlay, move.GetFromSquareIndex()) != move.GetMovingPiece())
+		if (position.GetPieceOnSquare(move.GetFromSquareIndex()) != move.GetMovingPiece())
 		{
 			// The wrong piece type is at the square
 			return false;
@@ -848,14 +841,14 @@ namespace Boxfish
 
 	Move CreateMove(const Position& position, const Square& from, const Square& to, Piece promotionPiece)
 	{
-		Move move(BitBoard::SquareToBitIndex(from), BitBoard::SquareToBitIndex(to), GetPieceAtSquare(position, position.TeamToPlay, from), MOVE_NORMAL);
+		Move move(BitBoard::SquareToBitIndex(from), BitBoard::SquareToBitIndex(to), position.GetPieceOnSquare(BitBoard::SquareToBitIndex(from)), MOVE_NORMAL);
 		SquareIndex toIndex = BitBoard::SquareToBitIndex(to);
 
 		bool occupied = position.GetTeamPieces(OtherTeam(position.TeamToPlay)) & toIndex;
 		if (occupied)
 		{
 			move.SetFlags(MOVE_CAPTURE);
-			move.SetCapturedPiece(GetPieceAtSquare(position, OtherTeam(position.TeamToPlay), to));
+			move.SetCapturedPiece(position.GetPieceOnSquare(BitBoard::SquareToBitIndex(to)));
 			BOX_ASSERT(move.GetCapturedPiece() != PIECE_KING, "Cannot capture king");
 		}
 

@@ -4,12 +4,12 @@
 namespace Boxfish
 {
 
-	constexpr Centipawns SCORE_GOOD_CAPTURE = 500;
-	constexpr Centipawns SCORE_PROMOTION = 600;
-	constexpr Centipawns SCORE_KILLER = 300;
+	constexpr Centipawns SCORE_GOOD_CAPTURE = 3000;
+	constexpr Centipawns SCORE_PROMOTION = 3000;
+	constexpr Centipawns SCORE_KILLER = 1900;
 	constexpr Centipawns SCORE_BAD_CAPTURE = -1000;
 
-	MoveSelector::MoveSelector(MoveList* moves, const Position* currentPosition, const Move& ttMove, const Move& counterMove, const OrderingTables* tables, const Move* killers)
+	MoveSelector::MoveSelector(MoveList* moves, const Position* currentPosition, Move ttMove, Move counterMove, Move prevMove, const OrderingTables* tables, const Move* killers)
 		: m_Moves(moves), m_CurrentPosition(currentPosition), m_ttMove(ttMove), m_CounterMove(counterMove), m_Tables(tables), m_Killers(killers), m_CurrentIndex(0), m_CurrentStage(TTMove)
 	{
 		if (ttMove == MOVE_NONE)
@@ -28,34 +28,40 @@ namespace Boxfish
 				{
 					score = SCORE_BAD_CAPTURE - GetPieceValue(move.GetMovingPiece()) + GetPieceValue(move.GetCapturedPiece());
 				}
+				if (prevMove != MOVE_NONE && prevMove.IsCapture() && move.GetToSquareIndex() == prevMove.GetToSquareIndex())
+					score += 150; // Recapture
 			}
 			else if (move.IsPromotion())
 			{
 				score = SCORE_PROMOTION + GetPieceValue(move.GetPromotionPiece());
 			}
-			else if (killers)
+			else
 			{
-				if (move == killers[1])
-					score = SCORE_KILLER - 1;
-				else if (move == killers[0])
-					score = SCORE_KILLER;
-			}
-
-			// Counter move
-			if (move == counterMove)
-			{
-				score += 25;
-			}
-			// History Heuristic
-			if (m_Tables->History && m_Tables->Butterfly)
-			{
-				Centipawns history = m_Tables->History[currentPosition->TeamToPlay][move.GetFromSquareIndex()][move.GetToSquareIndex()];
-				Centipawns butterfly = m_Tables->Butterfly[currentPosition->TeamToPlay][move.GetFromSquareIndex()][move.GetToSquareIndex()];
-				if (butterfly != 0 && history > butterfly)
+				if (killers)
 				{
-					score += history / butterfly;
+					if (move == killers[1])
+						score = SCORE_KILLER - 200;
+					else if (move == killers[0])
+						score = SCORE_KILLER;
+				}
+
+				// Counter move
+				if (move == counterMove)
+				{
+					score += 1300;
+				}
+				// History Heuristic
+				if (m_Tables->History && m_Tables->Butterfly)
+				{
+					Centipawns history = m_Tables->History[currentPosition->TeamToPlay][move.GetFromSquareIndex()][move.GetToSquareIndex()];
+					Centipawns butterfly = m_Tables->Butterfly[currentPosition->TeamToPlay][move.GetFromSquareIndex()][move.GetToSquareIndex()];
+					if (butterfly != 0 && history > butterfly)
+					{
+						score += history / butterfly * 5;
+					}
 				}
 			}
+
 			move.SetValue(score);
 		}
 	}
