@@ -11,7 +11,7 @@ jobs:
         working-directory: Scripts
         shell: cmd
       - name: Build Boxfish
-        run: '"C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Enterprise\\MSBuild\\Current\\Bin\\MSBuild.exe" Boxfish-Test/Boxfish-Test.vcxproj -m -p:Configuration=Dist'
+        run: '"C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Enterprise\\MSBuild\\Current\\Bin\\MSBuild.exe" Boxfish-Test/Boxfish-Test.vcxproj -m -p:Configuration=Dist -p:Platform=x64'
         shell: cmd
       - name: Run Tests
         run: ./Boxfish-Test.exe
