@@ -8,6 +8,8 @@ jobs:
         run: sudo apt-get update
       - name: Checkout Boxfish
         uses: actions/checkout@v2
+        with:
+          submodules: recursive
       - name: Generate makefiles
         run: ./Linux-GenProjects.sh
         working-directory: Scripts
