@@ -65,7 +65,7 @@ namespace Boxfish
 			void* address = &m_Entries[GetIndexFromHash(hash)];
 #ifdef BOX_PLATFORM_WINDOWS
 			_mm_prefetch((const char*)address, _MM_HINT_T0);
-#elif
+#else
 			__builtin_prefetch(address);
 #endif
 		}
