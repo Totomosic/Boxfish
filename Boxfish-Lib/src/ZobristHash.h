@@ -4,7 +4,7 @@
 namespace Boxfish
 {
 
-	class Position;
+	struct Position;
 
 	void InitZobristHash();
 
