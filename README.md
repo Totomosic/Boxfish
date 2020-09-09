@@ -1,5 +1,36 @@
+![Build-Windows](https://github.com/Totomosic/Boxfish/workflows/Build-Windows/badge.svg)
+![Build-Linux](https://github.com/Totomosic/Boxfish/workflows/Build-Linux/badge.svg)
+
 # Boxfish
-Chess engine created in c++ inspired by [Stockfish](https://stockfishchess.org/).
+C++ UCI Chess engine inspired by [Stockfish](https://stockfishchess.org/).
+
+## Features
+- Bitboards and magic bitboard move generation
+- UCI protocol
+- Search:
+  - Transposition table with Zobrist hashing
+  - PVS search
+  - Aspiration windows and iterative deepening
+  - Eval pruning
+  - Razoring
+  - Adaptive null move pruning
+  - Futility pruning
+  - Internal iterative deepening
+  - Singular extension
+  - Late move reduction
+  - Quiescence search with delta pruning
+- Evaluation:
+  - Material
+  - Piece squares
+  - Blocked pieces
+  - Passed pawns
+  - Weak pawns
+  - King safety
+  - Space
+  - Knights, Bishops, Rooks, Queens
+- All perft tests passed
+- Pondering
+- SEE move ordering
 
 ## Installing:
 1. Download or clone this repository.
