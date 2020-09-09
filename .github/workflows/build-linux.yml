@@ -1,0 +1,18 @@
+name: Build-Linux
+on: push
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Update
+        run: sudo apt-get update
+      - name: Checkout Boxfish
+        uses: actions/checkout@v2
+      - name: Generate makefiles
+        run: ./Linux-GenProjects.sh
+        working-directory: Scripts
+      - name: Make Boxfish
+        run: make -j4 Boxfish-Test config=dist
+      - name: Run Tests
+        run: ./Boxfish-Test
+        working-directory: bin/Dist-linux-x86_64/Boxfish-Test

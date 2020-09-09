@@ -1,0 +1,18 @@
+name: Build-Windows
+on: push
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Boxfish
+        uses: actions/checkout@v2
+      - name: Generate projects
+        run: ./Win-GenProjects.bat
+        working-directory: Scripts
+        shell: cmd
+      - name: Build Boxfish
+        run: '"C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Enterprise\\MSBuild\\Current\\Bin\\MSBuild.exe" Boxfish-Test/Boxfish-Test.vcxproj -m -p:Configuration=Dist'
+        shell: cmd
+      - name: Run Tests
+        run: ./Boxfish-Test.exe
+        working-directory: bin/Dist-windows-x86_64/Boxfish-Test
