@@ -71,7 +71,7 @@ namespace Boxfish
 		bool m_InCheck;
 
 	public:
-		QuiescenceMoveSelector(const Position& position, MoveList& legalMoves);
+		QuiescenceMoveSelector(const Position& position, MoveList& legalMoves, bool generateChecks);
 
 		bool Empty() const;
 		Move GetNextMove();

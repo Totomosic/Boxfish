@@ -124,8 +124,8 @@ namespace Boxfish
 		}
 	}
 
-	QuiescenceMoveSelector::QuiescenceMoveSelector(const Position& position, MoveList& legalMoves)
-		: m_LegalMoves(legalMoves), m_CurrentIndex(0), m_NumberOfCaptures(0), m_InCheck(IsInCheck(position, position.TeamToPlay))
+	QuiescenceMoveSelector::QuiescenceMoveSelector(const Position& position, MoveList& legalMoves, bool generateChecks)
+		: m_LegalMoves(legalMoves), m_CurrentIndex(0), m_NumberOfCaptures(0), m_InCheck(generateChecks)
 	{
 		ScoreMovesQuiescence(position, legalMoves);
 		if (m_InCheck)

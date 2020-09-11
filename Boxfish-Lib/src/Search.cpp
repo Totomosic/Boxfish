@@ -397,9 +397,7 @@ namespace Boxfish
 				break;
 
 			if (rootDepth >= depth)
-			{
 				break;
-			}
 		}
 
 		// Don't return if pondering (exceeded max ply)
@@ -618,8 +616,9 @@ namespace Boxfish
 			stack->MoveCount = moveIndex;
 
 			const bool givesCheck = IsInCheck(movedPosition);
+			const bool givesGoodCheck = givesCheck && SeeGE(position, move);
 
-			if (move.IsCastle() || (givesCheck && SeeGE(position, move)))
+			if (move.IsCastle() || givesGoodCheck)
 				depthExtension = 1;
 
 			if (!IsPvNode && futilityPrune && !givesCheck && !inCheck && !move.IsCaptureOrPromotion() && depthExtension <= 0)
@@ -659,7 +658,7 @@ namespace Boxfish
 			Centipawns value = -SCORE_MATE;
 
 			// Late move reduction
-			if (depth >= 3 && moveIndex > FIRST_MOVE_INDEX && !inCheck && !isCaptureOrPromotion && !givesCheck)
+			if (depth >= 3 && moveIndex > FIRST_MOVE_INDEX && !inCheck && !isCaptureOrPromotion && !givesGoodCheck)
 			{
 				int reduction = GetReduction<NT>(improving, depth, moveIndex);
 				if ((stack - 1)->MoveCount > 15)
@@ -728,7 +727,8 @@ namespace Boxfish
 				{
 					alpha = value;
 				}
-				if (value >= MateIn(stack->Ply))
+				// TODO: Check for quickest mate
+				if (IsMateScore(value) && value > 0)
 					break;
 			}
 
@@ -767,10 +767,11 @@ namespace Boxfish
 		const bool inCheck = IsInCheck(position);
 
 		Centipawns originalAlpha = alpha;
+		Centipawns futilityValue = -SCORE_MATE;
 
 		bool ttFound;
 		TranspositionTableEntry* ttEntry = m_TranspositionTable.GetEntry(position.Hash, ttFound);
-		if (ttFound && ttEntry->GetHash() == position.Hash)
+		if (!IsPvNode && ttFound && ttEntry->GetHash() == position.Hash)
 		{
 			if (ttEntry->GetFlag() == EXACT)
 				return ttEntry->GetScore();
@@ -789,7 +790,14 @@ namespace Boxfish
 		Centipawns evaluation = 0;
 		if (!inCheck)
 		{
-			evaluation = StaticEvalPosition(position, alpha, beta, stack->Ply);
+			if (ttFound && (ttEntry->GetFlag() == EXACT || ttEntry->GetFlag() == LOWER_BOUND))
+			{
+				evaluation = ttEntry->GetScore();
+			}
+			else
+			{
+				evaluation = StaticEvalPosition(position, alpha, beta, stack->Ply);
+			}
 
 			if (evaluation >= beta && !inCheck)
 			{
@@ -801,6 +809,7 @@ namespace Boxfish
 			}
 			if (alpha < evaluation)
 				alpha = evaluation;
+			futilityValue = evaluation + 100;
 		}
 
 		MoveGenerator generator(position);
@@ -818,7 +827,7 @@ namespace Boxfish
 
 		constexpr int FIRST_MOVE_INDEX = 1;
 		int moveIndex = 0;
-		QuiescenceMoveSelector selector(position, legalMoves);
+		QuiescenceMoveSelector selector(position, legalMoves, inCheck);
 		Move move;
 		while (!selector.Empty())
 		{
@@ -826,10 +835,23 @@ namespace Boxfish
 			move = selector.GetNextMove();
 
 			// TODO: Also find moves that give check
+			const bool givesCheck = false;
 
-			constexpr Centipawns delta = 250;
-			if (!inCheck && !move.IsPromotion() && (move.IsCapture() && (evaluation + GetPieceValue(move.GetCapturedPiece()) + delta < alpha)))
-				continue;
+			if (!inCheck && !givesCheck && !IsMateScore(futilityValue) && !move.IsAdvancedPawnPush(position.TeamToPlay))
+			{
+				Centipawns futilityThreshold = futilityValue + ((move.IsCapture()) ? GetPieceValue(move.GetCapturedPiece(), ENDGAME) : 0);
+				if (futilityThreshold <= alpha)
+				{
+					bestValue = std::max(bestValue, futilityThreshold);
+					continue;
+				}
+
+				if (futilityValue <= alpha && !SeeGE(position, move, 1))
+				{
+					bestValue = std::max(bestValue, futilityValue);
+					continue;
+				}
+			}
 
 			if (generator.IsLegal(move))
 			{
@@ -838,6 +860,8 @@ namespace Boxfish
 				m_Nodes++;
 
 				m_TranspositionTable.Prefetch(movedPosition.Hash);
+
+				stack->CurrentMove = move;
 
 				// Irreversible move was played
 				if (movedPosition.HalfTurnsSinceCaptureOrPush == 0)
