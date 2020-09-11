@@ -6,7 +6,7 @@ namespace Boxfish
 
 	constexpr Centipawns SCORE_GOOD_CAPTURE = 3000;
 	constexpr Centipawns SCORE_PROMOTION = 3000;
-	constexpr Centipawns SCORE_KILLER = 1900;
+	constexpr Centipawns SCORE_KILLER = 2000;
 	constexpr Centipawns SCORE_BAD_CAPTURE = -1000;
 
 	MoveSelector::MoveSelector(MoveList* moves, const Position* currentPosition, Move ttMove, Move counterMove, Move prevMove, const OrderingTables* tables, const Move* killers)
@@ -20,7 +20,7 @@ namespace Boxfish
 			Move& move = m_Moves->Moves[index];
 			if (move.IsCapture())
 			{
-				if (SeeGE(*currentPosition, move, -30))
+				if (SeeGE(*currentPosition, move, -50))
 				{
 					score = SCORE_GOOD_CAPTURE + GetPieceValue(move.GetCapturedPiece()) - GetPieceValue(move.GetMovingPiece());
 				}
@@ -28,7 +28,7 @@ namespace Boxfish
 				{
 					score = SCORE_BAD_CAPTURE - GetPieceValue(move.GetMovingPiece()) + GetPieceValue(move.GetCapturedPiece());
 				}
-				if (prevMove != MOVE_NONE && prevMove.IsCapture() && move.GetToSquareIndex() == prevMove.GetToSquareIndex())
+				if (prevMove != MOVE_NONE && move.IsCapture() && move.GetToSquareIndex() == prevMove.GetToSquareIndex())
 					score += 150; // Recapture
 			}
 			else if (move.IsPromotion())
@@ -45,10 +45,13 @@ namespace Boxfish
 						score = SCORE_KILLER;
 				}
 
+				if (move.IsAdvancedPawnPush(currentPosition->TeamToPlay) || (move.GetFlags() & (MOVE_DOUBLE_PAWN_PUSH | MOVE_KINGSIDE_CASTLE | MOVE_QUEENSIDE_CASTLE)))
+					score += 100;
+
 				// Counter move
 				if (move == counterMove)
 				{
-					score += 1300;
+					score += 1500;
 				}
 				// History Heuristic
 				if (m_Tables->History && m_Tables->Butterfly)

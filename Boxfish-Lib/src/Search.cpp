@@ -289,7 +289,7 @@ namespace Boxfish
 
 				while (true)
 				{
-					Centipawns newBestScore = SearchPosition<PV>(position, stackPtr, rootDepth, alpha, beta, selDepth, RootInfo{ rootMoves, pvIndex, (int)rootMoves.size() });
+					Centipawns newBestScore = SearchPosition<PV>(position, stackPtr, rootDepth, alpha, beta, selDepth, false, RootInfo{ rootMoves, pvIndex, (int)rootMoves.size() });
 
 					std::stable_sort(rootMoves.begin() + pvIndex, rootMoves.end());
 
@@ -419,7 +419,7 @@ namespace Boxfish
 	}
 
 	template<Search::NodeType NT>
-	Centipawns Search::SearchPosition(Position& position, SearchStack* stack, int depth, Centipawns alpha, Centipawns beta, int& selDepth, const Search::RootInfo& rootInfo)
+	Centipawns Search::SearchPosition(Position& position, SearchStack* stack, int depth, Centipawns alpha, Centipawns beta, int& selDepth, bool cutNode, const Search::RootInfo& rootInfo)
 	{
 		BOX_ASSERT(alpha < beta && beta >= -SCORE_MATE && beta <= SCORE_MATE && alpha >= -SCORE_MATE && alpha <= SCORE_MATE, "Invalid bounds");
 		constexpr bool IsPvNode = NT == PV;
@@ -469,10 +469,9 @@ namespace Boxfish
 
 		if (!IsPvNode && ttFound && ttEntry->GetDepth() >= depth)
 		{
-			const bool goodEnough = (ttEntry->GetScore() >= beta) ? (ttEntry->GetFlag() == EXACT || ttEntry->GetFlag() == LOWER_BOUND) : (ttEntry->GetFlag() == EXACT || ttEntry->GetFlag() == UPPER_BOUND);
-			if (goodEnough)
+			if (ttEntry->GetFlag() == EXACT || (ttEntry->GetFlag() == LOWER_BOUND && ttEntry->GetScore() >= beta))
 			{
-				if (ttMove != MOVE_NONE)
+				if (ttMove != MOVE_NONE && !ttMove.IsCaptureOrPromotion())
 				{
 					UpdateQuietStats(position, stack, depth, ttMove);
 				}
@@ -488,7 +487,7 @@ namespace Boxfish
 
 		if (stack->StaticEvaluation == SCORE_NONE && !inCheck)
 		{
-			if (ttFound && ttEntry->Depth >= depth - 1 && (ttEntry->GetFlag() == EXACT || ttEntry->GetFlag() == LOWER_BOUND))
+			if (ttFound && ttEntry->Depth >= depth - 1 && (ttEntry->GetFlag() == EXACT || ttEntry->GetFlag() == LOWER_BOUND) && !IsMateScore(ttEntry->GetScore()))
 			{
 				stack->StaticEvaluation = ttEntry->GetScore();
 			}
@@ -534,7 +533,7 @@ namespace Boxfish
 
 			int r = ((820 + 70 * depth) / 256 + std::min((stack->StaticEvaluation - beta) / 200, 3));
 
-			Centipawns value = -SearchPosition<NonPV>(position, stack + 1, depth - r, -beta, -beta + 1, selDepth, rootInfo);
+			Centipawns value = -SearchPosition<NonPV>(position, stack + 1, depth - r, -beta, -beta + 1, selDepth, !cutNode, rootInfo);
 			UndoNullMove(position, undo);
 			if (value >= beta)
 				return beta;
@@ -549,10 +548,12 @@ namespace Boxfish
 				futilityPrune = true;
 		}
 
+		(stack + 1)->CanNull = true;
+
 		// Internal iterative deepening
 		if (depth >= 8 && ttMove == MOVE_NONE)
 		{
-			SearchPosition<NonPV>(position, stack, depth - 7, alpha, beta, selDepth, rootInfo);
+			SearchPosition<NonPV>(position, stack, depth - 7, alpha, beta, selDepth, cutNode, rootInfo);
 			ttEntry = m_TranspositionTable.GetEntry(position.Hash, ttFound);
 			ttMove = ttFound ? ttEntry->GetMove() : MOVE_NONE;
 		}
@@ -569,10 +570,9 @@ namespace Boxfish
 			return EvaluateDraw(position, stack->Contempt);
 		}
 		Move previousMove = (stack - 1)->CurrentMove;
-
-		(stack + 1)->CanNull = true;
-
 		Move counterMove = m_OrderingTables.CounterMoves[previousMove.GetFromSquareIndex()][previousMove.GetToSquareIndex()];
+		Move move = MOVE_NONE;
+
 		MoveSelector selector(&legalMoves, &position, ttMove, counterMove, previousMove, &m_OrderingTables, stack->KillerMoves);
 
 		constexpr int FIRST_MOVE_INDEX = 1;
@@ -581,7 +581,6 @@ namespace Boxfish
 		int moveIndex = 0;
 		Centipawns bestValue = -SCORE_MATE;
 
-		Move move = MOVE_NONE;
 		while ((move = selector.GetNextMove()) != MOVE_NONE)
 		{
 			if (move == stack->ExcludedMove)
@@ -601,13 +600,11 @@ namespace Boxfish
 			{
 				Centipawns newBeta = std::max(ttEntry->GetScore() - 2 * depth, -SCORE_MATE);
 				stack->ExcludedMove = move;
-				Centipawns score = SearchPosition<NonPV>(position, stack, depth / 2, newBeta - 1, newBeta, selDepth, rootInfo);
+				Centipawns score = SearchPosition<NonPV>(position, stack, depth / 2, newBeta - 1, newBeta, selDepth, cutNode, rootInfo);
 				stack->ExcludedMove = MOVE_NONE;
 				if (score < newBeta)
 				{
 					depthExtension = 1;
-					if (score < newBeta - 4 * depth && IsPvNode)
-						depthExtension++;
 				}
 			}
 
@@ -622,8 +619,8 @@ namespace Boxfish
 
 			const bool givesCheck = IsInCheck(movedPosition);
 
-			if (move.IsCastle() || (givesCheck && SeeGE(position, move, -30)))
-				depthExtension++;
+			if (move.IsCastle() || (givesCheck && SeeGE(position, move)))
+				depthExtension = 1;
 
 			if (!IsPvNode && futilityPrune && !givesCheck && !inCheck && !move.IsCaptureOrPromotion() && depthExtension <= 0)
 				continue;
@@ -631,7 +628,7 @@ namespace Boxfish
 			int extendedDepth = depth - 1 + depthExtension;
 
 			// Shallow depth pruning
-			if (!isRoot && position.GetNonPawnMaterial(position.TeamToPlay) > 0 && !IsMateScore(beta))
+			if (!isRoot && !IsEndgame(position) && !IsMateScore(beta))
 			{
 				if (!isCaptureOrPromotion && !inCheck && !givesCheck && (!move.IsAdvancedPawnPush(position.TeamToPlay) || position.GetNonPawnMaterial() >= 2750))
 				{
@@ -671,10 +668,12 @@ namespace Boxfish
 					reduction--;
 				if (ttMoveIsCapture)
 					reduction++;
+				if (cutNode)
+					reduction++;
 
 				int d = std::max(extendedDepth - std::max(reduction, 0), 1);
 
-				value = -SearchPosition<NonPV>(movedPosition, stack + 1, d, -(alpha + 1), -alpha, selDepth, rootInfo);
+				value = -SearchPosition<NonPV>(movedPosition, stack + 1, d, -(alpha + 1), -alpha, selDepth, true, rootInfo);
 				fullDepthSearch = value > alpha && d != extendedDepth;
 			}
 			else
@@ -685,13 +684,13 @@ namespace Boxfish
 			int childDepth = extendedDepth - depthReduction;
 			if (fullDepthSearch)
 			{
-				value = -SearchPosition<NonPV>(movedPosition, stack + 1, childDepth, -(alpha + 1), -alpha, selDepth, rootInfo);
+				value = -SearchPosition<NonPV>(movedPosition, stack + 1, childDepth, -(alpha + 1), -alpha, selDepth, !cutNode, rootInfo);
 			}
 			if (IsPvNode && (moveIndex == FIRST_MOVE_INDEX || (value > alpha && (isRoot || value < beta))))
 			{
 				pv[0] = MOVE_NONE;
 				(stack + 1)->PV = pv;
-				value = -SearchPosition<PV>(movedPosition, stack + 1, childDepth, -beta, -alpha, selDepth, rootInfo);
+				value = -SearchPosition<PV>(movedPosition, stack + 1, childDepth, -beta, -alpha, selDepth, false, rootInfo);
 			}
 
 			if (CheckLimits())

@@ -569,7 +569,7 @@ namespace Boxfish
 					count += pawnsOnFile - 1;
 			}
 			Centipawns mg = -10 * count;
-			Centipawns eg = -20 * count;
+			Centipawns eg = -30 * count;
 			result.DoubledPawns[MIDGAME][team] = mg;
 			result.DoubledPawns[ENDGAME][team] = eg;
 		}
@@ -599,8 +599,8 @@ namespace Boxfish
 				if (!IsPawnSupported(position, square, team))
 					count++;
 			}
-			result.WeakPawns[MIDGAME][team] = count * -5;
-			result.WeakPawns[ENDGAME][team] = count * -15;
+			result.WeakPawns[MIDGAME][team] = count * -10;
+			result.WeakPawns[ENDGAME][team] = count * -20;
 		}
 		else
 		{

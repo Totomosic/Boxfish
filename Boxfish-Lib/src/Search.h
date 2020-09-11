@@ -118,7 +118,7 @@ namespace Boxfish
 
 		RootMove SearchRoot(Position& position, int depth, const std::function<void(SearchResult)>& callback);
 		template<NodeType type>
-		Centipawns SearchPosition(Position& position, SearchStack* stack, int depth, Centipawns alpha, Centipawns beta, int& selDepth, const RootInfo& rootInfo);
+		Centipawns SearchPosition(Position& position, SearchStack* stack, int depth, Centipawns alpha, Centipawns beta, int& selDepth, bool cutNode, const RootInfo& rootInfo);
 		template<NodeType type>
 		Centipawns QuiescenceSearch(Position& position, SearchStack* stack, int depth, Centipawns alpha, Centipawns beta);
 
