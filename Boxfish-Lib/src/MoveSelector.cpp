@@ -26,10 +26,10 @@ namespace Boxfish
 				}
 				else
 				{
-					score = SCORE_BAD_CAPTURE - GetPieceValue(move.GetMovingPiece()) + GetPieceValue(move.GetCapturedPiece());
+					score = SCORE_BAD_CAPTURE + GetPieceValue(move.GetCapturedPiece()) - GetPieceValue(move.GetMovingPiece());
 				}
 				if (prevMove != MOVE_NONE && move.IsCapture() && move.GetToSquareIndex() == prevMove.GetToSquareIndex())
-					score += 150; // Recapture
+					score += 250; // Recapture
 			}
 			else if (move.IsPromotion())
 			{
@@ -46,7 +46,11 @@ namespace Boxfish
 				}
 
 				if (move.IsAdvancedPawnPush(currentPosition->TeamToPlay) || (move.GetFlags() & (MOVE_DOUBLE_PAWN_PUSH | MOVE_KINGSIDE_CASTLE | MOVE_QUEENSIDE_CASTLE)))
-					score += 100;
+					score += 250;
+
+				constexpr BitBoard Center = (RANK_4_MASK | RANK_5_MASK) & (FILE_C_MASK | FILE_D_MASK | FILE_E_MASK | FILE_F_MASK);
+				if (move.GetMovingPiece() == PIECE_PAWN && (Center & move.GetToSquareIndex()))
+					score += 50;
 
 				// Counter move
 				if (move == counterMove)

@@ -128,6 +128,8 @@ namespace Boxfish
 		Centipawns EvaluateDraw(const Position& postion, Centipawns contempt) const;
 		Centipawns MateIn(int ply) const;
 		Centipawns MatedIn(int ply) const;
+		Centipawns GetValueForTT(Centipawns value, int currentPly) const;
+		Centipawns GetValueFromTT(Centipawns value, int currentPly) const;
 		int GetPliesFromMateScore(Centipawns score) const;
 		bool IsMateScore(Centipawns score) const;
 		Centipawns StaticEvalPosition(const Position& position, Centipawns alpha, Centipawns beta, int ply) const;

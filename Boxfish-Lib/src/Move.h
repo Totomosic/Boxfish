@@ -46,10 +46,10 @@ namespace Boxfish
 
 		Square GetFromSquare() const;
 		Square GetToSquare() const;
-		inline SquareIndex GetFromSquareIndex() const { return (SquareIndex)((m_Move >> 9) & 0x3f); }
-		inline SquareIndex GetToSquareIndex() const { return (SquareIndex)((m_Move >> 15) & 0x3f); }
+		inline SquareIndex GetFromSquareIndex() const { return (SquareIndex)((m_Move >> 9) & 0x3F); }
+		inline SquareIndex GetToSquareIndex() const { return (SquareIndex)((m_Move >> 15) & 0x3F); }
 		inline Piece GetMovingPiece() const { return (Piece)(m_Move & 0x7); }
-		inline MoveFlag GetFlags() const { return (MoveFlag)((m_Move >> 21) & 0x7f); }
+		inline MoveFlag GetFlags() const { return (MoveFlag)((m_Move >> 21) & 0x7F); }
 		void SetFlags(MoveFlag flags);
 
 		inline Piece GetCapturedPiece() const { return (Piece)((m_Move >> 6) & 0x7); }
