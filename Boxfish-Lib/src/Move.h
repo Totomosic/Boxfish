@@ -25,7 +25,7 @@ namespace Boxfish
 	{
 	private:
 		uint32_t m_Move;
-		int16_t m_Value;
+		int m_Value;
 
 	public:
 		// Don't initialize
@@ -42,7 +42,7 @@ namespace Boxfish
 		}
 
 		inline int GetValue() const { return m_Value; }
-		inline void SetValue(int16_t value) { m_Value = value; }
+		inline void SetValue(int value) { m_Value = value; }
 
 		Square GetFromSquare() const;
 		Square GetToSquare() const;

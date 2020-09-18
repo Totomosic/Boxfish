@@ -291,7 +291,7 @@ namespace Test
 		{
 			Position position = CreatePositionFromFEN(fen);
  
-			Centipawns eval = Evaluate(position, position.TeamToPlay);
+			ValueType eval = Evaluate(position, position.TeamToPlay);
 			REQUIRE(eval == Evaluate(MirrorPosition(position), OtherTeam(position.TeamToPlay)));
 		}
 	}
