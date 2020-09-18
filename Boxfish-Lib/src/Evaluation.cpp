@@ -51,15 +51,15 @@ namespace Boxfish
 
 	static int s_DistanceTable[FILE_MAX * RANK_MAX][FILE_MAX * RANK_MAX];
 
-	static Centipawns s_MaterialValues[GAME_STAGE_MAX][PIECE_MAX];
-	static Centipawns s_PieceSquareTables[GAME_STAGE_MAX][TEAM_MAX][PIECE_MAX][FILE_MAX * RANK_MAX];
+	static ValueType s_MaterialValues[GAME_STAGE_MAX][PIECE_MAX];
+	static ValueType s_PieceSquareTables[GAME_STAGE_MAX][TEAM_MAX][PIECE_MAX][FILE_MAX * RANK_MAX];
 
-	static constexpr Centipawns s_KnightAdjust[9] = { -20, -16, -12, -8, -4, 0, 4, 8, 12 };
-	static constexpr Centipawns s_RookAdjust[9] = { 15, 12, 9, 6, 3, 0, -3, -6, -9 };
+	static constexpr ValueType s_KnightAdjust[9] = { -20, -16, -12, -8, -4, 0, 4, 8, 12 };
+	static constexpr ValueType s_RookAdjust[9] = { 15, 12, 9, 6, 3, 0, -3, -6, -9 };
  
 	static BitBoard s_PawnShieldMasks[TEAM_MAX][FILE_MAX * RANK_MAX];
 	static BitBoard s_PassedPawnMasks[TEAM_MAX][FILE_MAX * RANK_MAX];
-	static Centipawns s_PassedPawnRankWeights[GAME_STAGE_MAX][TEAM_MAX][RANK_MAX];
+	static ValueType s_PassedPawnRankWeights[GAME_STAGE_MAX][TEAM_MAX][RANK_MAX];
 	static BitBoard s_SupportedPawnMasks[TEAM_MAX][FILE_MAX * RANK_MAX];
 
 	static BitBoard s_KingRings[TEAM_MAX][FILE_MAX * RANK_MAX];
@@ -76,7 +76,7 @@ namespace Boxfish
 
 	// Indexed by attack units
 	static constexpr int MAX_ATTACK_UNITS = 100;
-	static constexpr Centipawns s_KingSafetyTable[MAX_ATTACK_UNITS] = {
+	static constexpr ValueType s_KingSafetyTable[MAX_ATTACK_UNITS] = {
 		0,   0,   1,   2,   3,   5,   7,   9,  12,  15,
 		18,  22,  26,  30,  35,  39,  44,  50,  56,  62,
 		68,  75,  82,  85,  89,  97, 105, 113, 122, 131,
@@ -90,7 +90,7 @@ namespace Boxfish
 	};
 
 	// Pawns can never be on the 8th rank (1st rank used as a sentinel for when there is no pawn)
-	static constexpr Centipawns s_KingShieldStength[FILE_MAX / 2][RANK_MAX] = {
+	static constexpr ValueType s_KingShieldStength[FILE_MAX / 2][RANK_MAX] = {
 		{ -3, 40, 45, 26, 20, 9, 13 },
 		{ -21, 29, 17, -25, -14, -5, -32 },
 		{ -5, 36, 12, -1, 16, 1, -22 },
@@ -98,7 +98,7 @@ namespace Boxfish
 	};
 
 	// Pawns can never be on the 8th rank (1st rank used as a sentinel for when there is no pawn)
-	static constexpr Centipawns s_PawnStormStrength[FILE_MAX / 2][RANK_MAX] = {
+	static constexpr ValueType s_PawnStormStrength[FILE_MAX / 2][RANK_MAX] = {
 		{ 45, 52, 61, 45, 27, 23, 25 },
 		{ 22, -9, 62, 23, 18, -3, 11 },
 		{ 2, 25, 81, 17, 3, -6, -1 },
@@ -107,13 +107,13 @@ namespace Boxfish
 
 	static int s_AttackUnits[PIECE_MAX];
 
-	static constexpr Centipawns s_MinorPieceThreat[GAME_STAGE_MAX][PIECE_INVALID + 1] = {
+	static constexpr ValueType s_MinorPieceThreat[GAME_STAGE_MAX][PIECE_INVALID + 1] = {
 		// PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING, _, _, INVALID
 		{ 0, 20, 25, 32, 30, 0, 0, 0, 0 },
 		{ 15, 20, 20, 50, 55, 0, 0, 0, 0 }
 	};
 
-	static constexpr Centipawns s_RookThreat[GAME_STAGE_MAX][PIECE_INVALID + 1] = {
+	static constexpr ValueType s_RookThreat[GAME_STAGE_MAX][PIECE_INVALID + 1] = {
 		// PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING, _, _, INVALID
 		{ 0, 17, 17, 0, 22, 0, 0, 0, 0 },
 		{ 12, 34, 27, 17, 17, 0, 0, 0, 0 }
@@ -141,7 +141,7 @@ namespace Boxfish
 		RANK_7_MASK,
 	};
 
-	void MirrorTable(Centipawns* dest, Centipawns* src)
+	void MirrorTable(ValueType* dest, ValueType* src)
 	{
 		for (File file = FILE_A; file < FILE_MAX; file++)
 		{
@@ -244,7 +244,7 @@ namespace Boxfish
 
 	void InitPieceSquareTables()
 	{
-		Centipawns whitePawnsTable[FILE_MAX * RANK_MAX] = {
+		ValueType whitePawnsTable[FILE_MAX * RANK_MAX] = {
 			 0,  0,  0,  0,  0,  0,  0,  0,
 			50, 50, 50, 50, 50, 50, 50, 50,
 			10, 10, 20, 30, 30, 20, 10, 10,
@@ -259,7 +259,7 @@ namespace Boxfish
 		MirrorTable(s_PieceSquareTables[ENDGAME][TEAM_WHITE][PIECE_PAWN], s_PieceSquareTables[MIDGAME][TEAM_BLACK][PIECE_PAWN]);
 		MirrorTable(s_PieceSquareTables[ENDGAME][TEAM_BLACK][PIECE_PAWN], s_PieceSquareTables[MIDGAME][TEAM_WHITE][PIECE_PAWN]);
 
-		Centipawns whiteKnightsTable[FILE_MAX * RANK_MAX] = {
+		ValueType whiteKnightsTable[FILE_MAX * RANK_MAX] = {
 			-50,-40,-30,-30,-30,-30,-40,-50,
 			-40,-20,  0,  0,  0,  0,-20,-40,
 			-30,  0, 10, 15, 15, 10,  0,-30,
@@ -274,7 +274,7 @@ namespace Boxfish
 		MirrorTable(s_PieceSquareTables[ENDGAME][TEAM_WHITE][PIECE_KNIGHT], s_PieceSquareTables[MIDGAME][TEAM_BLACK][PIECE_KNIGHT]);
 		MirrorTable(s_PieceSquareTables[ENDGAME][TEAM_BLACK][PIECE_KNIGHT], s_PieceSquareTables[MIDGAME][TEAM_WHITE][PIECE_KNIGHT]);
 
-		Centipawns whiteBishopsTable[FILE_MAX * RANK_MAX] = {
+		ValueType whiteBishopsTable[FILE_MAX * RANK_MAX] = {
 			-20,-10,-10,-10,-10,-10,-10,-20,
 			-10,  0,  0,  0,  0,  0,  0,-10,
 			-10,  0,  5, 10, 10,  5,  0,-10,
@@ -289,7 +289,7 @@ namespace Boxfish
 		MirrorTable(s_PieceSquareTables[ENDGAME][TEAM_WHITE][PIECE_BISHOP], s_PieceSquareTables[MIDGAME][TEAM_BLACK][PIECE_BISHOP]);
 		MirrorTable(s_PieceSquareTables[ENDGAME][TEAM_BLACK][PIECE_BISHOP], s_PieceSquareTables[MIDGAME][TEAM_WHITE][PIECE_BISHOP]);
 
-		Centipawns whiteRooksTable[FILE_MAX * RANK_MAX] = {
+		ValueType whiteRooksTable[FILE_MAX * RANK_MAX] = {
 			  0,  0,  0,  0,  0,  0,  0,  0,
 			  5, 10, 10, 10, 10, 10, 10,  5,
 			 -5,  0,  0,  0,  0,  0,  0, -5,
@@ -304,7 +304,7 @@ namespace Boxfish
 		MirrorTable(s_PieceSquareTables[ENDGAME][TEAM_WHITE][PIECE_ROOK], s_PieceSquareTables[MIDGAME][TEAM_BLACK][PIECE_ROOK]);
 		MirrorTable(s_PieceSquareTables[ENDGAME][TEAM_BLACK][PIECE_ROOK], s_PieceSquareTables[MIDGAME][TEAM_WHITE][PIECE_ROOK]);
 
-		Centipawns whiteQueensTable[FILE_MAX * RANK_MAX] = {
+		ValueType whiteQueensTable[FILE_MAX * RANK_MAX] = {
 			-20,-10,-10, -5, -5,-10,-10,-20,
 			-10,  0,  0,  0,  0,  0,  0,-10,
 			-10,  0,  5,  5,  5,  5,  0,-10,
@@ -319,7 +319,7 @@ namespace Boxfish
 		MirrorTable(s_PieceSquareTables[ENDGAME][TEAM_WHITE][PIECE_QUEEN], s_PieceSquareTables[MIDGAME][TEAM_BLACK][PIECE_QUEEN]);
 		MirrorTable(s_PieceSquareTables[ENDGAME][TEAM_BLACK][PIECE_QUEEN], s_PieceSquareTables[MIDGAME][TEAM_WHITE][PIECE_QUEEN]);
 
-		Centipawns whiteKingsTableMidgame[FILE_MAX * RANK_MAX] = {
+		ValueType whiteKingsTableMidgame[FILE_MAX * RANK_MAX] = {
 			-30,-40,-40,-50,-50,-40,-40,-30,
 			-30,-40,-40,-50,-50,-40,-40,-30,
 			-30,-40,-40,-50,-50,-40,-40,-30,
@@ -332,7 +332,7 @@ namespace Boxfish
 		MirrorTable(s_PieceSquareTables[MIDGAME][TEAM_WHITE][PIECE_KING], whiteKingsTableMidgame);
 		MirrorTable(s_PieceSquareTables[MIDGAME][TEAM_BLACK][PIECE_KING], s_PieceSquareTables[MIDGAME][TEAM_WHITE][PIECE_KING]);
 
-		Centipawns whiteKingsTableEndgame[FILE_MAX * RANK_MAX] = {
+		ValueType whiteKingsTableEndgame[FILE_MAX * RANK_MAX] = {
 			-50,-40,-30,-20,-20,-30,-40,-50,
 			-30,-20,-10,  0,  0,-10,-20,-30,
 			-30,-10, 20, 30, 30, 20,-10,-30,
@@ -483,8 +483,8 @@ namespace Boxfish
 	{
 		if constexpr (UsePieceSquares)
 		{
-			Centipawns mg = 0;
-			Centipawns eg = 0;
+			ValueType mg = 0;
+			ValueType eg = 0;
 			for (Piece piece = PIECE_PAWN; piece < PIECE_MAX; piece++)
 			{
 				BitBoard pieces = position.GetTeamPieces(team, piece);
@@ -516,14 +516,14 @@ namespace Boxfish
 	{
 		if constexpr (UsePassedPawns)
 		{
-			Centipawns mgValue = 0;
-			Centipawns egValue = 0;
+			ValueType mgValue = 0;
+			ValueType egValue = 0;
 			BitBoard pawns = position.GetTeamPieces(team, PIECE_PAWN);
 			constexpr Team otherTeam = OtherTeam(team);
 
 			BitBoard otherPawns = position.GetTeamPieces(otherTeam, PIECE_PAWN);
 
-			constexpr Centipawns supportedBonus = 20;
+			constexpr ValueType supportedBonus = 20;
 
 			while (pawns)
 			{
@@ -568,8 +568,8 @@ namespace Boxfish
 				if (pawnsOnFile > 0)
 					count += pawnsOnFile - 1;
 			}
-			Centipawns mg = -10 * count;
-			Centipawns eg = -30 * count;
+			ValueType mg = -10 * count;
+			ValueType eg = -30 * count;
 			result.DoubledPawns[MIDGAME][team] = mg;
 			result.DoubledPawns[ENDGAME][team] = eg;
 		}
@@ -621,15 +621,15 @@ namespace Boxfish
 		if constexpr (UseBlockedPieces)
 		{
 			constexpr Team otherTeam = OtherTeam(team);
-			Centipawns mg = 0;
-			Centipawns eg = 0;
+			ValueType mg = 0;
+			ValueType eg = 0;
 
-			constexpr Centipawns TRAPPED_BISHOP_A8[GAME_STAGE_MAX] = { -150, -50 };
-			constexpr Centipawns TRAPPED_BISHOP_A7[GAME_STAGE_MAX] = { -100, -50 };
-			constexpr Centipawns TRAPPED_BISHOP_A6[GAME_STAGE_MAX] = { -50, -50 };
-			constexpr Centipawns TRAPPED_BISHOP_B8[GAME_STAGE_MAX] = { -150, -50 };
+			constexpr ValueType TRAPPED_BISHOP_A8[GAME_STAGE_MAX] = { -150, -50 };
+			constexpr ValueType TRAPPED_BISHOP_A7[GAME_STAGE_MAX] = { -100, -50 };
+			constexpr ValueType TRAPPED_BISHOP_A6[GAME_STAGE_MAX] = { -50, -50 };
+			constexpr ValueType TRAPPED_BISHOP_B8[GAME_STAGE_MAX] = { -150, -50 };
 
-			constexpr Centipawns TRAPPED_ROOK[GAME_STAGE_MAX] = { -25, -25 };
+			constexpr ValueType TRAPPED_ROOK[GAME_STAGE_MAX] = { -25, -25 };
 
 			// Trapped Bishops
 			if (IsPieceOnSquare(position, team, PIECE_BISHOP, RelativeSquare(team, a7)) && IsPieceOnSquare(position, otherTeam, PIECE_PAWN, RelativeSquare(team, b6)))
@@ -710,8 +710,8 @@ namespace Boxfish
 
 		result.Data.AttackedBy[team][PIECE_KNIGHT] = ZERO_BB;
 
-		Centipawns mg = 0;
-		Centipawns eg = 0;
+		ValueType mg = 0;
+		ValueType eg = 0;
 
 		BitBoard knights = position.GetTeamPieces(team, PIECE_KNIGHT);
 		BitBoard notTeamPieces = ~position.GetTeamPieces(team);
@@ -771,8 +771,8 @@ namespace Boxfish
 	{
 		constexpr Team otherTeam = OtherTeam(team);
 
-		Centipawns mg = 0;
-		Centipawns eg = 0;
+		ValueType mg = 0;
+		ValueType eg = 0;
 
 		result.Data.AttackedBy[team][PIECE_BISHOP] = ZERO_BB;
 
@@ -822,8 +822,8 @@ namespace Boxfish
 	{
 		constexpr Team otherTeam = OtherTeam(team);
 
-		Centipawns mg = 0;
-		Centipawns eg = 0;
+		ValueType mg = 0;
+		ValueType eg = 0;
 
 		result.Data.AttackedBy[team][PIECE_ROOK] = ZERO_BB;
 
@@ -886,8 +886,8 @@ namespace Boxfish
 
 		result.Data.AttackedBy[team][PIECE_QUEEN] = ZERO_BB;
 
-		Centipawns mg = 0;
-		Centipawns eg = 0;
+		ValueType mg = 0;
+		ValueType eg = 0;
 
 		BitBoard queens = position.GetTeamPieces(team, PIECE_QUEEN);
 		BitBoard notTeamPieces = ~position.GetTeamPieces(team);
@@ -948,7 +948,7 @@ namespace Boxfish
 
 			result.Data.Attackers[otherTeam] += (result.Data.KingAttackZone[team] & result.Data.AttackedBy[otherTeam][PIECE_PAWN]).GetCount();
 
-			Centipawns mg = 0;
+			ValueType mg = 0;
 			if (result.Data.Attackers[otherTeam] > 2 && position.GetTeamPieces(otherTeam, PIECE_QUEEN).GetCount() > 0)
 			{
 				mg -= s_KingSafetyTable[std::min(result.Data.AttackUnits[otherTeam], MAX_ATTACK_UNITS - 1)];
@@ -1048,11 +1048,11 @@ namespace Boxfish
 	{
 		if constexpr (UseThreats)
 		{
-			Centipawns mg = 0;
-			Centipawns eg = 0;
+			ValueType mg = 0;
+			ValueType eg = 0;
 
-			constexpr Centipawns HangingPieceMg = 25;
-			constexpr Centipawns HandingPieceEg = 10;
+			constexpr ValueType HangingPieceMg = 25;
+			constexpr ValueType HandingPieceEg = 10;
 
 			constexpr Team otherTeam = OtherTeam(team);
 			constexpr Direction UpDirection = (team == TEAM_WHITE) ? NORTH : SOUTH;
@@ -1121,7 +1121,7 @@ namespace Boxfish
 	{
 		if constexpr (UseInitiative)
 		{
-			constexpr Centipawns tempo = 10;
+			constexpr ValueType tempo = 10;
 			Team other = OtherTeam(position.TeamToPlay);
 			result.Tempo[MIDGAME][position.TeamToPlay] = tempo;
 			result.Tempo[ENDGAME][position.TeamToPlay] = tempo;
@@ -1146,7 +1146,7 @@ namespace Boxfish
 		memset(&result, 0, sizeof(EvaluationResult));
 	}
 
-	EvaluationResult EvaluateDetailed(const Position& position, Team team, Centipawns alpha, Centipawns beta)
+	EvaluationResult EvaluateDetailed(const Position& position, Team team, ValueType alpha, ValueType beta)
 	{
 		BOX_ASSERT(!IsInCheck(position, position.TeamToPlay), "Cannot evaluate position in check");
 		EvaluationResult result;
@@ -1181,7 +1181,7 @@ namespace Boxfish
 		return result;
 	}
 
-	Centipawns Evaluate(const Position& position, Team team, Centipawns alpha, Centipawns beta)
+	ValueType Evaluate(const Position& position, Team team, ValueType alpha, ValueType beta)
 	{
 		return EvaluateDetailed(position, team, alpha, beta).GetTotal(team);
 	}
@@ -1191,7 +1191,7 @@ namespace Boxfish
 		return EvaluateDetailed(position, TEAM_WHITE, -SCORE_MATE, SCORE_MATE);
 	}
 
-	Centipawns Evaluate(const Position& position, Team team)
+	ValueType Evaluate(const Position& position, Team team)
 	{
 		return Evaluate(position, team, -SCORE_MATE, SCORE_MATE);
 	}
@@ -1201,15 +1201,15 @@ namespace Boxfish
 		return position.GetNonPawnMaterial() <= 2000;
 	}
 
-	Centipawns GetPieceValue(const Position& position, Piece piece)
+	ValueType GetPieceValue(const Position& position, Piece piece)
 	{
 		float gameStage = CalculateGameStage(position);
-		Centipawns mg = s_MaterialValues[MIDGAME][piece];
-		Centipawns eg = s_MaterialValues[ENDGAME][piece];
+		ValueType mg = s_MaterialValues[MIDGAME][piece];
+		ValueType eg = s_MaterialValues[ENDGAME][piece];
 		return InterpolateGameStage(gameStage, mg, eg);
 	}
 
-	Centipawns GetPieceValue(Piece piece, GameStage stage)
+	ValueType GetPieceValue(Piece piece, GameStage stage)
 	{
 		return s_MaterialValues[stage][piece];
 	}
@@ -1218,7 +1218,7 @@ namespace Boxfish
 	//  FORMATTING
 	// =================================================================================================================================
 
-	std::string FormatScore(Centipawns score, int maxPlaces)
+	std::string FormatScore(ValueType score, int maxPlaces)
 	{
 		int places = 1;
 		if (std::abs(score) > 0)

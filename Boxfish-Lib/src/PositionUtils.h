@@ -45,7 +45,7 @@ namespace Boxfish
 	bool IsSquareUnderAttack(const Position& position, Team byTeam, const Square& square);
 	bool IsSquareUnderAttack(const Position& position, Team byTeam, SquareIndex square);
 
-	bool SeeGE(const Position& position, const Move& move, Centipawns threshold = 0);
+	bool SeeGE(const Position& position, const Move& move, ValueType threshold = 0);
 
 	void ApplyMove(Position& position, const Move& move, UndoInfo* outUndoInfo = nullptr);
 	void UndoMove(Position& position, const Move& move, const UndoInfo& undo);

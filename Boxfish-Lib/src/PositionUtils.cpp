@@ -438,7 +438,7 @@ namespace Boxfish
 		return PIECE;
 	}
 
-	bool SeeGE(const Position& position, const Move& move, Centipawns threshold)
+	bool SeeGE(const Position& position, const Move& move, ValueType threshold)
 	{
 		if (move.IsCapture())
 		{
@@ -448,7 +448,7 @@ namespace Boxfish
 			Piece nextVictim = move.GetMovingPiece();
 			Team team = position.TeamToPlay;
 			Team sideToMove = OtherTeam(team);
-			Centipawns balance;
+			ValueType balance;
 
 			Piece captured = move.GetCapturedPiece();
 			balance = GetPieceValue(captured) - threshold;

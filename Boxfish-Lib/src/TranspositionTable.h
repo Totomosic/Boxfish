@@ -20,7 +20,7 @@ namespace Boxfish
 		ZobristHash Hash;
 		Move BestMove;
 		int8_t Depth;
-		Centipawns Score;
+		ValueType Score;
 		int Age = -1;
 		EntryFlag Flag;
 
@@ -28,11 +28,11 @@ namespace Boxfish
 		inline ZobristHash GetHash() const { return Hash; }
 		inline Move GetMove() const { return BestMove; }
 		inline int GetDepth() const { return (int)Depth; }
-		inline Centipawns GetScore() const { return Score; }
+		inline ValueType GetScore() const { return Score; }
 		inline EntryFlag GetFlag() const { return Flag; }
 		inline int GetAge() const { return Age; }
 
-		inline void Update(ZobristHash hash, Move move, int depth, Centipawns score, EntryFlag flag, int age)
+		inline void Update(ZobristHash hash, Move move, int depth, ValueType score, EntryFlag flag, int age)
 		{
 			Hash = hash;
 			BestMove = move;
@@ -70,11 +70,17 @@ namespace Boxfish
 #endif
 		}
 
-		TranspositionTableEntry* GetEntry(const ZobristHash& hash, bool& found) const;
+		inline TranspositionTableEntry* GetEntry(const ZobristHash& hash, bool& found) const
+		{
+			TranspositionTableEntry* entry = &m_Entries[GetIndexFromHash(hash)];
+			found = entry->GetAge() >= 0 && entry->GetHash() == hash;
+			return entry;
+		}
+
 		void Clear();
 
 	private:
-		size_t GetIndexFromHash(const ZobristHash& hash) const;
+		inline size_t GetIndexFromHash(const ZobristHash& hash) const { return hash.Hash & m_Mask; }
 	};
 
 }

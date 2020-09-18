@@ -10,8 +10,8 @@ namespace Boxfish
 	{
 	public:
 		Move CounterMoves[SQUARE_MAX][SQUARE_MAX];
-		Centipawns History[TEAM_MAX][SQUARE_MAX][SQUARE_MAX];
-		Centipawns Butterfly[TEAM_MAX][SQUARE_MAX][SQUARE_MAX];
+		ValueType History[TEAM_MAX][SQUARE_MAX][SQUARE_MAX];
+		ValueType Butterfly[TEAM_MAX][SQUARE_MAX][SQUARE_MAX];
 
 	public:
 		inline void Clear()

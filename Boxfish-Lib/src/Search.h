@@ -32,9 +32,8 @@ namespace Boxfish
 		int MoveCount = 0;
 		Move CurrentMove = MOVE_NONE;
 		Move KillerMoves[2] = { MOVE_NONE, MOVE_NONE };
-		Centipawns StaticEvaluation = -SCORE_MATE;
-		bool CanNull = true;
-		Centipawns Contempt = 0;
+		ValueType StaticEvaluation = -SCORE_MATE;
+		ValueType Contempt = 0;
 		Move ExcludedMove = MOVE_NONE;
 	};
 
@@ -42,7 +41,7 @@ namespace Boxfish
 	{
 	public:
 		std::vector<Move> PV;
-		Centipawns Score;
+		ValueType Score;
 		Move BestMove;
 	};
 
@@ -58,7 +57,7 @@ namespace Boxfish
 		class RootMove
 		{
 		public:
-			Centipawns Score;
+			ValueType Score;
 			std::vector<Move> PV;
 
 		public:
@@ -118,21 +117,21 @@ namespace Boxfish
 
 		RootMove SearchRoot(Position& position, int depth, const std::function<void(SearchResult)>& callback);
 		template<NodeType type>
-		Centipawns SearchPosition(Position& position, SearchStack* stack, int depth, Centipawns alpha, Centipawns beta, int& selDepth, bool cutNode, const RootInfo& rootInfo);
+		ValueType SearchPosition(Position& position, SearchStack* stack, int depth, ValueType alpha, ValueType beta, int& selDepth, bool cutNode, const RootInfo& rootInfo);
 		template<NodeType type>
-		Centipawns QuiescenceSearch(Position& position, SearchStack* stack, int depth, Centipawns alpha, Centipawns beta);
+		ValueType QuiescenceSearch(Position& position, SearchStack* stack, int depth, ValueType alpha, ValueType beta);
 
 		bool CheckLimits() const;
 
 		bool IsDraw(const Position& position, SearchStack* stack) const;
-		Centipawns EvaluateDraw(const Position& postion, Centipawns contempt) const;
-		Centipawns MateIn(int ply) const;
-		Centipawns MatedIn(int ply) const;
-		Centipawns GetValueForTT(Centipawns value, int currentPly) const;
-		Centipawns GetValueFromTT(Centipawns value, int currentPly) const;
-		int GetPliesFromMateScore(Centipawns score) const;
-		bool IsMateScore(Centipawns score) const;
-		Centipawns StaticEvalPosition(const Position& position, Centipawns alpha, Centipawns beta, int ply) const;
+		ValueType EvaluateDraw(const Position& postion, ValueType contempt) const;
+		ValueType MateIn(int ply) const;
+		ValueType MatedIn(int ply) const;
+		ValueType GetValueForTT(ValueType value, int currentPly) const;
+		ValueType GetValueFromTT(ValueType value, int currentPly) const;
+		int GetPliesFromMateScore(ValueType score) const;
+		bool IsMateScore(ValueType score) const;
+		ValueType StaticEvalPosition(const Position& position, ValueType alpha, ValueType beta, int ply) const;
 
 		void UpdateQuietStats(const Position& position, SearchStack* stack, int depth, Move move);
 		bool ReplaceTT(int depth, int age, EntryFlag flag, const TranspositionTableEntry* entry);

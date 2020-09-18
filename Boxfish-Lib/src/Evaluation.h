@@ -8,11 +8,11 @@ namespace Boxfish
 
 	extern int s_MaxPhaseValue;
 
-	constexpr Centipawns SCORE_MATE = 200000;
-	constexpr Centipawns SCORE_DRAW = 0;
-	constexpr Centipawns SCORE_NONE = -SCORE_MATE * 2;
+	constexpr ValueType SCORE_MATE = 200000;
+	constexpr ValueType SCORE_DRAW = 0;
+	constexpr ValueType SCORE_NONE = -SCORE_MATE * 2;
 
-	inline Centipawns InterpolateGameStage(int stage, Centipawns midgame, Centipawns endgame)
+	inline ValueType InterpolateGameStage(int stage, ValueType midgame, ValueType endgame)
 	{
 		int mgWeight = s_MaxPhaseValue - stage;
 		return ((midgame * mgWeight) + (endgame * stage)) / s_MaxPhaseValue;
@@ -33,27 +33,27 @@ namespace Boxfish
 	public:
 		EvaluationMeta Data;
 
-		Centipawns Material[GAME_STAGE_MAX][TEAM_MAX];
-		Centipawns PieceSquares[GAME_STAGE_MAX][TEAM_MAX];
-		Centipawns PassedPawns[GAME_STAGE_MAX][TEAM_MAX];
-		Centipawns WeakPawns[GAME_STAGE_MAX][TEAM_MAX];
-		Centipawns DoubledPawns[GAME_STAGE_MAX][TEAM_MAX];
-		Centipawns BlockedPieces[GAME_STAGE_MAX][TEAM_MAX];
-		Centipawns Knights[GAME_STAGE_MAX][TEAM_MAX];
-		Centipawns Bishops[GAME_STAGE_MAX][TEAM_MAX];
-		Centipawns Rooks[GAME_STAGE_MAX][TEAM_MAX];
-		Centipawns Queens[GAME_STAGE_MAX][TEAM_MAX];
-		Centipawns Space[GAME_STAGE_MAX][TEAM_MAX];
-		Centipawns KingSafety[GAME_STAGE_MAX][TEAM_MAX];
-		Centipawns Threats[GAME_STAGE_MAX][TEAM_MAX];
-		Centipawns Tempo[GAME_STAGE_MAX][TEAM_MAX];
+		ValueType Material[GAME_STAGE_MAX][TEAM_MAX];
+		ValueType PieceSquares[GAME_STAGE_MAX][TEAM_MAX];
+		ValueType PassedPawns[GAME_STAGE_MAX][TEAM_MAX];
+		ValueType WeakPawns[GAME_STAGE_MAX][TEAM_MAX];
+		ValueType DoubledPawns[GAME_STAGE_MAX][TEAM_MAX];
+		ValueType BlockedPieces[GAME_STAGE_MAX][TEAM_MAX];
+		ValueType Knights[GAME_STAGE_MAX][TEAM_MAX];
+		ValueType Bishops[GAME_STAGE_MAX][TEAM_MAX];
+		ValueType Rooks[GAME_STAGE_MAX][TEAM_MAX];
+		ValueType Queens[GAME_STAGE_MAX][TEAM_MAX];
+		ValueType Space[GAME_STAGE_MAX][TEAM_MAX];
+		ValueType KingSafety[GAME_STAGE_MAX][TEAM_MAX];
+		ValueType Threats[GAME_STAGE_MAX][TEAM_MAX];
+		ValueType Tempo[GAME_STAGE_MAX][TEAM_MAX];
 		int GameStage;
 
 	public:
-		inline Centipawns GetTotal(Team team) const
+		inline ValueType GetTotal(Team team) const
 		{
 			Team other = OtherTeam(team);
-			Centipawns midgame =
+			ValueType midgame =
 				(Material[MIDGAME][team] - Material[MIDGAME][other]) +
 				(PieceSquares[MIDGAME][team] - PieceSquares[MIDGAME][other]) +
 				(PassedPawns[MIDGAME][team] - PassedPawns[MIDGAME][other]) +
@@ -68,7 +68,7 @@ namespace Boxfish
 				(KingSafety[MIDGAME][team] - KingSafety[MIDGAME][other]) +
 				(Threats[MIDGAME][team] - Threats[MIDGAME][other]) +
 				(Tempo[MIDGAME][team] - Tempo[MIDGAME][other]);
-			Centipawns endgame = 
+			ValueType endgame = 
 				(Material[ENDGAME][team] - Material[ENDGAME][other]) +
 				(PieceSquares[ENDGAME][team] - PieceSquares[ENDGAME][other]) +
 				(PassedPawns[ENDGAME][team] - PassedPawns[ENDGAME][other]) +
@@ -89,14 +89,14 @@ namespace Boxfish
 
 	void InitEvaluation();
 
-	EvaluationResult EvaluateDetailed(const Position& position, Team team, Centipawns alpha, Centipawns beta);
-	Centipawns Evaluate(const Position& position, Team team, Centipawns alpha, Centipawns beta);
+	EvaluationResult EvaluateDetailed(const Position& position, Team team, ValueType alpha, ValueType beta);
+	ValueType Evaluate(const Position& position, Team team, ValueType alpha, ValueType beta);
 	EvaluationResult EvaluateDetailed(const Position& position);
-	Centipawns Evaluate(const Position& position, Team team);
+	ValueType Evaluate(const Position& position, Team team);
 	bool IsEndgame(const Position& position);
 
-	Centipawns GetPieceValue(const Position& position, Piece piece);
-	Centipawns GetPieceValue(Piece piece, GameStage stage = MIDGAME);
+	ValueType GetPieceValue(const Position& position, Piece piece);
+	ValueType GetPieceValue(Piece piece, GameStage stage = MIDGAME);
 
 	std::string FormatEvaluation(const EvaluationResult& evaluation);
 

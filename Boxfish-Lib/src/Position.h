@@ -5,7 +5,7 @@
 namespace Boxfish
 {
 
-	using Centipawns = int;
+	using ValueType = int;
 
 	struct PositionInfo
 	{
@@ -22,7 +22,7 @@ namespace Boxfish
 		BitBoard Pinners[TEAM_MAX];
 		Piece PieceOnSquare[SQUARE_MAX];
 
-		Centipawns NonPawnMaterial[TEAM_MAX];
+		ValueType NonPawnMaterial[TEAM_MAX];
 	};
 
 	struct BOX_API Position
@@ -59,8 +59,8 @@ namespace Boxfish
 		inline const BitBoard& GetPieces(Piece piece) const { return InfoCache.PiecesByType[piece]; }
 		inline BitBoard GetPieces(Piece piece, Piece piece2) const { return GetPieces(piece) | GetPieces(piece2); }
 		inline BitBoard GetPieces(Piece piece, Piece piece2, Piece piece3) const { return GetPieces(piece, piece2) | GetPieces(piece3); }
-		inline Centipawns GetNonPawnMaterial(Team team) const { return InfoCache.NonPawnMaterial[team]; }
-		inline Centipawns GetNonPawnMaterial() const { return GetNonPawnMaterial(TEAM_WHITE) + GetNonPawnMaterial(TEAM_BLACK); }
+		inline ValueType GetNonPawnMaterial(Team team) const { return InfoCache.NonPawnMaterial[team]; }
+		inline ValueType GetNonPawnMaterial() const { return GetNonPawnMaterial(TEAM_WHITE) + GetNonPawnMaterial(TEAM_BLACK); }
 
 		inline int GetTotalHalfMoves() const { return 2 * TotalTurns + ((TeamToPlay == TEAM_BLACK) ? 1 : 0); }
 
