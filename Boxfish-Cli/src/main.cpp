@@ -13,7 +13,7 @@ int main(int argc, const char** argv)
 
 	CommandManager commands;
  
-	char buffer[4096];
+	char buffer[8192];
 	while (true)
 	{
 		std::cin.getline(buffer, sizeof(buffer));

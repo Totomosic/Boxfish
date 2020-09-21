@@ -326,7 +326,6 @@ namespace Boxfish
 				if (m_Log && pvIndex < m_Settings.MultiPV)
 				{
 					auto elapsed = std::chrono::high_resolution_clock::now() - m_SearchRootStartTime;
-
 					int hashFull = m_TranspositionTable.GetFullProportion();
 
 					std::cout << "info depth " << rootDepth << " seldepth " << selDepth << " score ";
@@ -417,6 +416,7 @@ namespace Boxfish
 	ValueType Search::SearchPosition(Position& position, SearchStack* stack, int depth, ValueType alpha, ValueType beta, int& selDepth, bool cutNode, const Search::RootInfo& rootInfo)
 	{
 		BOX_ASSERT(alpha < beta && beta >= -SCORE_MATE && beta <= SCORE_MATE && alpha >= -SCORE_MATE && alpha <= SCORE_MATE, "Invalid bounds");
+		constexpr int FirstMoveIndex = 1;
 		constexpr bool IsPvNode = NT == PV;
 		const bool IsRoot = IsPvNode && stack->Ply == 0;
 		const bool inCheck = IsInCheck(position);
@@ -493,7 +493,7 @@ namespace Boxfish
 
 		if (!inCheck)
 		{
-			if (ttFound && ttEntry->GetDepth() >= depth - 1 && (ttEntry->GetFlag() == EXACT || ttEntry->GetFlag() == LOWER_BOUND) && ttValue != SCORE_NONE)
+			if (ttFound && ttEntry->GetDepth() >= depth - 1 && (ttEntry->GetFlag() == EXACT || ttEntry->GetFlag() == LOWER_BOUND) && ttValue != SCORE_NONE && !IsMateScore(ttValue))
 			{
 				stack->StaticEvaluation = ttValue;
 			}
@@ -521,16 +521,12 @@ namespace Boxfish
 		// Null move pruning
 		if (!IsPvNode && !inCheck && depth >= 3 && (stack - 1)->CurrentMove != MOVE_NONE && stack->StaticEvaluation >= beta - 300 + 50 * depth && !IsEndgame(position))
 		{
-			int depthReduction = 3;
-			if (depth >= 8)
-				depthReduction++;
-			if (depth >= 12)
-				depthReduction++;
+			int depthReduction = std::max((stack->StaticEvaluation - beta) * depth / 300, 3);
 
 			UndoInfo undo;
 			ApplyNullMove(position, &undo);
 
-			stack->MoveCount = 1;
+			stack->MoveCount = FirstMoveIndex;
 			stack->CurrentMove = MOVE_NONE;
 			(stack + 1)->PlySinceCaptureOrPawnPush = stack->PlySinceCaptureOrPawnPush + 1;
 
@@ -547,7 +543,7 @@ namespace Boxfish
 			SearchPosition<NT>(position, stack, depth - 7, alpha, beta, selDepth, cutNode, rootInfo);
 			ttEntry = m_TranspositionTable.GetEntry(position.Hash, ttFound);
 			ttValue = ttFound ? GetValueFromTT(ttEntry->GetScore(), stack->Ply) : SCORE_NONE;
-			ttMove = ttFound ? ttEntry->GetMove() : MOVE_NONE;
+			ttMove = (ttFound && !IsMateScore(ttValue) && ttValue != SCORE_NONE) ? ttEntry->GetMove() : MOVE_NONE;
 		}
 
 		Move bestMove = MOVE_NONE;
@@ -567,8 +563,6 @@ namespace Boxfish
 
 		MoveSelector selector(&legalMoves, &position, ttMove, counterMove, previousMove, &m_OrderingTables, stack->KillerMoves);
 
-		constexpr int FIRST_MOVE_INDEX = 1;
-
 		const bool ttMoveIsCapture = ttMove != MOVE_NONE && ttMove.IsCapture();
 		int moveIndex = 0;
 		ValueType bestValue = -SCORE_MATE;
@@ -582,7 +576,7 @@ namespace Boxfish
 
 			moveIndex++;
 
-			BOX_ASSERT(moveIndex > FIRST_MOVE_INDEX || move == ttMove || ttMove == MOVE_NONE, "Invalid move ordering");
+			BOX_ASSERT(moveIndex > FirstMoveIndex || move == ttMove || ttMove == MOVE_NONE, "Invalid move ordering");
 
 			const bool isCaptureOrPromotion = move.IsCaptureOrPromotion();
 			int depthExtension = 0;
@@ -616,11 +610,13 @@ namespace Boxfish
 			ValueType value = -SCORE_MATE;
 
 			// Late move reduction
-			if (depth >= 3 && moveIndex > FIRST_MOVE_INDEX && !inCheck && !isCaptureOrPromotion && !givesGoodCheck)
+			if (depth >= 3 && moveIndex > FirstMoveIndex && !inCheck && !isCaptureOrPromotion && !givesGoodCheck)
 			{
 				int reduction = GetReduction<NT>(improving, depth, moveIndex);
 				if ((stack - 1)->MoveCount > 15)
 					reduction--;
+				if (ttMoveIsCapture)
+					reduction++;
 				if (cutNode)
 					reduction += 2;
 
@@ -631,7 +627,7 @@ namespace Boxfish
 			}
 			else
 			{
-				fullDepthSearch = !IsPvNode || moveIndex > FIRST_MOVE_INDEX;
+				fullDepthSearch = !IsPvNode || moveIndex > FirstMoveIndex;
 			}
 
 			int childDepth = extendedDepth - depthReduction;
@@ -639,7 +635,7 @@ namespace Boxfish
 			{
 				value = -SearchPosition<NonPV>(movedPosition, stack + 1, childDepth, -(alpha + 1), -alpha, selDepth, !cutNode, rootInfo);
 			}
-			if (IsPvNode && (moveIndex == FIRST_MOVE_INDEX || (value > alpha && (IsRoot || value < beta))))
+			if (IsPvNode && (moveIndex == FirstMoveIndex || (value > alpha && (IsRoot || value < beta))))
 			{
 				pv[0] = MOVE_NONE;
 				(stack + 1)->PV = pv;
@@ -656,7 +652,7 @@ namespace Boxfish
 			{
 				RootMove& rm = *std::find(rootInfo.Moves.begin(), rootInfo.Moves.end(), move);
 				
-				if (moveIndex == FIRST_MOVE_INDEX || value > alpha)
+				if (moveIndex == FirstMoveIndex || value > alpha)
 				{
 					rm.Score = value;
 					rm.PV.resize(1);
@@ -693,9 +689,9 @@ namespace Boxfish
 				}
 				if (rootInfo.PVIndex == 0 && (!ttFound || ReplaceTT(depth, position.GetTotalHalfMoves(), LOWER_BOUND, ttEntry)))
 				{
-					ttEntry->Update(position.Hash, move, depth, GetValueForTT(value, stack->Ply), LOWER_BOUND, position.GetTotalHalfMoves());
+					ttEntry->Update(position.Hash, move, depth, GetValueForTT(beta, stack->Ply), LOWER_BOUND, position.GetTotalHalfMoves());
 				}
-				return value;
+				return beta;
 			}
 			else if (rootInfo.PVIndex == 0 && !isCaptureOrPromotion)
 			{
@@ -717,14 +713,11 @@ namespace Boxfish
 		constexpr bool IsPvNode = NT == PV;
 		const bool inCheck = IsInCheck(position);
 
-		if (stack->Ply >= MAX_PLY)
-			return EvaluateDraw(position, stack->Contempt);
-
 		ValueType originalAlpha = alpha;
 
 		bool ttFound;
 		TranspositionTableEntry* ttEntry = m_TranspositionTable.GetEntry(position.Hash, ttFound);
-		ValueType ttValue = (ttFound) ? GetValueFromTT(ttEntry->GetScore(), stack->Ply) : SCORE_NONE;
+		ValueType ttValue = ttFound ? GetValueFromTT(ttEntry->GetScore(), stack->Ply) : SCORE_NONE;
 
 		if (!IsPvNode && ttFound && ttEntry->GetHash() == position.Hash && ttValue != SCORE_NONE && !IsMateScore(ttValue))
 		{
@@ -790,7 +783,7 @@ namespace Boxfish
 			moveIndex++;
 			move = selector.GetNextMove();
 
-			if (generator.IsLegal(move) && move.GetValue() > SCORE_NONE)
+			if (generator.IsLegal(move) && (inCheck || move.GetValue() > SCORE_NONE))
 			{
 				Position movedPosition = position;
 				ApplyMove(movedPosition, move);
@@ -806,7 +799,7 @@ namespace Boxfish
 				else
 					(stack + 1)->PlySinceCaptureOrPawnPush = stack->PlySinceCaptureOrPawnPush + 1;
 
-				ValueType score = -QuiescenceSearch<NT>(movedPosition, stack + 1, depth -1, -beta, -alpha);
+				ValueType score = -QuiescenceSearch<NT>(movedPosition, stack + 1, depth - 1, -beta, -alpha);
 				if (score > bestValue)
 					bestValue = score;
 
