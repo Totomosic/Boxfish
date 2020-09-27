@@ -231,14 +231,14 @@ namespace Boxfish
 		s_MaterialValues[MIDGAME][PIECE_KNIGHT] = 325;
 		s_MaterialValues[MIDGAME][PIECE_BISHOP] = 335;
 		s_MaterialValues[MIDGAME][PIECE_ROOK] = 500;
-		s_MaterialValues[MIDGAME][PIECE_QUEEN] = 925;
+		s_MaterialValues[MIDGAME][PIECE_QUEEN] = 1050;
 		s_MaterialValues[MIDGAME][PIECE_KING] = 20000;
 
 		s_MaterialValues[ENDGAME][PIECE_PAWN] = 140;
 		s_MaterialValues[ENDGAME][PIECE_KNIGHT] = 325;
 		s_MaterialValues[ENDGAME][PIECE_BISHOP] = 335;
 		s_MaterialValues[ENDGAME][PIECE_ROOK] = 500;
-		s_MaterialValues[ENDGAME][PIECE_QUEEN] = 925;
+		s_MaterialValues[ENDGAME][PIECE_QUEEN] = 1050;
 		s_MaterialValues[ENDGAME][PIECE_KING] = 20000;
 	}
 
@@ -523,7 +523,7 @@ namespace Boxfish
 
 			BitBoard otherPawns = position.GetTeamPieces(otherTeam, PIECE_PAWN);
 
-			constexpr ValueType supportedBonus = 20;
+			constexpr ValueType supportedBonus = 35;
 
 			while (pawns)
 			{
@@ -568,8 +568,8 @@ namespace Boxfish
 				if (pawnsOnFile > 0)
 					count += pawnsOnFile - 1;
 			}
-			ValueType mg = -10 * count;
-			ValueType eg = -30 * count;
+			ValueType mg = -15 * count;
+			ValueType eg = -40 * count;
 			result.DoubledPawns[MIDGAME][team] = mg;
 			result.DoubledPawns[ENDGAME][team] = eg;
 		}
@@ -737,7 +737,7 @@ namespace Boxfish
 			File file = BitBoard::FileOfIndex(square);
 			Rank rank = BitBoard::RankOfIndex(square);
 
-			// Knight supported by a pawn and no enemy pawns on neighbour files
+			// Knight supported by a pawn and no enemy pawns on neighbour files - Outpost
 			if ((result.Data.AttackedBy[team][PIECE_PAWN] & square & CenterRanks) && !(FILE_MASKS[file] & result.Data.AttackedBy[otherTeam][PIECE_PAWN] & InFront(rank, team)))
 			{
 				mg += 30;
@@ -900,12 +900,6 @@ namespace Boxfish
 			result.Data.AttackedByTwice[team] |= result.Data.AttackedBy[team][PIECE_ALL] & attacks;
 			result.Data.AttackedBy[team][PIECE_ALL] |= attacks;
 
-			if (GetSliderBlockers(position, position.GetTeamPieces(otherTeam, PIECE_ROOK, PIECE_BISHOP), square, nullptr))
-			{
-				mg -= 25;
-				eg -= 5;
-			}
-
 			// Mobility
 			int reachableSquares = (attacks & ~result.Data.AttackedBy[otherTeam][PIECE_PAWN]).GetCount();
 			mg += 1 * (reachableSquares - 13);
@@ -1027,7 +1021,7 @@ namespace Boxfish
 			int count = safe.GetCount() + (behind & safe).GetCount();
 			int weight = position.GetTeamPieces(team).GetCount();
 
-			result.Space[MIDGAME][team] = count * weight * weight / 16;
+			result.Space[MIDGAME][team] = count * weight * weight / 24;
 			result.Space[ENDGAME][team] = 0;
 		}
 		else

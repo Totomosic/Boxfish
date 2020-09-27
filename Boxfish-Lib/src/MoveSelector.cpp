@@ -4,7 +4,7 @@
 namespace Boxfish
 {
 
-	constexpr ValueType SCORE_GOOD_CAPTURE = 3000;
+	constexpr ValueType SCORE_GOOD_CAPTURE = 10000;
 	constexpr ValueType SCORE_PROMOTION = 3000;
 	constexpr ValueType SCORE_KILLER = 2000;
 	constexpr ValueType SCORE_BAD_CAPTURE = -1000;
@@ -48,6 +48,7 @@ namespace Boxfish
 				if (move.IsAdvancedPawnPush(currentPosition->TeamToPlay) || (move.GetFlags() & (MOVE_DOUBLE_PAWN_PUSH | MOVE_KINGSIDE_CASTLE | MOVE_QUEENSIDE_CASTLE)))
 					score += 250;
 
+				// Central pawn push
 				constexpr BitBoard Center = (RANK_4_MASK | RANK_5_MASK) & (FILE_C_MASK | FILE_D_MASK | FILE_E_MASK | FILE_F_MASK);
 				if (move.GetMovingPiece() == PIECE_PAWN && (Center & move.GetToSquareIndex()))
 					score += 50;
@@ -64,7 +65,7 @@ namespace Boxfish
 					ValueType butterfly = m_Tables->Butterfly[currentPosition->TeamToPlay][move.GetFromSquareIndex()][move.GetToSquareIndex()];
 					if (butterfly != 0 && history > butterfly)
 					{
-						score += history / butterfly * 5;
+						score += history / butterfly;
 					}
 				}
 			}

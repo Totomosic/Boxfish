@@ -7,6 +7,7 @@ namespace Boxfish
 
 	// DepthReductions[NodeType][Improving][Depth][MoveIndex];
 	static int DepthReductions[2][2][32][64];
+	static int FutilityMoveCounts[2][16];
 
 	void InitSearch()
 	{
@@ -24,6 +25,11 @@ namespace Boxfish
 						DepthReductions[Search::NodeType::NonPV][improving][depth][moveIndex]++;
 				}
 			}
+		}
+		for (int d = 0; d < 16; d++)
+		{
+			FutilityMoveCounts[0][d] = int(2.4 + 0.74 * std::pow(d, 1.78)) + 10;
+			FutilityMoveCounts[1][d] = int(5.0 + 1.00 * std::pow(d, 2.00)) + 10;
 		}
 	}
 
@@ -569,16 +575,15 @@ namespace Boxfish
 
 		while ((move = selector.GetNextMove()) != MOVE_NONE)
 		{
+			const bool isCaptureOrPromotion = move.IsCaptureOrPromotion();
+
 			if (move == stack->ExcludedMove)
 				continue;
 			if (IsRoot && std::count(rootInfo.Moves.begin() + rootInfo.PVIndex, rootInfo.Moves.begin() + rootInfo.PVLast, move) == 0)
 				continue;
 
 			moveIndex++;
-
 			BOX_ASSERT(moveIndex > FirstMoveIndex || move == ttMove || ttMove == MOVE_NONE, "Invalid move ordering");
-
-			const bool isCaptureOrPromotion = move.IsCaptureOrPromotion();
 			int depthExtension = 0;
 
 			Position movedPosition = position;
@@ -590,7 +595,7 @@ namespace Boxfish
 			stack->CurrentMove = move;
 			stack->MoveCount = moveIndex;
 
-			const bool isGoodCapture = SeeGE(position, move);
+			const bool isGoodCapture = move.IsCapture() && SeeGE(position, move);
 			const bool givesCheck = IsInCheck(movedPosition);
 			const bool givesGoodCheck = givesCheck && isGoodCapture;
 
@@ -610,7 +615,7 @@ namespace Boxfish
 			ValueType value = -SCORE_MATE;
 
 			// Late move reduction
-			if (depth >= 3 && moveIndex > FirstMoveIndex && !inCheck && !isCaptureOrPromotion && !givesGoodCheck)
+			if (depth >= 3 && moveIndex > FirstMoveIndex && !isCaptureOrPromotion)
 			{
 				int reduction = GetReduction<NT>(improving, depth, moveIndex);
 				if ((stack - 1)->MoveCount > 15)
@@ -674,9 +679,7 @@ namespace Boxfish
 				if (IsPvNode && !IsRoot && (stack + 1)->PV)
 					UpdatePV(stack->PV, move, (stack + 1)->PV);
 				if (value > alpha && IsPvNode)
-				{
 					alpha = value;
-				}
 			}
 
 			// Beta cutoff - Fail high
@@ -735,7 +738,7 @@ namespace Boxfish
 		ValueType evaluation = 0;
 		if (!inCheck)
 		{
-			if (ttFound && ttEntry->GetDepth() > depth && (ttEntry->GetFlag() == EXACT || ttEntry->GetFlag() == LOWER_BOUND) && !IsMateScore(ttValue))
+			if (ttFound && ttEntry->GetDepth() >= depth && (ttEntry->GetFlag() == EXACT || ttEntry->GetFlag() == LOWER_BOUND) && !IsMateScore(ttValue))
 				evaluation = ttValue;
 			else
 				evaluation = StaticEvalPosition(position, alpha, beta, stack->Ply);
@@ -822,7 +825,7 @@ namespace Boxfish
 			}
 		}
 
-		EntryFlag entryFlag = (alpha > originalAlpha) ? EXACT : LOWER_BOUND;
+		EntryFlag entryFlag = (alpha > originalAlpha) ? EXACT : UPPER_BOUND;
 		if (!ttFound || ReplaceTT(depth, position.GetTotalHalfMoves(), entryFlag, ttEntry))
 		{
 			ttEntry->Update(position.Hash, MOVE_NONE, depth, GetValueForTT(alpha, stack->Ply), entryFlag, position.GetTotalHalfMoves());
