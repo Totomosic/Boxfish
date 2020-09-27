@@ -427,6 +427,11 @@ namespace Boxfish
 		const bool IsRoot = IsPvNode && stack->Ply == 0;
 		const bool inCheck = IsInCheck(position);
 
+		if (!(inCheck == !!GetAttackers(position, OtherTeam(position.TeamToPlay), position.GetKingSquare(position.TeamToPlay), position.GetAllPieces())))
+			std::cout << position << std::endl;
+
+		BOX_ASSERT(inCheck == !!GetAttackers(position, OtherTeam(position.TeamToPlay), position.GetKingSquare(position.TeamToPlay), position.GetAllPieces()), "Mismatch");
+
 		MoveList pvMoveList = m_MovePool.GetList();
 		Move* pv = pvMoveList.Moves;
 
@@ -525,7 +530,7 @@ namespace Boxfish
 			return stack->StaticEvaluation;
 
 		// Null move pruning
-		if (!IsPvNode && !inCheck && depth >= 3 && (stack - 1)->CurrentMove != MOVE_NONE && stack->StaticEvaluation >= beta - 300 + 50 * depth && !IsEndgame(position))
+		if (!IsPvNode && !inCheck && depth >= 3 && (stack - 1)->CurrentMove != MOVE_NONE && stack->ExcludedMove == MOVE_NONE && stack->StaticEvaluation >= (beta + 200 - 35 * depth) && !IsEndgame(position))
 		{
 			int depthReduction = std::max((stack->StaticEvaluation - beta) * depth / 300, 3);
 
@@ -536,7 +541,7 @@ namespace Boxfish
 			stack->CurrentMove = MOVE_NONE;
 			(stack + 1)->PlySinceCaptureOrPawnPush = stack->PlySinceCaptureOrPawnPush + 1;
 
-			ValueType value = -SearchPosition<NonPV>(position, stack + 1, std::max(depth - depthReduction, 0), -(beta + 1), -beta, selDepth, !cutNode, rootInfo);
+			ValueType value = -SearchPosition<NonPV>(position, stack + 1, std::max(depth - depthReduction, 0), -beta, -beta + 1, selDepth, !cutNode, rootInfo);
 
 			UndoNullMove(position, undo);
 
@@ -779,7 +784,7 @@ namespace Boxfish
 
 		constexpr int FIRST_MOVE_INDEX = 1;
 		int moveIndex = 0;
-		QuiescenceMoveSelector selector(position, legalMoves, inCheck && depth >= -20);
+		QuiescenceMoveSelector selector(position, legalMoves, inCheck);
 		Move move;
 		while (!selector.Empty())
 		{

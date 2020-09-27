@@ -679,9 +679,7 @@ namespace Boxfish
 				position.InfoCache.KingSquare[currentTeam] = move.GetToSquareIndex();
 
 			CalculateKingBlockers(position, otherTeam);
-			//CalculateKingBlockers(position, TEAM_BLACK);
 			CalculateCheckers(position, otherTeam);
-			//CalculateCheckers(position, TEAM_BLACK);
 		}
 
 		if (move.GetMovingPiece() == PIECE_PAWN || (flags & MOVE_CAPTURE))
@@ -759,6 +757,9 @@ namespace Boxfish
 				AddPiece(position, OtherTeam(currentTeam), PIECE_PAWN, (SquareIndex)(move.GetToSquareIndex() - GetForwardShift(currentTeam)));
 			}
 
+			if (move.GetMovingPiece() == PIECE_KING)
+				position.InfoCache.KingSquare[currentTeam] = move.GetFromSquareIndex();
+
 			if (position.Teams[TEAM_WHITE].CastleKingSide != undo.CastleKingSide[TEAM_WHITE])
 			{
 				position.Teams[TEAM_WHITE].CastleKingSide = undo.CastleKingSide[TEAM_WHITE];
@@ -796,15 +797,20 @@ namespace Boxfish
 
 	void ApplyNullMove(Position& position, UndoInfo* outUndoInfo)
 	{
+		BOX_ASSERT(!GetAttackers(position, OtherTeam(position.TeamToPlay), position.GetKingSquare(position.TeamToPlay), position.GetAllPieces()), "In Check");
 		outUndoInfo->EnpassantSquare = position.EnpassantSquare;
 		if (position.EnpassantSquare != INVALID_SQUARE)
 		{
 			position.Hash.RemoveEnPassant(position.EnpassantSquare.File);
 			position.EnpassantSquare = INVALID_SQUARE;
 		}
+
 		position.TeamToPlay = OtherTeam(position.TeamToPlay);
 		position.Hash.FlipTeamToPlay();
 		position.HalfTurnsSinceCaptureOrPush++;
+
+		CalculateKingBlockers(position, position.TeamToPlay);
+		CalculateCheckers(position, position.TeamToPlay);
 	}
 
 	void UndoNullMove(Position& position, const UndoInfo& undo)
