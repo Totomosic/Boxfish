@@ -609,6 +609,21 @@ namespace Boxfish
 
 			int extendedDepth = depth - 1 + depthExtension;
 
+			if (!IsRoot && position.GetNonPawnMaterial(position.TeamToPlay) > 0 && !IsMateScore(bestValue))
+			{
+				if (!isCaptureOrPromotion && !givesCheck && (!move.IsAdvancedPawnPush(position.TeamToPlay) || position.GetNonPawnMaterial() > 3500))
+				{
+					// Reduced depth of the next LMR search
+					int lmrDepth = std::max(extendedDepth - GetReduction<PV>(improving, depth, moveIndex), 0);
+
+					// Prune moves with negative SEE (~10 Elo)
+					if (!SeeGE(position, move, -40 * lmrDepth * lmrDepth))
+						continue;
+				}
+				else if (!depthExtension && !SeeGE(position, move, -GetPieceValue(PIECE_PAWN, ENDGAME) * depth))
+					continue;
+			}
+
 			// Irreversible move was played
 			if (movedPosition.HalfTurnsSinceCaptureOrPush == 0)
 				(stack + 1)->PlySinceCaptureOrPawnPush = 0;
