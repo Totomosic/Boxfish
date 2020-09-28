@@ -1,5 +1,7 @@
 #pragma once
 #include "Boxfish.h"
+#include <unordered_map>
+#include <thread>
 
 namespace Boxfish
 {

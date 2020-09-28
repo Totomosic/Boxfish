@@ -1,6 +1,7 @@
 #include "Search.h"
 #include "Random.h"
 #include "Uci.h"
+#include <thread>
 
 namespace Boxfish
 {

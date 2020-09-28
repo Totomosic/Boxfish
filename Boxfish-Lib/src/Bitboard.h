@@ -23,10 +23,20 @@ namespace Boxfish
 		}
 
 #ifdef BOX_PLATFORM_WINDOWS
+#ifdef EMSCRIPTEN
+		inline int GetCount() const
+		{
+			int count = 0;
+			for (int i = 0; i < 64; i++)
+				count += !!(Board & (1ULL << i));
+			return count;
+		}
+#else
 		inline int GetCount() const
 		{
 			return (int)__popcnt64(Board);
 		}
+#endif
 #else
 		inline int GetCount() const
 		{
@@ -65,6 +75,32 @@ namespace Boxfish
 	};
 
 #ifdef BOX_PLATFORM_WINDOWS
+#ifdef EMSCRIPTEN
+	inline SquareIndex ForwardBitScan(const BitBoard& board)
+	{
+		for (int i = 0; i < 64; i++)
+		{
+			if (board.Board & (1ULL << i))
+				return (SquareIndex)i;
+		}
+		return a1;
+	}
+
+	inline SquareIndex BackwardBitScan(const BitBoard& board)
+	{
+		for (int i = 63; i >= 0; i--)
+		{
+			if (board.Board & (1ULL << i))
+				return (SquareIndex)i;
+		}
+		return a1;
+	}
+
+	inline BitBoard FlipVertically(const BitBoard& board)
+	{
+		return board;
+	}
+#else
 	inline SquareIndex ForwardBitScan(const BitBoard& board)
 	{
 		unsigned long lsb;
@@ -83,7 +119,7 @@ namespace Boxfish
 	{
 		return _byteswap_uint64(board.Board);
 	}
-
+#endif
 #else
 
 	inline SquareIndex ForwardBitScan(const BitBoard& board)

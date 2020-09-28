@@ -1,5 +1,6 @@
 #pragma once
 #include <random>
+#include "BoxfishDefines.h"
 #include "Logging.h"
 
 namespace Boxfish

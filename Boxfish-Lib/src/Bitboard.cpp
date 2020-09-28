@@ -1,4 +1,5 @@
 #include "Bitboard.h"
+#include <iostream>
 
 namespace Boxfish
 {

@@ -1,3 +1,4 @@
+#if (!defined(EMSCRIPTEN) || !defined(BOX_DIST))
 #include "Logging.h"
 
 namespace Boxfish
@@ -18,3 +19,4 @@ namespace Boxfish
 	}
 
 }
+#endif

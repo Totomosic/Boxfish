@@ -1216,7 +1216,7 @@ namespace Boxfish
 	{
 		int places = 1;
 		if (std::abs(score) > 0)
-			places = (int)std::log10(std::abs(score)) + 1;
+			places = (int)log10(std::abs(score)) + 1;
 		if (score < 0)
 			places++;
 		int spaces = maxPlaces - places;

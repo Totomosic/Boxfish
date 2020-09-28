@@ -19,7 +19,7 @@ namespace Boxfish
 	}
 
 	CommandManager::CommandManager()
-		: m_CommandMap(), m_CurrentPosition(CreateStartingPosition()), m_Search(50 * 1024 * 1024), m_Settings(), m_Searching(false), m_SearchThread()
+		: m_CommandMap(), m_CurrentPosition(CreateStartingPosition()), m_Search(1 * 1024 * 1024), m_Settings(), m_Searching(false), m_SearchThread()
 	{
 		m_CommandMap["help"] = [this](const std::vector<std::string>& args)
 		{

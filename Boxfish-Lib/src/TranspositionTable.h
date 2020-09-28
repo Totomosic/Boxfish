@@ -34,6 +34,7 @@ namespace Boxfish
 
 		inline void Update(ZobristHash hash, Move move, int depth, ValueType score, EntryFlag flag, int age)
 		{
+			BOX_ASSERT(flag >= 0 && flag <= 2, "Invalid flag");
 			Hash = hash;
 			BestMove = move;
 			Depth = (int8_t)depth;
@@ -41,9 +42,7 @@ namespace Boxfish
 			Age = age;
 			Flag = flag;
 		}
-	}
-		
-	;
+	};
 
 	class BOX_API TranspositionTable
 	{
@@ -62,11 +61,13 @@ namespace Boxfish
 
 		inline void Prefetch(const ZobristHash& hash) const
 		{
+#ifndef EMSCRIPTEN
 			void* address = &m_Entries[GetIndexFromHash(hash)];
-#ifdef BOX_PLATFORM_WINDOWS
+	#ifdef BOX_PLATFORM_WINDOWS
 			_mm_prefetch((const char*)address, _MM_HINT_T0);
-#else
+	#else
 			__builtin_prefetch(address);
+	#endif
 #endif
 		}
 
