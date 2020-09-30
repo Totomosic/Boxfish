@@ -47,11 +47,12 @@ namespace Boxfish
 
 	bool SeeGE(const Position& position, const Move& move, ValueType threshold = 0);
 
-	void ApplyMove(Position& position, const Move& move, UndoInfo* outUndoInfo = nullptr);
-	void UndoMove(Position& position, const Move& move, const UndoInfo& undo);
+	void ApplyMove(Position& position, Move move);
+	void ApplyMove(Position& position, Move move, UndoInfo* outUndoInfo);
+	void UndoMove(Position& position, Move move, const UndoInfo& undo);
 	void ApplyNullMove(Position& position, UndoInfo* outUndoInfo);
 	void UndoNullMove(Position& position, const UndoInfo& undo);
-	bool SanityCheckMove(const Position& position, const Move& move);
+	bool SanityCheckMove(const Position& position, Move move);
 	Move CreateMove(const Position& position, const Square& from, const Square& to, Piece promotionPiece = PIECE_QUEEN);
 	// e7d8q - Move piece from e7 -> d8 and promote to queen
 	Move CreateMoveFromString(const Position& position, const std::string& uciString);

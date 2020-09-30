@@ -107,7 +107,8 @@ namespace Boxfish
 		void Reset();
 
 		size_t Perft(const Position& position, int depth);
-		Move SearchBestMove(const Position& position, const SearchLimits& limits, const std::function<void(SearchResult)>& callback = {});
+		Move SearchBestMove(const Position& position, const SearchLimits& limits);
+		Move SearchBestMove(const Position& position, const SearchLimits& limits, const std::function<void(SearchResult)>& callback);
 		void Ponder(const Position& position, const std::function<void(SearchResult)>& callback = {});
 
 		void Stop();

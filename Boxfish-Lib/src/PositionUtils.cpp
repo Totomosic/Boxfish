@@ -593,7 +593,12 @@ namespace Boxfish
 		}
 	}
 
-	void ApplyMove(Position& position, const Move& move, UndoInfo* outUndoInfo)
+	void ApplyMove(Position& position, Move move)
+	{
+		return ApplyMove(position, move, nullptr);
+	}
+
+	void ApplyMove(Position& position, Move move, UndoInfo* outUndoInfo)
 	{
 		BOX_ASSERT(!(move.IsCapture() && move.GetCapturedPiece() == PIECE_KING), "Cannot capture king");
 		if (outUndoInfo)
@@ -693,7 +698,7 @@ namespace Boxfish
 		position.Hash.FlipTeamToPlay();
 	}
 
-	void UndoMove(Position& position, const Move& move, const UndoInfo& undo)
+	void UndoMove(Position& position, Move move, const UndoInfo& undo)
 	{
 		if (position.TeamToPlay == TEAM_WHITE)
 			position.TotalTurns--;
@@ -825,7 +830,7 @@ namespace Boxfish
 		position.HalfTurnsSinceCaptureOrPush--;
 	}
 
-	bool SanityCheckMove(const Position& position, const Move& move)
+	bool SanityCheckMove(const Position& position, Move move)
 	{
 		if (!IsSquareOccupied(position, position.TeamToPlay, move.GetFromSquareIndex()))
 		{

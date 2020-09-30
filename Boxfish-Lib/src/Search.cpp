@@ -139,6 +139,11 @@ namespace Boxfish
 		return total;
 	}
 
+	Move Search::SearchBestMove(const Position& position, const SearchLimits& limits)
+	{
+		return SearchBestMove(position, limits, [](SearchResult) {});
+	}
+
 	Move Search::SearchBestMove(const Position& position, const SearchLimits& limits, const std::function<void(SearchResult)>& callback)
 	{
 		SetLimits(limits);
@@ -299,12 +304,12 @@ namespace Boxfish
 
 					if (pvIndex == 0)
 						bestScore = newBestScore;
-					if (newBestScore <= alpha)
+					if (newBestScore <= alpha && newBestScore != -SCORE_MATE)
 					{
 						beta = (alpha + beta) / 2;
 						alpha = std::max(newBestScore - delta, -SCORE_MATE);
 					}
-					else if (newBestScore >= beta)
+					else if (newBestScore >= beta && newBestScore != SCORE_MATE)
 					{
 						beta = std::min(newBestScore + delta, SCORE_MATE);
 					}
@@ -427,9 +432,6 @@ namespace Boxfish
 		constexpr bool IsPvNode = NT == PV;
 		const bool IsRoot = IsPvNode && stack->Ply == 0;
 		const bool inCheck = IsInCheck(position);
-
-		if (!(inCheck == !!GetAttackers(position, OtherTeam(position.TeamToPlay), position.GetKingSquare(position.TeamToPlay), position.GetAllPieces())))
-			std::cout << position << std::endl;
 
 		BOX_ASSERT(inCheck == !!GetAttackers(position, OtherTeam(position.TeamToPlay), position.GetKingSquare(position.TeamToPlay), position.GetAllPieces()), "Mismatch");
 
@@ -597,6 +599,11 @@ namespace Boxfish
 			m_Nodes++;
 
 			m_TranspositionTable.Prefetch(movedPosition.Hash);
+
+			if (move.GetFromSquareIndex() == d1 && move.GetToSquareIndex() == f2)
+			{
+				//std::cout << "HERE" << std::endl;
+			}
 
 			stack->CurrentMove = move;
 			stack->MoveCount = moveIndex;
@@ -802,12 +809,13 @@ namespace Boxfish
 		int moveIndex = 0;
 		QuiescenceMoveSelector selector(position, legalMoves, inCheck);
 		Move move;
+
 		while (!selector.Empty())
 		{
 			moveIndex++;
 			move = selector.GetNextMove();
 
-			if (generator.IsLegal(move) && (inCheck || move.GetValue() > SCORE_NONE))
+			if (generator.IsLegal(move))
 			{
 				Position movedPosition = position;
 				ApplyMove(movedPosition, move);

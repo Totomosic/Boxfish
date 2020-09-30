@@ -62,6 +62,7 @@ namespace Boxfish
 		inline bool IsCaptureOrPromotion() const { return GetFlags() & (MOVE_CAPTURE | MOVE_PROMOTION); }
 		inline bool IsCastle() const { return GetFlags() & (MOVE_KINGSIDE_CASTLE | MOVE_QUEENSIDE_CASTLE); }
 		inline bool IsAdvancedPawnPush(Team team) const { return GetMovingPiece() == PIECE_PAWN && RelativeRank(team, BitBoard::RankOfIndex(GetFromSquareIndex())) > RANK_4; }
+		inline bool IsEnpassant() const { return GetFlags() & MOVE_EN_PASSANT; }
 
 		inline friend bool operator==(const Move& left, const Move& right) { return left.m_Move == right.m_Move; }
 		inline friend bool operator!=(const Move& left, const Move& right) { return left.m_Move != right.m_Move; }

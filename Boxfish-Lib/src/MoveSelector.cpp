@@ -157,7 +157,7 @@ namespace Boxfish
 	{
 		BOX_ASSERT(!Empty(), "Move list is empty");
 		size_t bestIndex = 0;
-		ValueType bestScore = SCORE_NONE;
+		ValueType bestScore = SCORE_NONE - 1;
 		for (int index = m_CurrentIndex; index < m_LegalMoves.MoveCount; ++index)
 		{
 			const Move& move = m_LegalMoves.Moves[index];

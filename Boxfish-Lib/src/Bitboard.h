@@ -26,10 +26,7 @@ namespace Boxfish
 #ifdef EMSCRIPTEN
 		inline int GetCount() const
 		{
-			int count = 0;
-			for (int i = 0; i < 64; i++)
-				count += !!(Board & (1ULL << i));
-			return count;
+			return (int)__builtin_popcountll(Board);
 		}
 #else
 		inline int GetCount() const
@@ -78,22 +75,12 @@ namespace Boxfish
 #ifdef EMSCRIPTEN
 	inline SquareIndex ForwardBitScan(const BitBoard& board)
 	{
-		for (int i = 0; i < 64; i++)
-		{
-			if (board.Board & (1ULL << i))
-				return (SquareIndex)i;
-		}
-		return a1;
+		return (SquareIndex)(__builtin_ffsll(board.Board) - 1);
 	}
 
 	inline SquareIndex BackwardBitScan(const BitBoard& board)
 	{
-		for (int i = 63; i >= 0; i--)
-		{
-			if (board.Board & (1ULL << i))
-				return (SquareIndex)i;
-		}
-		return a1;
+		return (SquareIndex)(63 - __builtin_clzll(board.Board));
 	}
 
 	inline BitBoard FlipVertically(const BitBoard& board)
