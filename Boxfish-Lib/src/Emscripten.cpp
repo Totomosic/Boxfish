@@ -87,6 +87,7 @@ EMSCRIPTEN_BINDINGS(my_module) {
 
 	constant("INVALID_SQUARE", INVALID_SQUARE);
 	constant("MOVE_NONE", MOVE_NONE);
+	constant("SQUARE_MAX", SQUARE_MAX);
 
 	function("Init", &Init);
 	function("OtherTeam", &OtherTeam);
@@ -217,7 +218,8 @@ EMSCRIPTEN_BINDINGS(my_module) {
 	function("IndexToSquare", &BitBoard::BitIndexToSquare);
 	function("SquareToIndex", &BitBoard::SquareToBitIndex);
 
-	class_<UndoInfo>("UndoInfo");
+	class_<UndoInfo>("UndoInfo")
+		.constructor<>();
 	class_<UCI>("UCI")
 		.class_function("FormatMove", &UCI::FormatMove);
 	class_<Move>("Move")
