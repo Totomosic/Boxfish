@@ -1021,7 +1021,7 @@ namespace Boxfish
 			int count = safe.GetCount() + (behind & safe).GetCount();
 			int weight = position.GetTeamPieces(team).GetCount();
 
-			result.Space[MIDGAME][team] = count * weight * weight / 24;
+			result.Space[MIDGAME][team] = count * weight * weight / 16;
 			result.Space[ENDGAME][team] = 0;
 		}
 		else

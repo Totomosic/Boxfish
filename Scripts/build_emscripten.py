@@ -37,7 +37,7 @@ if __name__ == "__main__":
 
     os.chdir(WEB_DIRECTORY)
 
-    command_line = "em++ --bind -o Boxfish.js -std=c++17 -s MODULARIZE=1 -s WASM=0 -O3 -DEMSCRIPTEN -DBOX_DIST -DBOX_PLATFORM_WINDOWS -s EXPORTED_RUNTIME_METHODS=[\"ccall\",\"cwrap\"]"# -s EXPORTED_FUNCTIONS=[".format(SOURCE_DIRECTORY)
+    command_line = "em++ --bind -o Boxfish.js -std=c++17 -s ALLOW_MEMORY_GROWTH=1 -s MODULARIZE=1 -s WASM=0 -O3 -DEMSCRIPTEN -DBOX_DIST -DBOX_PLATFORM_WINDOWS -s EXPORTED_RUNTIME_METHODS=[\"ccall\",\"cwrap\"]"# -s EXPORTED_FUNCTIONS=[".format(SOURCE_DIRECTORY)
     #for fn in EXPORTED_FUNCTIONS:
     #    command_line += "\"{}\",".format(fn)
     #command_line = command_line[:len(command_line) - 1]

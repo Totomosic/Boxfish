@@ -65,15 +65,28 @@ SquareIndex PositionEnpassantCaptureSquare(const Position& position, Team moving
 	return (SquareIndex)(BitBoard::SquareToBitIndex(position.EnpassantSquare) - GetForwardShift(movingTeam));
 }
 
+void ApplyUndoableMove(Position& position, Move move, UndoInfo& undo)
+{
+	ApplyMove(position, move, &undo);
+}
+
 bool MoveEquivalent(Move a, Move b)
 {
 	return a == b;
+}
+
+void SearchSetLevel(Search& search, int level)
+{
+	BoxfishSettings settings;
+	settings.SkillLevel = level;
+	search.SetSettings(settings);
 }
 
 EMSCRIPTEN_BINDINGS(my_module) {
 	register_vector<Move>("MoveList");
 
 	constant("INVALID_SQUARE", INVALID_SQUARE);
+	constant("MOVE_NONE", MOVE_NONE);
 
 	function("Init", &Init);
 	function("OtherTeam", &OtherTeam);
@@ -83,6 +96,8 @@ EMSCRIPTEN_BINDINGS(my_module) {
 	function("CreateMove", &CreateMove);
 	function("CreateMoveFromString", &CreateMoveFromString);
 	function("ApplyMove", select_overload<void(Position&, Move)>(&ApplyMove));
+	function("ApplyUndoableMove", &ApplyUndoableMove);
+	function("UndoMove", &UndoMove);
 	function("GenerateLegalMoves", &GenerateLegalMoves);
 	function("IsSameMove", &MoveEquivalent);
 
@@ -202,6 +217,7 @@ EMSCRIPTEN_BINDINGS(my_module) {
 	function("IndexToSquare", &BitBoard::BitIndexToSquare);
 	function("SquareToIndex", &BitBoard::SquareToBitIndex);
 
+	class_<UndoInfo>("UndoInfo");
 	class_<UCI>("UCI")
 		.class_function("FormatMove", &UCI::FormatMove);
 	class_<Move>("Move")
@@ -231,6 +247,7 @@ EMSCRIPTEN_BINDINGS(my_module) {
 		.field("Milliseconds", &SearchLimits::Milliseconds);
 	class_<Search>("Search")
 		.constructor<size_t, bool>()
+		.function("SetLevel", &SearchSetLevel)
 		.function("Perft", &Search::Perft)
 		.function("SearchMoveTime", &SearchBestMoveTime)
 		.function("SearchDepth", &SearchBestMoveDepth);
