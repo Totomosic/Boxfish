@@ -10,6 +10,7 @@ SOURCE_FILES = [
     "Bitboard.cpp",
     "Boxfish.cpp",
     "Evaluation.cpp",
+    "Format.cpp",
     "Logging.cpp",
     "Move.cpp",
     "MoveGenerator.cpp",
@@ -20,7 +21,6 @@ SOURCE_FILES = [
     "Rays.cpp",
     "Search.cpp",
     "TranspositionTable.cpp",
-    "Uci.cpp",
     "ZobristHash.cpp",
     "Emscripten.cpp",
 ]

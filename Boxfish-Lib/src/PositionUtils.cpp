@@ -1,7 +1,7 @@
 #include "PositionUtils.h"
 #include "Utils.h"
 #include "Attacks.h"
-#include "Uci.h"
+#include "Format.h"
 
 namespace Boxfish
 {

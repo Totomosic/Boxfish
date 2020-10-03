@@ -13,7 +13,7 @@
 #include "Evaluation.h"
 
 #include "Search.h"
-#include "Uci.h"
+#include "Format.h"
 #include "Settings.h"
 
 namespace Boxfish

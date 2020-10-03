@@ -1,6 +1,6 @@
 #include "Search.h"
 #include "Random.h"
-#include "Uci.h"
+#include "Format.h"
 #include <thread>
 
 namespace Boxfish
@@ -75,6 +75,11 @@ namespace Boxfish
 		m_WasStopped(false), m_ShouldStop(false), m_Log(log), m_OrderingTables()
 	{
 		m_OrderingTables.Clear();
+	}
+
+	const BoxfishSettings& Search::GetSettings() const
+	{
+		return m_Settings;
 	}
 
 	void Search::SetSettings(const BoxfishSettings& settings)
@@ -365,6 +370,16 @@ namespace Boxfish
 					}
 					std::cout << std::endl;
 				}
+
+				if (callback)
+				{
+					SearchResult result;
+					result.BestMove = rootPV.size() > 0 ? rootPV[0] : MOVE_NONE;
+					result.PV = rootPV;
+					result.Score = rootMove.Score;
+					result.PVIndex = pvIndex;
+					callback(result);
+				}
 			}
 
 			if (CheckLimits())
@@ -391,15 +406,6 @@ namespace Boxfish
 
 			RootMove& rootMove = result[0];
 			std::vector<Move>& rootPV = rootMove.PV;
-
-			if (callback)
-			{
-				SearchResult result;
-				result.BestMove = pv[0];
-				result.PV = rootPV;
-				result.Score = rootMove.Score;
-				callback(result);
-			}
 
 			if (IsMateScore(rootMove.Score) && rootMove.Score > 0 && !m_Limits.Infinite)
 				break;

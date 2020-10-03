@@ -114,6 +114,21 @@ namespace Boxfish
         return ZERO_BB;
     }
 
+    inline BitBoard GetAttacksBy(Piece piece, SquareIndex from, Team team, const BitBoard& blockers)
+    {
+        if (piece == PIECE_PAWN || piece == PIECE_KNIGHT || piece == PIECE_KING)
+        {
+            return s_NonSlidingAttacks[team][piece][from];
+        }
+        if (piece == PIECE_BISHOP)
+            return GetBishopAttacks(from, blockers);
+        if (piece == PIECE_ROOK)
+            return GetRookAttacks(from, blockers);
+        if (piece == PIECE_QUEEN)
+            return GetBishopAttacks(from, blockers) | GetRookAttacks(from, blockers);
+        return ZERO_BB;
+    }
+
 	/*inline BitBoard GetSlidingAttacks(Piece piece, SquareIndex fromSquare, const BitBoard& blockers)
     {
         switch (piece)

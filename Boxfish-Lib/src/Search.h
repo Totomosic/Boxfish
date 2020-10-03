@@ -43,6 +43,7 @@ namespace Boxfish
 		std::vector<Move> PV;
 		ValueType Score;
 		Move BestMove;
+		int PVIndex;
 	};
 
 	class BOX_API Search
@@ -100,6 +101,8 @@ namespace Boxfish
 
 	public:
 		Search(size_t transpositionTableSize = TranspositionTable::TABLE_SIZE, bool log = true);
+
+		const BoxfishSettings& GetSettings() const;
 
 		void SetSettings(const BoxfishSettings& settings);
 		void SetLimits(const SearchLimits& limits);

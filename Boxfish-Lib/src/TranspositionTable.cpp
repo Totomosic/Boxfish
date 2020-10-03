@@ -18,7 +18,7 @@ namespace Boxfish
 				ret <<= 1;
 			}
 			m_EntryCount = ret - 1;
-			m_Entries = std::make_unique<TranspositionTableEntry[]>(m_EntryCount);
+			m_Entries = std::make_unique<TranspositionTableEntry[]>(m_EntryCount + 1);
 			m_Mask = m_EntryCount;
 		}
 

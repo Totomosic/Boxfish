@@ -21,7 +21,7 @@ namespace Boxfish
 		Move BestMove;
 		int8_t Depth;
 		ValueType Score;
-		int Age = -1;
+		int16_t Age = -1;
 		EntryFlag Flag;
 
 	public:
@@ -30,9 +30,9 @@ namespace Boxfish
 		inline int GetDepth() const { return (int)Depth; }
 		inline ValueType GetScore() const { return Score; }
 		inline EntryFlag GetFlag() const { return Flag; }
-		inline int GetAge() const { return Age; }
+		inline int16_t GetAge() const { return Age; }
 
-		inline void Update(ZobristHash hash, Move move, int depth, ValueType score, EntryFlag flag, int age)
+		inline void Update(ZobristHash hash, Move move, int depth, ValueType score, EntryFlag flag, int16_t age)
 		{
 			BOX_ASSERT(flag >= 0 && flag <= 2, "Invalid flag");
 			Hash = hash;

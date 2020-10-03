@@ -2,11 +2,17 @@
 #include <string>
 #include <vector>
 #include <iostream>
+#include <thread>
 #include "Boxfish.h"
 using namespace Boxfish;
 
 #include <emscripten/bind.h>
 using namespace emscripten;
+
+void PrintPosition(const Position& position)
+{
+	std::cout << position << std::endl;
+}
 
 Move SearchBestMoveTime(Search& search, const Position& position, int milliseconds)
 {
@@ -65,6 +71,11 @@ SquareIndex PositionEnpassantCaptureSquare(const Position& position, Team moving
 	return (SquareIndex)(BitBoard::SquareToBitIndex(position.EnpassantSquare) - GetForwardShift(movingTeam));
 }
 
+Position PositionClone(const Position& position)
+{
+	return position;
+}
+
 void ApplyUndoableMove(Position& position, Move move, UndoInfo& undo)
 {
 	ApplyMove(position, move, &undo);
@@ -77,9 +88,24 @@ bool MoveEquivalent(Move a, Move b)
 
 void SearchSetLevel(Search& search, int level)
 {
-	BoxfishSettings settings;
+	BoxfishSettings settings = search.GetSettings();
 	settings.SkillLevel = level;
 	search.SetSettings(settings);
+}
+
+void SearchSetMultiPV(Search& search, int multiPv)
+{
+	BoxfishSettings settings = search.GetSettings();
+	settings.MultiPV = multiPv;
+	search.SetSettings(settings);
+}
+
+void SearchPonder(Search& search, const Position& position, emscripten::val callback)
+{
+	search.Ponder(position, [callback](const SearchResult& result)
+	{
+		callback(result);
+	});
 }
 
 EMSCRIPTEN_BINDINGS(my_module) {
@@ -90,6 +116,7 @@ EMSCRIPTEN_BINDINGS(my_module) {
 	constant("SQUARE_MAX", SQUARE_MAX);
 
 	function("Init", &Init);
+	function("PrintPosition", &PrintPosition);
 	function("OtherTeam", &OtherTeam);
 	function("CreateStartingPosition", &CreateStartingPosition);
 	function("CreatePositionFromFEN", &CreatePositionFromFEN);
@@ -222,6 +249,8 @@ EMSCRIPTEN_BINDINGS(my_module) {
 		.constructor<>();
 	class_<UCI>("UCI")
 		.class_function("FormatMove", &UCI::FormatMove);
+	class_<PGN>("PGN")
+		.class_function("FormatMove", &PGN::FormatMove);
 	class_<Move>("Move")
 		.constructor<>()
 		.function("GetFromSquareIndex", &Move::GetFromSquareIndex)
@@ -241,18 +270,26 @@ EMSCRIPTEN_BINDINGS(my_module) {
 		.property("EnpassantSquare", &PositionGetEnpassant, &PositionSetEnpassant)
 		.function("GetPieceOnSquare", &Position::GetPieceOnSquare)
 		.function("GetKingSquare", &Position::GetKingSquare)
-		.function("GetEnpassantCaptureSquare", &PositionEnpassantCaptureSquare);
+		.function("GetEnpassantCaptureSquare", &PositionEnpassantCaptureSquare)
+		.function("DeepClone", &PositionClone);
 	value_object<SearchLimits>("SearchLimits")
 		.field("Infinite", &SearchLimits::Infinite)
 		.field("Depth", &SearchLimits::Depth)
 		.field("Nodes", &SearchLimits::Nodes)
 		.field("Milliseconds", &SearchLimits::Milliseconds);
+	value_object<SearchResult>("SearchResult")
+		.field("PV", &SearchResult::PV)
+		.field("Score", &SearchResult::Score)
+		.field("BestMove", &SearchResult::BestMove)
+		.field("PVIndex", &SearchResult::PVIndex);
 	class_<Search>("Search")
 		.constructor<size_t, bool>()
 		.function("SetLevel", &SearchSetLevel)
+		.function("SetMultiPV", &SearchSetMultiPV)
 		.function("Perft", &Search::Perft)
 		.function("SearchMoveTime", &SearchBestMoveTime)
-		.function("SearchDepth", &SearchBestMoveDepth);
+		.function("SearchDepth", &SearchBestMoveDepth)
+		.function("Ponder", &SearchPonder);
 }
 
 #endif
