@@ -114,6 +114,9 @@ EMSCRIPTEN_BINDINGS(my_module) {
 	constant("INVALID_SQUARE", INVALID_SQUARE);
 	constant("MOVE_NONE", MOVE_NONE);
 	constant("SQUARE_MAX", SQUARE_MAX);
+	constant("SCORE_MATE", SCORE_MATE);
+	constant("SCORE_NONE", SCORE_NONE);
+	constant("SCORE_DRAW", SCORE_DRAW);
 
 	function("Init", &Init);
 	function("PrintPosition", &PrintPosition);
@@ -281,7 +284,9 @@ EMSCRIPTEN_BINDINGS(my_module) {
 		.field("PV", &SearchResult::PV)
 		.field("Score", &SearchResult::Score)
 		.field("BestMove", &SearchResult::BestMove)
-		.field("PVIndex", &SearchResult::PVIndex);
+		.field("PVIndex", &SearchResult::PVIndex)
+		.field("Depth", &SearchResult::Depth)
+		.field("SelDepth", &SearchResult::SelDepth);
 	class_<Search>("Search")
 		.constructor<size_t, bool>()
 		.function("SetLevel", &SearchSetLevel)

@@ -378,6 +378,8 @@ namespace Boxfish
 					result.PV = rootPV;
 					result.Score = rootMove.Score;
 					result.PVIndex = pvIndex;
+					result.Depth = rootDepth;
+					result.SelDepth = selDepth;
 					callback(result);
 				}
 			}

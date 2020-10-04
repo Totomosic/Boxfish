@@ -44,6 +44,8 @@ namespace Boxfish
 		ValueType Score;
 		Move BestMove;
 		int PVIndex;
+		int Depth;
+		int SelDepth;
 	};
 
 	class BOX_API Search
