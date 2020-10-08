@@ -12,7 +12,6 @@ namespace Boxfish
 	constexpr bool UseWeakPawns = true;
 	constexpr bool UseKingSafety = true;
 	constexpr bool UseSpace = true;
-	constexpr bool UseThreats = false;
 	constexpr bool UseInitiative = true;
 
 	// =================================================================================================================================
@@ -99,10 +98,14 @@ namespace Boxfish
 
 	// Pawns can never be on the 8th rank (1st rank used as a sentinel for when there is no pawn)
 	static constexpr ValueType s_PawnStormStrength[FILE_MAX / 2][RANK_MAX] = {
-		{ 45, 52, 61, 45, 27, 23, 25 },
+		{ 45, -140, -80, 45, 27, 23, 25 },
 		{ 22, -9, 62, 23, 18, -3, 11 },
-		{ 2, 25, 81, 17, 3, -6, -1 },
-		{ -5, -7, 43, 7, 1, -3, -7 },
+		{ -3, 25, 81, 17, -1, -10, -5 },
+		{ -8, -6, 50, 2, 5, -8, -11 },
+	};
+
+	static constexpr ValueType s_BlockedStormStrength[RANK_MAX] = {
+		0, 0, 30, -5, -4, -2, -1
 	};
 
 	static int s_AttackUnits[PIECE_MAX];
@@ -450,6 +453,13 @@ namespace Boxfish
 	inline int CalculateTropism(SquareIndex a, SquareIndex b)
 	{
 		return s_DistanceTable[a][b];
+	}
+
+	template<Team team>
+	constexpr BitBoard GetPawnDoubleAttacks(BitBoard pawns)
+	{
+		return (team == TEAM_WHITE) ? Shift<NORTH_WEST>(pawns) & Shift<NORTH_EAST>(pawns)
+									: Shift<SOUTH_EAST>(pawns) & Shift<SOUTH_WEST>(pawns);
 	}
 
 	// =================================================================================================================================
@@ -943,30 +953,30 @@ namespace Boxfish
 			result.Data.Attackers[otherTeam] += (result.Data.KingAttackZone[team] & result.Data.AttackedBy[otherTeam][PIECE_PAWN]).GetCount();
 
 			ValueType mg = 0;
+			ValueType eg = 0;
 			if (result.Data.Attackers[otherTeam] > 2 && position.GetTeamPieces(otherTeam, PIECE_QUEEN).GetCount() > 0)
 			{
 				mg -= s_KingSafetyTable[std::min(result.Data.AttackUnits[otherTeam], MAX_ATTACK_UNITS - 1)];
 			}
 
-			const BitBoard pawnMask = InFront(kingSquare.Rank, team) & ~RANK_MASKS[kingSquare.Rank];
+			const BitBoard pawnMask = InFront(kingSquare.Rank, team);
 
 			// King Shield
-			File kingFileCenter = std::min(std::max(kingSquare.File, FILE_B), FILE_G);
+			File kingFileCenter = std::clamp(kingSquare.File, FILE_B, FILE_G);
 			for (File file = (File)(kingFileCenter - 1); file <= kingFileCenter + 1; file++)
 			{
 				// Only include pawns in front of our king
-				BitBoard ourPawns = FILE_MASKS[file] & position.GetTeamPieces(team, PIECE_PAWN) & pawnMask;
+				BitBoard ourPawns = FILE_MASKS[file] & position.GetTeamPieces(team, PIECE_PAWN) & pawnMask & ~result.Data.AttackedBy[otherTeam][PIECE_PAWN];
 				BitBoard theirPawns = FILE_MASKS[file] & position.GetTeamPieces(otherTeam, PIECE_PAWN);
 
-				int ourRank = (ourPawns) ? RelativeRank(team, BitBoard::RankOfIndex(BackmostSquare(ourPawns, team))) : 0;
-				int theirRank = (theirPawns) ? RelativeRank(otherTeam, BitBoard::RankOfIndex(FrontmostSquare(theirPawns, otherTeam))) : 0;
+				int ourRank = (ourPawns) ? RelativeRank(team, BitBoard::RankOfIndex(FrontmostSquare(ourPawns, otherTeam))) : 0;
+				int theirRank = (theirPawns) ? RelativeRank(team, BitBoard::RankOfIndex(FrontmostSquare(theirPawns, otherTeam))) : 0;
 
 				int distance = std::min<int>(file, FILE_MAX - file - 1);
 				mg += s_KingShieldStength[distance][ourRank];
 				if (ourRank > 0 && ourRank == theirRank - 1)
 				{
-					if (theirRank == RANK_3)
-						mg -= 30;
+					mg -= s_BlockedStormStrength[theirRank];
 				}
 				else
 				{
@@ -980,8 +990,24 @@ namespace Boxfish
 
 			mg -= 2 * tropismCount;
 
+			BitBoard pawns = position.GetTeamPieces(team, PIECE_PAWN);
+			int minDistance = 6;
+
+			if (pawns & GetNonSlidingAttacks<PIECE_KING>(kngSq, team))
+				minDistance = 1;
+			else
+			{
+				while (pawns)
+				{
+					SquareIndex sq = PopLeastSignificantBit(pawns);
+					minDistance = std::min(minDistance, CalculateTropism(kngSq, sq));
+				}
+			}
+
+			eg -= 8 * minDistance;
+
 			result.KingSafety[MIDGAME][team] = mg;
-			result.KingSafety[ENDGAME][team] = 0;
+			result.KingSafety[ENDGAME][team] = eg;
 		}
 		else
 		{
@@ -997,7 +1023,7 @@ namespace Boxfish
 	}
 
 	template<Team team>
-	void EvaluateSpace(EvaluationResult& result, const Position& position)
+	void EvaluateSpace(EvaluationResult& result, const Position& position, int blockedPawns)
 	{
 		if constexpr (UseSpace)
 		{
@@ -1008,6 +1034,7 @@ namespace Boxfish
 				return;
 			}
 			constexpr Team otherTeam = OtherTeam(team);
+			constexpr Direction Up = (team == TEAM_WHITE) ? NORTH : SOUTH;
 
 			constexpr BitBoard spaceMask =
 				(team == TEAM_WHITE) ? (FILE_C_MASK | FILE_D_MASK | FILE_E_MASK | FILE_F_MASK) & (RANK_2_MASK | RANK_3_MASK | RANK_4_MASK)
@@ -1021,7 +1048,7 @@ namespace Boxfish
 			int count = safe.GetCount() + (behind & safe).GetCount();
 			int weight = position.GetTeamPieces(team).GetCount();
 
-			result.Space[MIDGAME][team] = count * weight * weight / 16;
+			result.Space[MIDGAME][team] = (count - 3 + std::min(blockedPawns, 9)) * weight * weight / 18;
 			result.Space[ENDGAME][team] = 0;
 		}
 		else
@@ -1033,82 +1060,15 @@ namespace Boxfish
 
 	void EvaluateSpace(EvaluationResult& result, const Position& position)
 	{
-		EvaluateSpace<TEAM_WHITE>(result, position);
-		EvaluateSpace<TEAM_BLACK>(result, position);
-	}
+		BitBoard whitePawns = position.GetTeamPieces(TEAM_WHITE, PIECE_PAWN);
+		BitBoard blackPawns = position.GetTeamPieces(TEAM_BLACK, PIECE_PAWN);
 
-	template<Team team>
-	void EvaluateThreats(EvaluationResult& result, const Position& position)
-	{
-		if constexpr (UseThreats)
-		{
-			ValueType mg = 0;
-			ValueType eg = 0;
+		int blockedPawns = 0;
+		blockedPawns += (Shift<NORTH>(whitePawns) & (blackPawns | GetPawnDoubleAttacks<TEAM_BLACK>(blackPawns)));
+		blockedPawns += (Shift<SOUTH>(blackPawns) & (whitePawns | GetPawnDoubleAttacks<TEAM_WHITE>(whitePawns)));
 
-			constexpr ValueType HangingPieceMg = 25;
-			constexpr ValueType HandingPieceEg = 10;
-
-			constexpr Team otherTeam = OtherTeam(team);
-			constexpr Direction UpDirection = (team == TEAM_WHITE) ? NORTH : SOUTH;
-			constexpr BitBoard Rank3BB = (team == TEAM_WHITE) ? RANK_3_MASK : RANK_6_MASK;
-
-			BitBoard nonPawns = position.GetTeamPieces(otherTeam) ^ position.GetTeamPieces(otherTeam, PIECE_PAWN);
-			BitBoard protectedSquares = result.Data.AttackedBy[otherTeam][PIECE_PAWN] | (result.Data.AttackedByTwice[otherTeam] & ~result.Data.AttackedByTwice[team]);
-			BitBoard defendedPieces = nonPawns & protectedSquares;
-			BitBoard weakPieces = position.GetTeamPieces(otherTeam) & ~protectedSquares & result.Data.AttackedBy[team][PIECE_ALL];
-			BitBoard safeSquares = ~result.Data.AttackedBy[otherTeam][PIECE_ALL] | result.Data.AttackedBy[team][PIECE_ALL];
-
-			BitBoard current;
-			if (defendedPieces | weakPieces)
-			{
-				current = (defendedPieces | weakPieces) & (result.Data.AttackedBy[team][PIECE_KNIGHT] | result.Data.AttackedBy[team][PIECE_BISHOP]);
-				while (current)
-				{
-					SquareIndex square = PopLeastSignificantBit(current);
-					Piece piece = position.GetPieceOnSquare(square);
-					mg += s_MinorPieceThreat[MIDGAME][piece];
-					eg += s_MinorPieceThreat[ENDGAME][piece];
-				}
-				current = weakPieces & result.Data.AttackedBy[team][PIECE_ROOK];
-				while (current)
-				{
-					SquareIndex square = PopLeastSignificantBit(current);
-					Piece piece = position.GetPieceOnSquare(square);
-					mg += s_RookThreat[MIDGAME][piece];
-					eg += s_RookThreat[ENDGAME][piece];
-				}
-				if (weakPieces & result.Data.AttackedBy[team][PIECE_KING])
-				{
-					mg += 5;
-					eg += 30;
-				}
-
-				current = ~result.Data.AttackedBy[otherTeam][PIECE_ALL] | (nonPawns & result.Data.AttackedByTwice[team]);
-				int hangingPieces = (weakPieces & current).GetCount();
-				mg += HangingPieceMg * hangingPieces;
-				eg += HandingPieceEg * hangingPieces;
-			}
-
-			current = position.GetTeamPieces(team, PIECE_PAWN) & safeSquares;
-			current = GetPawnAttacks<team>(current) & nonPawns;
-			int threatenedPieces = current.GetCount();
-			mg += 80 * threatenedPieces;
-			eg += 45 * threatenedPieces;
-
-			result.Threats[MIDGAME][team] = mg;
-			result.Threats[ENDGAME][team] = eg;
-		}
-		else
-		{
-			result.Threats[MIDGAME][team] = 0;
-			result.Threats[ENDGAME][team] = 0;
-		}
-	}
-
-	void EvaluateThreats(EvaluationResult& result, const Position& position)
-	{
-		EvaluateThreats<TEAM_WHITE>(result, position);
-		EvaluateThreats<TEAM_BLACK>(result, position);
+		EvaluateSpace<TEAM_WHITE>(result, position, blockedPawns);
+		EvaluateSpace<TEAM_BLACK>(result, position, blockedPawns);
 	}
 
 	void EvaluateTempo(EvaluationResult& result, const Position& position)
@@ -1170,7 +1130,6 @@ namespace Boxfish
 		EvaluateBlockedPieces(result, position);
 		EvaluateSpace(result, position);
 		EvaluateKingSafety(result, position);
-		EvaluateThreats(result, position);
 		EvaluateTempo(result, position);
 		return result;
 	}
@@ -1251,7 +1210,6 @@ namespace Boxfish
 			evaluation.Queens[MIDGAME][TEAM_WHITE] +
 			evaluation.Space[MIDGAME][TEAM_WHITE] +
 			evaluation.KingSafety[MIDGAME][TEAM_WHITE] +
-			evaluation.Threats[MIDGAME][TEAM_WHITE] +
 			evaluation.Tempo[MIDGAME][TEAM_WHITE],
 			scoreLength
 		);
@@ -1269,7 +1227,6 @@ namespace Boxfish
 			evaluation.Queens[ENDGAME][TEAM_WHITE] +
 			evaluation.Space[ENDGAME][TEAM_WHITE] +
 			evaluation.KingSafety[ENDGAME][TEAM_WHITE] +
-			evaluation.Threats[ENDGAME][TEAM_WHITE] +
 			evaluation.Tempo[ENDGAME][TEAM_WHITE],
 			scoreLength
 		);
@@ -1287,7 +1244,6 @@ namespace Boxfish
 			evaluation.Queens[MIDGAME][TEAM_BLACK] +
 			evaluation.Space[MIDGAME][TEAM_BLACK] +
 			evaluation.KingSafety[MIDGAME][TEAM_BLACK] +
-			evaluation.Threats[MIDGAME][TEAM_BLACK] +
 			evaluation.Tempo[MIDGAME][TEAM_BLACK],
 			scoreLength
 		);
@@ -1305,7 +1261,6 @@ namespace Boxfish
 			evaluation.Queens[ENDGAME][TEAM_BLACK] +
 			evaluation.Space[ENDGAME][TEAM_BLACK] +
 			evaluation.KingSafety[ENDGAME][TEAM_BLACK] +
-			evaluation.Threats[ENDGAME][TEAM_BLACK] +
 			evaluation.Tempo[ENDGAME][TEAM_BLACK],
 			scoreLength
 		);
@@ -1323,7 +1278,6 @@ namespace Boxfish
 			evaluation.Queens[MIDGAME][TEAM_WHITE] - evaluation.Queens[MIDGAME][TEAM_BLACK] +
 			evaluation.Space[MIDGAME][TEAM_WHITE] - evaluation.Space[MIDGAME][TEAM_BLACK] +
 			evaluation.KingSafety[MIDGAME][TEAM_WHITE] - evaluation.KingSafety[MIDGAME][TEAM_BLACK] +
-			evaluation.Threats[MIDGAME][TEAM_WHITE] - evaluation.Threats[MIDGAME][TEAM_BLACK] +
 			evaluation.Tempo[MIDGAME][TEAM_WHITE] - evaluation.Tempo[MIDGAME][TEAM_BLACK],
 			scoreLength
 		);
@@ -1341,7 +1295,6 @@ namespace Boxfish
 			evaluation.Queens[ENDGAME][TEAM_WHITE] - evaluation.Queens[ENDGAME][TEAM_BLACK] +
 			evaluation.Space[ENDGAME][TEAM_WHITE] - evaluation.Space[ENDGAME][TEAM_BLACK] +
 			evaluation.KingSafety[ENDGAME][TEAM_WHITE] - evaluation.KingSafety[ENDGAME][TEAM_BLACK] +
-			evaluation.Threats[ENDGAME][TEAM_WHITE] - evaluation.Threats[ENDGAME][TEAM_BLACK] +
 			evaluation.Tempo[ENDGAME][TEAM_WHITE] - evaluation.Tempo[ENDGAME][TEAM_BLACK],
 			scoreLength
 		);
@@ -1362,7 +1315,6 @@ namespace Boxfish
 		result += "         Queens | " + FormatScore(evaluation.Queens[MIDGAME][TEAM_WHITE], scoreLength)        + " " + FormatScore(evaluation.Queens[ENDGAME][TEAM_WHITE], scoreLength)        + " | " + FormatScore(evaluation.Queens[MIDGAME][TEAM_BLACK], scoreLength)        + " " + FormatScore(evaluation.Queens[ENDGAME][TEAM_BLACK], scoreLength)        + " | " + FormatScore(evaluation.Queens[MIDGAME][TEAM_WHITE] - evaluation.Queens[MIDGAME][TEAM_BLACK], scoreLength)               + " " + FormatScore(evaluation.Queens[ENDGAME][TEAM_WHITE] - evaluation.Queens[ENDGAME][TEAM_BLACK], scoreLength)               + '\n';
 		result += "          Space | " + FormatScore(evaluation.Space[MIDGAME][TEAM_WHITE], scoreLength)         + " " + FormatScore(evaluation.Space[ENDGAME][TEAM_WHITE], scoreLength)         + " | " + FormatScore(evaluation.Space[MIDGAME][TEAM_BLACK], scoreLength)         + " " + FormatScore(evaluation.Space[ENDGAME][TEAM_BLACK], scoreLength)         + " | " + FormatScore(evaluation.Space[MIDGAME][TEAM_WHITE] - evaluation.Space[MIDGAME][TEAM_BLACK], scoreLength)                 + " " + FormatScore(evaluation.Space[ENDGAME][TEAM_WHITE] - evaluation.Space[ENDGAME][TEAM_BLACK], scoreLength)                 + '\n';
 		result += "    King Safety | " + FormatScore(evaluation.KingSafety[MIDGAME][TEAM_WHITE], scoreLength)    + " " + FormatScore(evaluation.KingSafety[ENDGAME][TEAM_WHITE], scoreLength)    + " | " + FormatScore(evaluation.KingSafety[MIDGAME][TEAM_BLACK], scoreLength)    + " " + FormatScore(evaluation.KingSafety[ENDGAME][TEAM_BLACK], scoreLength)    + " | " + FormatScore(evaluation.KingSafety[MIDGAME][TEAM_WHITE] - evaluation.KingSafety[MIDGAME][TEAM_BLACK], scoreLength)       + " " + FormatScore(evaluation.KingSafety[ENDGAME][TEAM_WHITE] - evaluation.KingSafety[ENDGAME][TEAM_BLACK], scoreLength)       + '\n';
-		result += "        Threats | " + FormatScore(evaluation.Threats[MIDGAME][TEAM_WHITE], scoreLength)       + " " + FormatScore(evaluation.Threats[ENDGAME][TEAM_WHITE], scoreLength)       + " | " + FormatScore(evaluation.Threats[MIDGAME][TEAM_BLACK], scoreLength)       + " " + FormatScore(evaluation.Threats[ENDGAME][TEAM_BLACK], scoreLength)       + " | " + FormatScore(evaluation.Threats[MIDGAME][TEAM_WHITE] - evaluation.Threats[MIDGAME][TEAM_BLACK], scoreLength)             + " " + FormatScore(evaluation.Threats[ENDGAME][TEAM_WHITE] - evaluation.Threats[ENDGAME][TEAM_BLACK], scoreLength)             + '\n';
 		result += "          Tempo | " + FormatScore(evaluation.Tempo[MIDGAME][TEAM_WHITE], scoreLength)         + " " + FormatScore(evaluation.Tempo[ENDGAME][TEAM_WHITE], scoreLength)         + " | " + FormatScore(evaluation.Tempo[MIDGAME][TEAM_BLACK], scoreLength)         + " " + FormatScore(evaluation.Tempo[ENDGAME][TEAM_BLACK], scoreLength)         + " | " + FormatScore(evaluation.Tempo[MIDGAME][TEAM_WHITE] - evaluation.Tempo[MIDGAME][TEAM_BLACK], scoreLength)                 + " " + FormatScore(evaluation.Tempo[ENDGAME][TEAM_WHITE] - evaluation.Tempo[ENDGAME][TEAM_BLACK], scoreLength)                 + '\n';
 		result += " ---------------+---------------+---------------+--------------\n";
 		result += "          Total | " + whiteMidgameTotal + " " + whiteEndgameTotal + " | " + blackMidgameTotal + " " + blackEndgameTotal + " | " + midgameTotal + " " + endgameTotal + "\n";

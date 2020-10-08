@@ -301,9 +301,11 @@ namespace Boxfish
 					beta = std::min(prevMaxScore + delta, SCORE_MATE);
 				}
 
+				int betaCutoffs = 0;
 				while (true)
 				{
-					ValueType newBestScore = SearchPosition<PV>(position, stackPtr, rootDepth, alpha, beta, selDepth, false, RootInfo{ rootMoves, pvIndex, (int)rootMoves.size() });
+					int adjustedDepth = std::max(1, rootDepth - betaCutoffs);
+					ValueType newBestScore = SearchPosition<PV>(position, stackPtr, adjustedDepth, alpha, beta, selDepth, false, RootInfo{ rootMoves, pvIndex, (int)rootMoves.size() });
 
 					std::stable_sort(rootMoves.begin() + pvIndex, rootMoves.end());
 
@@ -317,6 +319,7 @@ namespace Boxfish
 					else if (newBestScore >= beta && newBestScore != SCORE_MATE)
 					{
 						beta = std::min(newBestScore + delta, SCORE_MATE);
+						betaCutoffs++;
 					}
 					else
 					{
@@ -534,10 +537,13 @@ namespace Boxfish
 			return QuiescenceSearch<NonPV>(position, stack, 0, alpha, beta);
 		}
 
-		const bool improving = stack->StaticEvaluation >= (stack - 2)->StaticEvaluation || (stack - 2)->StaticEvaluation == SCORE_NONE;
-
+		const bool improving =
+			(stack - 2)->StaticEvaluation == SCORE_NONE ?
+			(stack->StaticEvaluation > (stack - 4)->StaticEvaluation || (stack - 4)->StaticEvaluation == SCORE_NONE) :
+			(stack->StaticEvaluation > (stack - 2)->StaticEvaluation);
+			
 		// Futility pruning
-		if (!IsRoot && !inCheck && depth <= 6 && stack->StaticEvaluation - (100 + 50 * improving) * depth >= beta && !IsMateScore(stack->StaticEvaluation))
+		if (!IsRoot && !inCheck && depth <= 6 && stack->StaticEvaluation - 125 * (depth - improving) >= beta && !IsMateScore(stack->StaticEvaluation))
 			return stack->StaticEvaluation;
 
 		// Null move pruning
@@ -636,7 +642,7 @@ namespace Boxfish
 					if (!SeeGE(position, move, -40 * lmrDepth * lmrDepth))
 						continue;
 				}
-				else if (!depthExtension && !SeeGE(position, move, -GetPieceValue(PIECE_PAWN, ENDGAME) * depth))
+				else if (!SeeGE(position, move, -(GetPieceValue(PIECE_PAWN, ENDGAME) + 20) * depth))
 					continue;
 			}
 
@@ -651,7 +657,7 @@ namespace Boxfish
 			ValueType value = -SCORE_MATE;
 
 			// Late move reduction
-			if (depth >= 3 && moveIndex > FirstMoveIndex && !isCaptureOrPromotion)
+			if (depth >= 3 && moveIndex > FirstMoveIndex + 2 * IsRoot && (!isCaptureOrPromotion || cutNode))
 			{
 				int reduction = GetReduction<NT>(improving, depth, moveIndex);
 				if ((stack - 1)->MoveCount > 15)
@@ -721,25 +727,25 @@ namespace Boxfish
 			// Beta cutoff - Fail high
 			if (value >= beta)
 			{
-				if (rootInfo.PVIndex == 0 && !isCaptureOrPromotion)
+				if (!isCaptureOrPromotion)
 				{
 					m_OrderingTables.CounterMoves[previousMove.GetFromSquareIndex()][previousMove.GetToSquareIndex()] = move;
 					UpdateQuietStats(position, stack, depth, move);
 				}
-				if (rootInfo.PVIndex == 0 && (!ttFound || ReplaceTT(depth, position.GetTotalHalfMoves(), LOWER_BOUND, ttEntry)))
+				if ((!ttFound || ReplaceTT(depth, position.GetTotalHalfMoves(), LOWER_BOUND, ttEntry)))
 				{
 					ttEntry->Update(position.Hash, move, depth, GetValueForTT(beta, stack->Ply), LOWER_BOUND, position.GetTotalHalfMoves());
 				}
 				return beta;
 			}
-			else if (rootInfo.PVIndex == 0 && !isCaptureOrPromotion)
+			else if (!isCaptureOrPromotion)
 			{
 				m_OrderingTables.Butterfly[position.TeamToPlay][move.GetFromSquareIndex()][move.GetToSquareIndex()] += depth * depth;
 			}
 		}
 
 		EntryFlag entryFlag = (bestValue > originalAlpha) ? EXACT : UPPER_BOUND;
-		if (rootInfo.PVIndex == 0 && (!ttFound || ReplaceTT(depth, position.GetTotalHalfMoves(), entryFlag, ttEntry)))
+		if (!ttFound || ReplaceTT(depth, position.GetTotalHalfMoves(), entryFlag, ttEntry))
 		{
 			ttEntry->Update(position.Hash, bestMove, depth, GetValueForTT(bestValue, stack->Ply), entryFlag, position.GetTotalHalfMoves());
 		}
@@ -774,7 +780,7 @@ namespace Boxfish
 		ValueType evaluation = 0;
 		if (!inCheck)
 		{
-			if (ttFound && ttEntry->GetDepth() >= depth && (ttEntry->GetFlag() == EXACT || ttEntry->GetFlag() == LOWER_BOUND) && !IsMateScore(ttValue))
+			if (ttFound && ttEntry->GetDepth() >= depth - 3 && (ttEntry->GetFlag() == EXACT || ttEntry->GetFlag() == LOWER_BOUND) && !IsMateScore(ttValue))
 				evaluation = ttValue;
 			else
 				evaluation = StaticEvalPosition(position, alpha, beta, stack->Ply);

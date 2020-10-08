@@ -91,7 +91,7 @@ namespace Boxfish
     }
 
     template<Piece PIECE>
-	inline BitBoard GetNonSlidingAttacks(SquareIndex fromSquare, Team team)
+	inline constexpr BitBoard GetNonSlidingAttacks(SquareIndex fromSquare, Team team)
     {
         if constexpr (PIECE == PIECE_PAWN || PIECE == PIECE_KING || PIECE == PIECE_KNIGHT)
             return s_NonSlidingAttacks[team][PIECE][fromSquare];
