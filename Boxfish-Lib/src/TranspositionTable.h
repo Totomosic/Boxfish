@@ -9,9 +9,9 @@ namespace Boxfish
 
 	enum EntryFlag
 	{
-		EXACT,
-		UPPER_BOUND,
-		LOWER_BOUND
+		EXACT = 0b11,
+		UPPER_BOUND = 0b01,
+		LOWER_BOUND = 0b10,
 	};
 
 	struct BOX_API TranspositionTableEntry

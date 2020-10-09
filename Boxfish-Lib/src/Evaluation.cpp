@@ -1048,7 +1048,7 @@ namespace Boxfish
 			int count = safe.GetCount() + (behind & safe).GetCount();
 			int weight = position.GetTeamPieces(team).GetCount();
 
-			result.Space[MIDGAME][team] = (count - 3 + std::min(blockedPawns, 9)) * weight * weight / 18;
+			result.Space[MIDGAME][team] = (count - 3 + std::min(blockedPawns, 9)) * weight * weight / 24;
 			result.Space[ENDGAME][team] = 0;
 		}
 		else

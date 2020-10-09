@@ -614,11 +614,6 @@ namespace Boxfish
 
 			m_TranspositionTable.Prefetch(movedPosition.Hash);
 
-			if (move.GetFromSquareIndex() == d1 && move.GetToSquareIndex() == f2)
-			{
-				//std::cout << "HERE" << std::endl;
-			}
-
 			stack->CurrentMove = move;
 			stack->MoveCount = moveIndex;
 
@@ -626,25 +621,51 @@ namespace Boxfish
 			const bool givesCheck = IsInCheck(movedPosition);
 			const bool givesGoodCheck = givesCheck && isGoodCapture;
 
-			if (move.IsCastle() || givesGoodCheck)
-				depthExtension = 1;
-
-			int extendedDepth = depth - 1 + depthExtension;
-
 			if (!IsRoot && position.GetNonPawnMaterial(position.TeamToPlay) > 0 && !IsMateScore(bestValue))
 			{
 				if (!isCaptureOrPromotion && !givesCheck && (!move.IsAdvancedPawnPush(position.TeamToPlay) || position.GetNonPawnMaterial() > 3500))
 				{
-					// Reduced depth of the next LMR search
-					int lmrDepth = std::max(extendedDepth - GetReduction<PV>(improving, depth, moveIndex), 0);
+					int lmrDepth = std::max(depth - 1 - GetReduction<PV>(improving, depth, moveIndex), 0);
 
-					// Prune moves with negative SEE (~10 Elo)
 					if (!SeeGE(position, move, -40 * lmrDepth * lmrDepth))
 						continue;
 				}
 				else if (!SeeGE(position, move, -(GetPieceValue(PIECE_PAWN, ENDGAME) + 20) * depth))
 					continue;
 			}
+
+			// Singular extension
+			if (depth >= 7 && ttFound && move == ttMove && !IsRoot && stack->ExcludedMove == MOVE_NONE && !IsMateScore(ttValue) && (ttEntry->GetFlag() & LOWER_BOUND) && ttEntry->GetDepth() >= depth - 3)
+			{
+				ValueType singularBeta = ttValue - 2 * depth;
+				int singularDepth = (depth - 1) / 2;
+
+				stack->ExcludedMove = move;
+				ValueType value = SearchPosition<NonPV>(position, stack, singularDepth, singularBeta - 1, singularBeta, selDepth, cutNode, rootInfo);
+				stack->ExcludedMove = MOVE_NONE;
+
+				if (value < singularBeta)
+				{
+					depthExtension = 1;
+				}
+				else if (singularBeta >= beta)
+					return singularBeta;
+				else if (ttValue >= beta)
+				{
+					stack->ExcludedMove = move;
+					value = SearchPosition<NonPV>(position, stack, (depth + 3) / 2, beta - 1, beta, selDepth, cutNode, rootInfo);
+					stack->ExcludedMove = MOVE_NONE;
+
+					if (value >= beta)
+						return beta;
+				}
+			}
+			else if (move.IsCastle() || givesGoodCheck)
+				depthExtension = 1;
+			else if (move.IsCapture() && GetPieceValue(move.GetCapturedPiece(), ENDGAME) > GetPieceValue(PIECE_PAWN, ENDGAME) && position.GetNonPawnMaterial() <= 2 * GetPieceValue(PIECE_ROOK, ENDGAME))
+				depthExtension = 1;
+
+			int extendedDepth = depth - 1 + depthExtension;
 
 			// Irreversible move was played
 			if (movedPosition.HalfTurnsSinceCaptureOrPush == 0)
@@ -660,14 +681,14 @@ namespace Boxfish
 			if (depth >= 3 && moveIndex > FirstMoveIndex + 2 * IsRoot && (!isCaptureOrPromotion || cutNode))
 			{
 				int reduction = GetReduction<NT>(improving, depth, moveIndex);
-				if ((stack - 1)->MoveCount > 15)
+				if ((stack - 1)->MoveCount > 13)
 					reduction--;
 				if (ttMoveIsCapture)
 					reduction++;
 				if (cutNode)
 					reduction += 2;
 
-				int d = std::max(extendedDepth - std::max(reduction, 0), 1);
+				int d = std::clamp(extendedDepth - reduction, 1, extendedDepth);
 
 				value = -SearchPosition<NonPV>(movedPosition, stack + 1, d, -(alpha + 1), -alpha, selDepth, true, rootInfo);
 				fullDepthSearch = value > alpha && d != extendedDepth;
