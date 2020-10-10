@@ -52,6 +52,7 @@ namespace Boxfish
 
 		inline SquareIndex GetKingSquare(Team team) const { return InfoCache.KingSquare[team]; }
 		inline Piece GetPieceOnSquare(SquareIndex square) const { return InfoCache.PieceOnSquare[square]; }
+		inline BitBoard GetBlockersForKing(Team team) const { return InfoCache.BlockersForKing[team]; }
 
 		inline const BitBoard& GetTeamPieces(Team team, Piece piece) const { return Teams[team].Pieces[piece]; }
 		inline BitBoard GetTeamPieces(Team team, Piece piece, Piece piece2) const { return GetTeamPieces(team, piece) | GetTeamPieces(team, piece2); }

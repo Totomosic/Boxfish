@@ -55,7 +55,7 @@ namespace Boxfish
 
 	static constexpr ValueType s_KnightAdjust[9] = { -20, -16, -12, -8, -4, 0, 4, 8, 12 };
 	static constexpr ValueType s_RookAdjust[9] = { 15, 12, 9, 6, 3, 0, -3, -6, -9 };
- 
+
 	static BitBoard s_PawnShieldMasks[TEAM_MAX][FILE_MAX * RANK_MAX];
 	static BitBoard s_PassedPawnMasks[TEAM_MAX][FILE_MAX * RANK_MAX];
 	static ValueType s_PassedPawnRankWeights[GAME_STAGE_MAX][TEAM_MAX][RANK_MAX];
@@ -71,6 +71,20 @@ namespace Boxfish
 		KingSide,
 		KingSide,
 		KingSide & ~FILE_E_MASK
+	};
+
+	static constexpr ValueType s_MobilityWeights[GAME_STAGE_MAX][PIECE_MAX] = {
+		{ 0, 4, 3, 2, 1, 0 },
+		{ 0, 4, 3, 1, 2, 0 },
+	};
+
+	static constexpr int s_MobilityOffsets[PIECE_MAX] = {
+		0, 4, 6, 6, 13, 0,
+	};
+
+	static constexpr ValueType s_TropismWeights[GAME_STAGE_MAX][PIECE_MAX] = {
+		{ 0, 3, 2, 2, 2, 0 },
+		{ 0, 3, 1, 1, 4, 0 },
 	};
 
 	// Indexed by attack units
@@ -109,18 +123,6 @@ namespace Boxfish
 	};
 
 	static int s_AttackUnits[PIECE_MAX];
-
-	static constexpr ValueType s_MinorPieceThreat[GAME_STAGE_MAX][PIECE_INVALID + 1] = {
-		// PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING, _, _, INVALID
-		{ 0, 20, 25, 32, 30, 0, 0, 0, 0 },
-		{ 15, 20, 20, 50, 55, 0, 0, 0, 0 }
-	};
-
-	static constexpr ValueType s_RookThreat[GAME_STAGE_MAX][PIECE_INVALID + 1] = {
-		// PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING, _, _, INVALID
-		{ 0, 17, 17, 0, 22, 0, 0, 0, 0 },
-		{ 12, 34, 27, 17, 17, 0, 0, 0, 0 }
-	};
 
 	static const BitBoard s_NeighbourFiles[FILE_MAX] = {
 					  FILE_B_MASK,
@@ -385,7 +387,7 @@ namespace Boxfish
 			{
 				Square sqi = BitBoard::BitIndexToSquare(i);
 				Square sqj = BitBoard::BitIndexToSquare(j);
-				s_DistanceTable[i][j] = 14 - (std::abs(sqi.File - sqj.File) + std::abs(sqi.Rank - sqi.Rank));
+				s_DistanceTable[i][j] = std::abs(sqi.File - sqj.File) + std::abs(sqi.Rank - sqi.Rank);
 			}
 		}
 	}
@@ -452,7 +454,7 @@ namespace Boxfish
 
 	inline int CalculateTropism(SquareIndex a, SquareIndex b)
 	{
-		return s_DistanceTable[a][b];
+		return 14 - s_DistanceTable[a][b];
 	}
 
 	template<Team team>
@@ -467,25 +469,37 @@ namespace Boxfish
 	// =================================================================================================================================
 
 	template<Team team>
-	void EvaluateMaterial(EvaluationResult& result, const Position& position)
+	int EvaluateMaterial(EvaluationResult& result, const Position& position)
 	{
 		if constexpr (UseMaterial)
 		{
 			int pawnCount = position.GetTeamPieces(team, PIECE_PAWN).GetCount();
 			result.Material[MIDGAME][team] = pawnCount * s_MaterialValues[MIDGAME][PIECE_PAWN] + position.GetNonPawnMaterial(team);
 			result.Material[ENDGAME][team] = pawnCount * s_MaterialValues[ENDGAME][PIECE_PAWN] + position.GetNonPawnMaterial(team);
+			return pawnCount;
 		}
 		else
 		{
 			result.Material[MIDGAME][team] = 0;
 			result.Material[ENDGAME][team] = 0;
+			return 1;
 		}
 	}
 
 	void EvaluateMaterial(EvaluationResult& result, const Position& position)
 	{
-		EvaluateMaterial<TEAM_WHITE>(result, position);
-		EvaluateMaterial<TEAM_BLACK>(result, position);
+		int whitePawnCount = EvaluateMaterial<TEAM_WHITE>(result, position);
+		int blackPawnCount = EvaluateMaterial<TEAM_BLACK>(result, position);
+
+		// Draw if only 1 minor piece
+		if (result.Material[TEAM_WHITE] > result.Material[TEAM_BLACK] && whitePawnCount == 0)
+		{
+			result.IsDraw = position.GetNonPawnMaterial(TEAM_WHITE) < GetPieceValue(PIECE_ROOK, MIDGAME);
+		}
+		else if (result.Material[TEAM_BLACK] > result.Material[TEAM_WHITE] && blackPawnCount == 0)
+		{
+			result.IsDraw = position.GetNonPawnMaterial(TEAM_BLACK) < GetPieceValue(PIECE_ROOK, MIDGAME);
+		}
 	}
 
 	template<Team team>
@@ -713,228 +727,100 @@ namespace Boxfish
 		EvaluateBlockedPieces<TEAM_BLACK>(result, position);
 	}
 
-	template<Team team>
-	void EvaluateKnights(EvaluationResult& result, const Position& position)
+	template<Team TEAM, Piece PIECE>
+	void EvaluatePieces(EvaluationResult& result, const Position& position)
 	{
-		constexpr Team otherTeam = OtherTeam(team);
-
-		result.Data.AttackedBy[team][PIECE_KNIGHT] = ZERO_BB;
+		constexpr Team OTHER_TEAM = OtherTeam(TEAM);
+		constexpr BitBoard OutpostZone =
+			(TEAM == TEAM_WHITE ? (RANK_4_MASK | RANK_5_MASK | RANK_6_MASK)
+							   : (RANK_5_MASK | RANK_4_MASK | RANK_3_MASK)) & CenterFiles;
 
 		ValueType mg = 0;
 		ValueType eg = 0;
 
-		BitBoard knights = position.GetTeamPieces(team, PIECE_KNIGHT);
-		BitBoard notTeamPieces = ~position.GetTeamPieces(team);
+		result.Data.AttackedBy[TEAM][PIECE] = ZERO_BB;
 
-		int pawnCount = position.GetTeamPieces(team, PIECE_PAWN).GetCount();
-		mg += s_KnightAdjust[pawnCount];
-		eg += s_KnightAdjust[pawnCount];
-
-		while (knights)
+		BitBoard pieceSquares = position.GetTeamPieces(TEAM, PIECE);
+		while (pieceSquares)
 		{
-			SquareIndex square = PopLeastSignificantBit(knights);
-			BitBoard attacks = GetNonSlidingAttacks<PIECE_KNIGHT>(square, team) & notTeamPieces;
-			result.Data.AttackedBy[team][PIECE_KNIGHT] |= attacks;
-			result.Data.AttackedByTwice[team] |= result.Data.AttackedBy[team][PIECE_ALL] & attacks;
-			result.Data.AttackedBy[team][PIECE_ALL] |= attacks;
+			SquareIndex square = PopLeastSignificantBit(pieceSquares);
 
-			// Mobility
-			int safeSquaresReachable = (attacks & ~result.Data.AttackedBy[otherTeam][PIECE_PAWN]).GetCount();
-			mg += 4 * (safeSquaresReachable - 4);
-			eg += 4 * (safeSquaresReachable - 4);
+			BitBoard attacks =
+				PIECE == PIECE_BISHOP ? GetSlidingAttacks<PIECE_BISHOP>(square, position.GetAllPieces() ^ position.GetPieces(PIECE_QUEEN)) :
+				PIECE == PIECE_ROOK ? GetSlidingAttacks<PIECE_ROOK>(square, position.GetAllPieces() ^ position.GetPieces(PIECE_QUEEN) ^ position.GetTeamPieces(TEAM, PIECE_ROOK)) :
+				PIECE == PIECE_QUEEN ? GetSlidingAttacks<PIECE_QUEEN>(square, position.GetAllPieces()) :
+				PIECE == PIECE_KNIGHT ? GetNonSlidingAttacks<PIECE_KNIGHT>(square, TEAM) : ZERO_BB;
 
-			// Outpost
-			File file = BitBoard::FileOfIndex(square);
-			Rank rank = BitBoard::RankOfIndex(square);
+			if (position.GetBlockersForKing(TEAM) & square)
+				attacks &= GetLineBetween(position.GetKingSquare(TEAM), square);
 
-			// Knight supported by a pawn and no enemy pawns on neighbour files - Outpost
-			if ((result.Data.AttackedBy[team][PIECE_PAWN] & square & CenterRanks) && !(FILE_MASKS[file] & result.Data.AttackedBy[otherTeam][PIECE_PAWN] & InFront(rank, team)))
+			result.Data.AttackedByTwice[TEAM] |= result.Data.AttackedBy[TEAM][PIECE_ALL] & attacks;
+			result.Data.AttackedBy[TEAM][PIECE] |= attacks;
+			result.Data.AttackedBy[TEAM][PIECE_ALL] |= attacks;
+
+			BitBoard attacksOnKing = attacks & result.Data.KingAttackZone[OTHER_TEAM];
+			if (attacksOnKing)
 			{
-				mg += 30;
-				eg += 15;
+				result.Data.Attackers[TEAM]++;
+				result.Data.AttackUnits[TEAM] += s_AttackUnits[PIECE] * attacksOnKing.GetCount();
 			}
-			
-			// King safety
-			int kingSquaresAttacked = (attacks & result.Data.KingAttackZone[otherTeam]).GetCount();
-			if (kingSquaresAttacked > 0)
-			{
-				result.Data.Attackers[team]++;
-				result.Data.AttackUnits[team] += s_AttackUnits[PIECE_KNIGHT] * kingSquaresAttacked;
-			}
+			// Bishop and Rook X-raying king attack zone
+			else if (PIECE == PIECE_BISHOP && (GetSlidingAttacks<PIECE_BISHOP>(square, position.GetPieces(PIECE_PAWN)) & result.Data.KingAttackZone[OTHER_TEAM]))
+				mg += 15;
+			else if (PIECE == PIECE_ROOK && (FILE_MASKS[BitBoard::FileOfIndex(square)] & result.Data.KingAttackZone[OTHER_TEAM]))
+				mg += 5;
 
-			int tropism = CalculateTropism(square, position.GetKingSquare(otherTeam));
-			mg += 3 * tropism;
-			eg += 3 * tropism;
+			int reachableSquares = (attacks & ~position.GetTeamPieces(TEAM) & ~result.Data.AttackedBy[OTHER_TEAM][PIECE_PAWN]).GetCount();
+			mg += s_MobilityWeights[MIDGAME][PIECE] * (reachableSquares - s_MobilityOffsets[PIECE]);
+			eg += s_MobilityWeights[ENDGAME][PIECE] * (reachableSquares - s_MobilityOffsets[PIECE]);
+
+			mg += s_TropismWeights[MIDGAME][PIECE] * CalculateTropism(position.GetKingSquare(OTHER_TEAM), square);
+			eg += s_TropismWeights[ENDGAME][PIECE] * CalculateTropism(position.GetKingSquare(OTHER_TEAM), square);
+
+			if constexpr (PIECE == PIECE_KNIGHT || PIECE == PIECE_BISHOP)
+			{
+				File file = BitBoard::FileOfIndex(square);
+				Rank rank = BitBoard::RankOfIndex(square);
+				// Knight supported by a pawn and no enemy pawns on neighbour files - Outpost
+				if ((result.Data.AttackedBy[TEAM][PIECE_PAWN] & square & OutpostZone) && !(FILE_MASKS[file] & result.Data.AttackedBy[OTHER_TEAM][PIECE_PAWN] & InFront(rank, TEAM)))
+				{
+					mg += 30;
+					eg += 15;
+				}
+			}
+			if constexpr (PIECE == PIECE_BISHOP)
+			{
+				if (attacks & Center)
+					mg += 30;
+			}
+			if constexpr (PIECE == PIECE_ROOK)
+			{
+				int pawnCountOnFile = (FILE_MASKS[BitBoard::FileOfIndex(square)] & position.GetPieces(PIECE_PAWN)).GetCount();
+				if (pawnCountOnFile < 2)
+				{
+					mg += 20 * (2 - pawnCountOnFile);
+					eg += 15 * (2 - pawnCountOnFile);
+				}
+			}
+			if constexpr (PIECE == PIECE_QUEEN)
+			{
+				BitBoard b;
+				if (GetSliderBlockers(position, position.GetTeamPieces(OTHER_TEAM, PIECE_ROOK, PIECE_BISHOP), square, &b))
+				{
+					mg -= 25;
+					eg -= 5;
+				}
+			}
 		}
-		result.Knights[MIDGAME][team] = mg;
-		result.Knights[ENDGAME][team] = eg;
+
+		result.SetPieceEval<TEAM, PIECE>(mg, eg);
 	}
 
-	void EvaluateKnights(EvaluationResult& result, const Position& position)
+	template<Piece PIECE>
+	void EvaluatePieces(EvaluationResult& result, const Position& position)
 	{
-		EvaluateKnights<TEAM_WHITE>(result, position);
-		EvaluateKnights<TEAM_BLACK>(result, position);
-	}
-
-	template<Team team>
-	void EvaluateBishops(EvaluationResult& result, const Position& position)
-	{
-		constexpr Team otherTeam = OtherTeam(team);
-
-		ValueType mg = 0;
-		ValueType eg = 0;
-
-		result.Data.AttackedBy[team][PIECE_BISHOP] = ZERO_BB;
-
-		BitBoard bishops = position.GetTeamPieces(team, PIECE_BISHOP);
-		BitBoard notTeamPieces = ~position.GetTeamPieces(team);
-		BitBoard blockers = position.GetAllPieces();
-		while (bishops)
-		{
-			SquareIndex square = PopLeastSignificantBit(bishops);
-			BitBoard attacks = GetSlidingAttacks<PIECE_BISHOP>(square, blockers) & notTeamPieces;
-			result.Data.AttackedBy[team][PIECE_BISHOP] |= attacks;
-			result.Data.AttackedByTwice[team] |= result.Data.AttackedBy[team][PIECE_ALL] & attacks;
-			result.Data.AttackedBy[team][PIECE_ALL] |= attacks;
-
-			if (MoreThanOne(GetSlidingAttacks<PIECE_BISHOP>(square, position.GetPieces(PIECE_PAWN)) & Center))
-				mg += 30;
-
-			// Mobility
-			int safeReachableSquares = (attacks & ~result.Data.AttackedBy[otherTeam][PIECE_PAWN]).GetCount();
-			mg += 3 * (safeReachableSquares - 6);
-			eg += 3 * (safeReachableSquares - 6);
-
-			// King safety
-			int kingSquaresAttacked = (attacks & result.Data.KingAttackZone[otherTeam]).GetCount();
-			if (kingSquaresAttacked > 0)
-			{
-				result.Data.Attackers[team]++;
-				result.Data.AttackUnits[team] += s_AttackUnits[PIECE_BISHOP] * kingSquaresAttacked;
-			}
-
-			int tropism = CalculateTropism(square, position.GetKingSquare(otherTeam));
-			mg += 2 * tropism;
-			eg += 1 * tropism;
-		}
-		result.Bishops[MIDGAME][team] = mg;
-		result.Bishops[ENDGAME][team] = eg;
-	}
-
-	void EvaluateBishops(EvaluationResult& result, const Position& position)
-	{
-		EvaluateBishops<TEAM_WHITE>(result, position);
-		EvaluateBishops<TEAM_BLACK>(result, position);
-	}
-
-	template<Team team>
-	void EvaluateRooks(EvaluationResult& result, const Position& position)
-	{
-		constexpr Team otherTeam = OtherTeam(team);
-
-		ValueType mg = 0;
-		ValueType eg = 0;
-
-		result.Data.AttackedBy[team][PIECE_ROOK] = ZERO_BB;
-
-		BitBoard rooks = position.GetTeamPieces(team, PIECE_ROOK);
-		BitBoard notTeamPieces = ~position.GetTeamPieces(team);
-		BitBoard blockers = position.GetAllPieces();
-
-		int pawnCount = position.GetTeamPieces(team, PIECE_PAWN).GetCount();
-		mg += s_RookAdjust[pawnCount];
-		eg += s_RookAdjust[pawnCount];
-
-		BitBoard pawns = position.GetPieces(PIECE_PAWN);
-			
-		while (rooks)
-		{
-			SquareIndex square = PopLeastSignificantBit(rooks);
-			BitBoard attacks = GetSlidingAttacks<PIECE_ROOK>(square, blockers) & notTeamPieces;
-			result.Data.AttackedBy[team][PIECE_ROOK] |= attacks;
-			result.Data.AttackedByTwice[team] |= result.Data.AttackedBy[team][PIECE_ALL] & attacks;
-			result.Data.AttackedBy[team][PIECE_ALL] |= attacks;
-
-			int pawnCountOnFile = (FILE_MASKS[BitBoard::FileOfIndex(square)] & pawns).GetCount();
-			if (pawnCountOnFile < 2)
-			{
-				mg += 20 * (2 - pawnCountOnFile);
-				eg += 15 * (2 - pawnCountOnFile);
-			}
-
-			// Mobility
-			int squaresReachable = (attacks & ~result.Data.AttackedBy[otherTeam][PIECE_PAWN]).GetCount();
-			mg += 2 * (squaresReachable - 6);
-			eg += 4 * (squaresReachable - 6);
-
-			// King safety
-			int kingSquaresAttacked = (attacks & result.Data.KingAttackZone[otherTeam]).GetCount();
-			if (kingSquaresAttacked > 0)
-			{
-				result.Data.Attackers[team]++;
-				result.Data.AttackUnits[team] += s_AttackUnits[PIECE_ROOK] * kingSquaresAttacked;
-			}
-
-			int tropism = CalculateTropism(square, position.GetKingSquare(otherTeam));
-			mg += 2 * tropism;
-			eg += 1 * tropism;
-		}
-		result.Rooks[MIDGAME][team] = mg;
-		result.Rooks[ENDGAME][team] = eg;
-	}
-
-	void EvaluateRooks(EvaluationResult& result, const Position& position)
-	{
-		EvaluateRooks<TEAM_WHITE>(result, position);
-		EvaluateRooks<TEAM_BLACK>(result, position);
-	}
-
-	template<Team team>
-	void EvaluateQueens(EvaluationResult& result, const Position& position)
-	{
-		constexpr Team otherTeam = OtherTeam(team);
-
-		result.Data.AttackedBy[team][PIECE_QUEEN] = ZERO_BB;
-
-		ValueType mg = 0;
-		ValueType eg = 0;
-
-		BitBoard queens = position.GetTeamPieces(team, PIECE_QUEEN);
-		BitBoard notTeamPieces = ~position.GetTeamPieces(team);
-		BitBoard blockers = position.GetAllPieces();
-		while (queens)
-		{
-			SquareIndex square = PopLeastSignificantBit(queens);
-			BitBoard attacks = GetSlidingAttacks<PIECE_QUEEN>(square, blockers) & notTeamPieces;
-			result.Data.AttackedBy[team][PIECE_QUEEN] |= attacks;
-			result.Data.AttackedByTwice[team] |= result.Data.AttackedBy[team][PIECE_ALL] & attacks;
-			result.Data.AttackedBy[team][PIECE_ALL] |= attacks;
-
-			// Mobility
-			int reachableSquares = (attacks & ~result.Data.AttackedBy[otherTeam][PIECE_PAWN]).GetCount();
-			mg += 1 * (reachableSquares - 13);
-			eg += 2 * (reachableSquares - 13);
-
-			// King safety
-			int kingSquaresAttacked = (attacks & result.Data.KingAttackZone[otherTeam]).GetCount();
-			if (kingSquaresAttacked > 0)
-			{
-				result.Data.Attackers[team]++;
-				result.Data.AttackUnits[team] += s_AttackUnits[PIECE_QUEEN] * kingSquaresAttacked;
-			}
-
-			int tropism = CalculateTropism(square, position.GetKingSquare(otherTeam));
-			mg += 2 * tropism;
-			eg += 4 * tropism;
-		}
-		result.Queens[MIDGAME][team] = mg;
-		result.Queens[ENDGAME][team] = eg;
-	}
-
-	void EvaluateQueens(EvaluationResult& result, const Position& position)
-	{
-		EvaluateQueens<TEAM_WHITE>(result, position);
-		EvaluateQueens<TEAM_BLACK>(result, position);
+		EvaluatePieces<TEAM_WHITE, PIECE>(result, position);
+		EvaluatePieces<TEAM_BLACK, PIECE>(result, position);
 	}
 
 	template<Team team>
@@ -954,7 +840,7 @@ namespace Boxfish
 
 			ValueType mg = 0;
 			ValueType eg = 0;
-			if (result.Data.Attackers[otherTeam] > 2 && position.GetTeamPieces(otherTeam, PIECE_QUEEN).GetCount() > 0)
+			if (result.Data.Attackers[otherTeam] >= 2 && position.GetTeamPieces(otherTeam, PIECE_QUEEN).GetCount() > 0)
 			{
 				mg -= s_KingSafetyTable[std::min(result.Data.AttackUnits[otherTeam], MAX_ATTACK_UNITS - 1)];
 			}
@@ -1000,7 +886,7 @@ namespace Boxfish
 				while (pawns)
 				{
 					SquareIndex sq = PopLeastSignificantBit(pawns);
-					minDistance = std::min(minDistance, CalculateTropism(kngSq, sq));
+					minDistance = std::min(minDistance, s_DistanceTable[kngSq][sq]);
 				}
 			}
 
@@ -1027,7 +913,7 @@ namespace Boxfish
 	{
 		if constexpr (UseSpace)
 		{
-			if (position.GetNonPawnMaterial() < 4500)
+			if (position.GetNonPawnMaterial() < 6000)
 			{
 				result.Space[MIDGAME][team] = 0;
 				result.Space[ENDGAME][team] = 0;
@@ -1048,7 +934,7 @@ namespace Boxfish
 			int count = safe.GetCount() + (behind & safe).GetCount();
 			int weight = position.GetTeamPieces(team).GetCount();
 
-			result.Space[MIDGAME][team] = (count - 3 + std::min(blockedPawns, 9)) * weight * weight / 24;
+			result.Space[MIDGAME][team] = (count - 3 + std::min(blockedPawns, 9)) * weight * weight / 32;
 			result.Space[ENDGAME][team] = 0;
 		}
 		else
@@ -1105,6 +991,7 @@ namespace Boxfish
 		BOX_ASSERT(!IsInCheck(position, position.TeamToPlay), "Cannot evaluate position in check");
 		EvaluationResult result;
 		result.GameStage = CalculateGameStage(position);
+		result.IsDraw = false;
 		EvaluateMaterial(result, position);
 		EvaluatePieceSquareTables(result, position);
 			
@@ -1119,10 +1006,10 @@ namespace Boxfish
 		result.Data.AttackedByTwice[TEAM_BLACK] = result.Data.AttackedBy[TEAM_BLACK][PIECE_PAWN] & result.Data.AttackedBy[TEAM_BLACK][PIECE_KING];
 
 		// Do these first as they set AttackedBy data
-		EvaluateKnights(result, position);
-		EvaluateBishops(result, position);
-		EvaluateRooks(result, position);
-		EvaluateQueens(result, position);
+		EvaluatePieces<PIECE_KNIGHT>(result, position);
+		EvaluatePieces<PIECE_BISHOP>(result, position);
+		EvaluatePieces<PIECE_ROOK>(result, position);
+		EvaluatePieces<PIECE_QUEEN>(result, position);
 
 		EvaluatePassedPawns(result, position);
 		EvaluateDoubledPawns(result, position);
@@ -1131,6 +1018,7 @@ namespace Boxfish
 		EvaluateSpace(result, position);
 		EvaluateKingSafety(result, position);
 		EvaluateTempo(result, position);
+
 		return result;
 	}
 

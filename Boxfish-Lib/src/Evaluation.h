@@ -47,10 +47,38 @@ namespace Boxfish
 		ValueType KingSafety[GAME_STAGE_MAX][TEAM_MAX];
 		ValueType Tempo[GAME_STAGE_MAX][TEAM_MAX];
 		int GameStage;
+		bool IsDraw;
 
 	public:
+		template<Team TEAM, Piece PIECE>
+		inline void SetPieceEval(ValueType mg, ValueType eg)
+		{
+			if constexpr (PIECE == PIECE_KNIGHT)
+			{
+				Knights[MIDGAME][TEAM] = mg;
+				Knights[ENDGAME][TEAM] = eg;
+			}
+			if constexpr (PIECE == PIECE_BISHOP)
+			{
+				Bishops[MIDGAME][TEAM] = mg;
+				Bishops[ENDGAME][TEAM] = eg;
+			}
+			if constexpr (PIECE == PIECE_ROOK)
+			{
+				Rooks[MIDGAME][TEAM] = mg;
+				Rooks[ENDGAME][TEAM] = eg;
+			}
+			if constexpr (PIECE == PIECE_QUEEN)
+			{
+				Queens[MIDGAME][TEAM] = mg;
+				Queens[ENDGAME][TEAM] = eg;
+			}
+		}
+
 		inline ValueType GetTotal(Team team) const
 		{
+			if (IsDraw)
+				return SCORE_DRAW;
 			Team other = OtherTeam(team);
 			ValueType midgame =
 				(Material[MIDGAME][team] - Material[MIDGAME][other]) +
