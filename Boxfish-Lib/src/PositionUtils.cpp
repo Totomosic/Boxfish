@@ -842,7 +842,7 @@ namespace Boxfish
 			// The wrong piece type is at the square
 			return false;
 		}
-		if ((move.GetFlags() & MOVE_CAPTURE) && !IsSquareOccupied(position, OtherTeam(position.TeamToPlay), move.GetToSquareIndex()))
+		if (move.IsCapture() && !IsSquareOccupied(position, OtherTeam(position.TeamToPlay), move.GetToSquareIndex()))
 		{
 			// No piece to capture
 			return false;

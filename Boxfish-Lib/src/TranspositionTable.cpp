@@ -41,7 +41,7 @@ namespace Boxfish
 	{
 		for (size_t i = 0; i < m_EntryCount; i++)
 		{
-			m_Entries[i].Update(0ULL, MOVE_NONE, -1, SCORE_NONE, LOWER_BOUND, -1);
+			m_Entries[i].Update(0ULL, MOVE_NONE, -1, SCORE_NONE, LOWER_BOUND, -1, false);
 		}
 	}
 

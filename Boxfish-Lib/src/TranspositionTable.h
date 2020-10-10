@@ -27,17 +27,19 @@ namespace Boxfish
 	public:
 		inline ZobristHash GetHash() const { return Hash; }
 		inline Move GetMove() const { return BestMove; }
-		inline int GetDepth() const { return (int)Depth; }
+		inline int GetDepth() const { return (int)(Depth & 0x7F); }
+		inline bool IsPv() const { return (bool)(Depth & 0x80); }
 		inline ValueType GetScore() const { return Score; }
 		inline EntryFlag GetFlag() const { return Flag; }
 		inline int16_t GetAge() const { return Age; }
 
-		inline void Update(ZobristHash hash, Move move, int depth, ValueType score, EntryFlag flag, int16_t age)
+		inline void Update(ZobristHash hash, Move move, int depth, ValueType score, EntryFlag flag, int16_t age, bool isPv)
 		{
-			BOX_ASSERT(flag >= 0 && flag <= 2, "Invalid flag");
+			BOX_ASSERT(flag >= 1 && flag <= 3, "Invalid flag");
 			Hash = hash;
 			BestMove = move;
-			Depth = (int8_t)depth;
+			Depth = (int8_t)(depth & 0x7F);
+			Depth |= ((uint8_t)isPv) << 7;
 			Score = score;
 			Age = age;
 			Flag = flag;

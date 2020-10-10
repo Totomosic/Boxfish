@@ -487,9 +487,15 @@ namespace Boxfish
 
 		stack->PositionHistory[0] = position.Hash;
 
+		ZobristHash ttHash = position.Hash;
+		if (stack->ExcludedMove != MOVE_NONE)
+			ttHash ^= stack->ExcludedMove.GetKey();
 		bool ttFound;
-		TranspositionTableEntry* ttEntry = m_TranspositionTable.GetEntry(position.Hash, ttFound);
-		ttFound = ttFound && stack->ExcludedMove == MOVE_NONE;
+		TranspositionTableEntry* ttEntry = m_TranspositionTable.GetEntry(ttHash, ttFound);
+
+		if (ttFound)
+			ttFound = SanityCheckMove(position, ttEntry->GetMove());
+		bool ttIsPv = ttFound && ttEntry->IsPv();
 
 		Move ttMove =
 			(IsRoot) ? rootInfo.Moves[rootInfo.PVIndex].PV[0] :
@@ -532,9 +538,9 @@ namespace Boxfish
 		}
 
 		// Razoring
-		if (depth <= 1 && !inCheck && stack->StaticEvaluation <= alpha - 300)
+		if (!IsRoot && depth <= 1 && !inCheck && stack->StaticEvaluation <= alpha - 275)
 		{
-			return QuiescenceSearch<NonPV>(position, stack, 0, alpha, beta);
+			return QuiescenceSearch<NT>(position, stack, 0, alpha, beta);
 		}
 
 		const bool improving =
@@ -543,11 +549,11 @@ namespace Boxfish
 			(stack->StaticEvaluation > (stack - 2)->StaticEvaluation);
 			
 		// Futility pruning
-		if (!IsRoot && !inCheck && depth <= 6 && stack->StaticEvaluation - 125 * (depth - improving) >= beta && !IsMateScore(stack->StaticEvaluation))
+		if (!IsRoot && !inCheck && depth <= 7 && stack->StaticEvaluation - 125 * (depth - improving) >= beta && !IsMateScore(stack->StaticEvaluation))
 			return stack->StaticEvaluation;
 
 		// Null move pruning
-		if (!IsPvNode && !inCheck && depth >= 3 && (stack - 1)->CurrentMove != MOVE_NONE && stack->ExcludedMove == MOVE_NONE && stack->StaticEvaluation >= (beta + 200 - 35 * depth) && !IsEndgame(position))
+		if (!IsPvNode && !inCheck && (stack - 1)->CurrentMove != MOVE_NONE && stack->ExcludedMove == MOVE_NONE && stack->StaticEvaluation >= (beta + 100 - 15 * depth - 14 * improving + 45 * ttIsPv) && !IsEndgame(position))
 		{
 			int depthReduction = std::max((stack->StaticEvaluation - beta) * depth / 300, 3);
 
@@ -566,13 +572,8 @@ namespace Boxfish
 				return beta;
 		}
 
-		if (depth >= 8 && ttMove == MOVE_NONE)
-		{
-			SearchPosition<NT>(position, stack, depth - 7, alpha, beta, selDepth, cutNode, rootInfo);
-			ttEntry = m_TranspositionTable.GetEntry(position.Hash, ttFound);
-			ttValue = ttFound ? GetValueFromTT(ttEntry->GetScore(), stack->Ply) : SCORE_NONE;
-			ttMove = (ttFound && !IsMateScore(ttValue) && ttValue != SCORE_NONE) ? ttEntry->GetMove() : MOVE_NONE;
-		}
+		if (IsPvNode && depth >= 6 && ttMove == MOVE_NONE)
+			depth -= 2;
 
 		Move bestMove = MOVE_NONE;
 		MoveGenerator movegen(position);
@@ -605,7 +606,7 @@ namespace Boxfish
 				continue;
 
 			moveIndex++;
-			BOX_ASSERT(moveIndex > FirstMoveIndex || move == ttMove || ttMove == MOVE_NONE, "Invalid move ordering");
+			BOX_ASSERT(moveIndex > FirstMoveIndex || move == ttMove || ttMove == MOVE_NONE || ttMove == stack->ExcludedMove, "Invalid move ordering");
 			int depthExtension = 0;
 
 			Position movedPosition = position;
@@ -657,7 +658,7 @@ namespace Boxfish
 					stack->ExcludedMove = MOVE_NONE;
 
 					if (value >= beta)
-						return beta;
+						return value;
 				}
 			}
 			else if (move.IsCastle() || givesGoodCheck)
@@ -755,9 +756,9 @@ namespace Boxfish
 				}
 				if ((!ttFound || ReplaceTT(depth, position.GetTotalHalfMoves(), LOWER_BOUND, ttEntry)))
 				{
-					ttEntry->Update(position.Hash, move, depth, GetValueForTT(beta, stack->Ply), LOWER_BOUND, position.GetTotalHalfMoves());
+					ttEntry->Update(position.Hash, move, depth, GetValueForTT(value, stack->Ply), LOWER_BOUND, position.GetTotalHalfMoves(), IsPvNode);
 				}
-				return beta;
+				return value;
 			}
 			else if (!isCaptureOrPromotion)
 			{
@@ -768,7 +769,7 @@ namespace Boxfish
 		EntryFlag entryFlag = (bestValue > originalAlpha) ? EXACT : UPPER_BOUND;
 		if (!ttFound || ReplaceTT(depth, position.GetTotalHalfMoves(), entryFlag, ttEntry))
 		{
-			ttEntry->Update(position.Hash, bestMove, depth, GetValueForTT(bestValue, stack->Ply), entryFlag, position.GetTotalHalfMoves());
+			ttEntry->Update(position.Hash, bestMove, depth, GetValueForTT(bestValue, stack->Ply), entryFlag, position.GetTotalHalfMoves(), IsPvNode);
 		}
 		return bestValue;
 	}
@@ -810,9 +811,9 @@ namespace Boxfish
 			{
 				if (!ttFound || ReplaceTT(depth, position.GetTotalHalfMoves(), LOWER_BOUND, ttEntry))
 				{
-					ttEntry->Update(position.Hash, MOVE_NONE, depth, GetValueForTT(evaluation, stack->Ply), LOWER_BOUND, position.GetTotalHalfMoves());
+					ttEntry->Update(position.Hash, MOVE_NONE, depth, GetValueForTT(evaluation, stack->Ply), LOWER_BOUND, position.GetTotalHalfMoves(), IsPvNode);
 				}
-				return beta;
+				return evaluation;
 			}
 			if (alpha < evaluation)
 				alpha = evaluation;
@@ -835,7 +836,7 @@ namespace Boxfish
 			return EvaluateDraw(position, stack->Contempt);
 		}
 
-		if (!inCheck && evaluation >= beta + 250)
+		if (!inCheck && evaluation >= beta + 250 && !IsMateScore(evaluation))
 			return beta;
 
 		ValueType bestValue = -SCORE_MATE;
@@ -880,9 +881,9 @@ namespace Boxfish
 				{
 					if (!ttFound || ReplaceTT(depth, position.GetTotalHalfMoves(), LOWER_BOUND, ttEntry))
 					{
-						ttEntry->Update(position.Hash, move, depth, GetValueForTT(beta, stack->Ply), LOWER_BOUND, position.GetTotalHalfMoves());
+						ttEntry->Update(position.Hash, move, depth, GetValueForTT(score, stack->Ply), LOWER_BOUND, position.GetTotalHalfMoves(), IsPvNode);
 					}
-					return beta;
+					return score;
 				}
 				if (score > alpha)
 					alpha = score;
@@ -892,7 +893,7 @@ namespace Boxfish
 		EntryFlag entryFlag = (alpha > originalAlpha) ? EXACT : UPPER_BOUND;
 		if (!ttFound || ReplaceTT(depth, position.GetTotalHalfMoves(), entryFlag, ttEntry))
 		{
-			ttEntry->Update(position.Hash, MOVE_NONE, depth, GetValueForTT(alpha, stack->Ply), entryFlag, position.GetTotalHalfMoves());
+			ttEntry->Update(position.Hash, MOVE_NONE, depth, GetValueForTT(alpha, stack->Ply), entryFlag, position.GetTotalHalfMoves(), IsPvNode);
 		}
 
 		return alpha;

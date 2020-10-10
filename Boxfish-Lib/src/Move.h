@@ -51,6 +51,7 @@ namespace Boxfish
 		inline Piece GetMovingPiece() const { return (Piece)(m_Move & 0x7); }
 		inline MoveFlag GetFlags() const { return (MoveFlag)((m_Move >> 21) & 0x7F); }
 		void SetFlags(MoveFlag flags);
+		inline uint64_t GetKey() const { return m_Move; }
 
 		inline Piece GetCapturedPiece() const { return (Piece)((m_Move >> 6) & 0x7); }
 		void SetCapturedPiece(Piece piece);
