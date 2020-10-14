@@ -132,9 +132,6 @@ EMSCRIPTEN_BINDINGS(my_module) {
 	function("GenerateLegalMoves", &GenerateLegalMoves);
 	function("IsSameMove", &MoveEquivalent);
 
-	function("IsInCheck", select_overload<bool(const Position&)>(&IsInCheck));
-	function("GetTeamAt", &GetTeamAt);
-
 	enum_<Team>("Team")
 		.value("White", TEAM_WHITE)
 		.value("Black", TEAM_BLACK);
@@ -274,6 +271,8 @@ EMSCRIPTEN_BINDINGS(my_module) {
 		.function("GetPieceOnSquare", &Position::GetPieceOnSquare)
 		.function("GetKingSquare", &Position::GetKingSquare)
 		.function("GetEnpassantCaptureSquare", &PositionEnpassantCaptureSquare)
+		.function("InCheck", select_overload<bool(void)const>(&Position::InCheck))
+		.function("GetTeamAt", &Position::GetTeamAt)
 		.function("DeepClone", &PositionClone);
 	value_object<SearchLimits>("SearchLimits")
 		.field("Infinite", &SearchLimits::Infinite)

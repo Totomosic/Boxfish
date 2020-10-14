@@ -442,7 +442,7 @@ namespace Boxfish
 		constexpr int FirstMoveIndex = 1;
 		constexpr bool IsPvNode = NT == PV;
 		const bool IsRoot = IsPvNode && stack->Ply == 0;
-		const bool inCheck = IsInCheck(position);
+		const bool inCheck = position.InCheck();
 
 		BOX_ASSERT(inCheck == !!GetAttackers(position, OtherTeam(position.TeamToPlay), position.GetKingSquare(position.TeamToPlay), position.GetAllPieces()), "Mismatch");
 
@@ -619,7 +619,7 @@ namespace Boxfish
 			stack->MoveCount = moveIndex;
 
 			const bool isGoodCapture = move.IsCapture() && SeeGE(position, move);
-			const bool givesCheck = IsInCheck(movedPosition);
+			const bool givesCheck = movedPosition.InCheck();
 			const bool givesGoodCheck = givesCheck && isGoodCapture;
 
 			if (!IsRoot && position.GetNonPawnMaterial(position.TeamToPlay) > 0 && !IsMateScore(bestValue))
@@ -778,7 +778,7 @@ namespace Boxfish
 	ValueType Search::QuiescenceSearch(Position& position, SearchStack* stack, int depth, ValueType alpha, ValueType beta)
 	{
 		constexpr bool IsPvNode = NT == PV;
-		const bool inCheck = IsInCheck(position);
+		const bool inCheck = position.InCheck();
 
 		ValueType originalAlpha = alpha;
 

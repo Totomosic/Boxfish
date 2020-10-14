@@ -422,7 +422,7 @@ namespace Boxfish
 		BitBoard moves = GetNonSlidingAttacks<PIECE_KING>(square, team) & ~position.GetTeamPieces(team);
 		AddMoves(moveList, position, team, square, PIECE_KING, moves, position.GetTeamPieces(OtherTeam(team)));
 		BitBoard occupied = position.GetAllPieces();
-		const bool inCheck = IsInCheck(position, team);
+		const bool inCheck = position.InCheck();
 		if (team == TEAM_WHITE && !inCheck)
 		{
 			if (position.Teams[TEAM_WHITE].CastleKingSide)

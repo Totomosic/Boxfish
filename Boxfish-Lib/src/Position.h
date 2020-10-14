@@ -7,27 +7,27 @@ namespace Boxfish
 
 	using ValueType = int;
 
-	struct PositionInfo
-	{
-	public:
-		BitBoard TeamPieces[TEAM_MAX];
-		BitBoard PiecesByType[PIECE_MAX];
-		BitBoard AllPieces;
-
-		SquareIndex KingSquare[TEAM_MAX];
-		BitBoard CheckedBy[TEAM_MAX];
-		bool InCheck[TEAM_MAX];
-
-		BitBoard BlockersForKing[TEAM_MAX];
-		BitBoard Pinners[TEAM_MAX];
-		Piece PieceOnSquare[SQUARE_MAX];
-
-		ValueType NonPawnMaterial[TEAM_MAX];
-	};
-
 	struct BOX_API Position
 	{
 	public:
+		struct PositionInfo
+		{
+		public:
+			BitBoard TeamPieces[TEAM_MAX];
+			BitBoard PiecesByType[PIECE_MAX];
+			BitBoard AllPieces;
+
+			SquareIndex KingSquare[TEAM_MAX];
+			BitBoard CheckedBy[TEAM_MAX];
+			bool InCheck[TEAM_MAX];
+
+			BitBoard BlockersForKing[TEAM_MAX];
+			BitBoard Pinners[TEAM_MAX];
+			Piece PieceOnSquare[SQUARE_MAX];
+
+			ValueType NonPawnMaterial[TEAM_MAX];
+		};
+
 		struct BOX_API TeamPosition
 		{
 		public:
@@ -35,6 +35,7 @@ namespace Boxfish
 			bool CastleKingSide = true;
 			bool CastleQueenSide = true;
 		};
+
 	public:
 		TeamPosition Teams[TEAM_MAX];
 		Team TeamToPlay = TEAM_WHITE;
@@ -51,8 +52,13 @@ namespace Boxfish
 		inline BitBoard GetNotOccupied() const { return ~GetAllPieces(); }
 
 		inline SquareIndex GetKingSquare(Team team) const { return InfoCache.KingSquare[team]; }
-		inline Piece GetPieceOnSquare(SquareIndex square) const { return InfoCache.PieceOnSquare[square]; }
 		inline BitBoard GetBlockersForKing(Team team) const { return InfoCache.BlockersForKing[team]; }
+		inline Piece GetPieceOnSquare(SquareIndex square) const { return InfoCache.PieceOnSquare[square]; }
+		inline Team GetTeamAt(SquareIndex square) const { return (GetTeamPieces(TEAM_WHITE) & square) ? TEAM_WHITE : TEAM_BLACK; }
+		inline bool IsPieceOnSquare(Team team, Piece piece, SquareIndex square) const { return GetTeamPieces(team, piece) & square; }
+		inline bool IsSquareOccupied(Team team, SquareIndex square) const { return GetTeamPieces(team) & square; }
+		inline bool InCheck(Team team) const { return InfoCache.InCheck[team]; }
+		inline bool InCheck() const { return InCheck(TeamToPlay); }
 
 		inline const BitBoard& GetTeamPieces(Team team, Piece piece) const { return Teams[team].Pieces[piece]; }
 		inline BitBoard GetTeamPieces(Team team, Piece piece, Piece piece2) const { return GetTeamPieces(team, piece) | GetTeamPieces(team, piece2); }

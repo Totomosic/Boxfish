@@ -108,7 +108,7 @@ namespace Boxfish
 				(Space[ENDGAME][team] - Space[ENDGAME][other]) +
 				(KingSafety[ENDGAME][team] - KingSafety[ENDGAME][other]) +
 				(Tempo[ENDGAME][team] - Tempo[ENDGAME][other]);
-			return InterpolateGameStage(this->GameStage, midgame, endgame);
+			return InterpolateGameStage(GameStage, midgame, endgame);
 		}
 	};
 

@@ -348,7 +348,7 @@ namespace Boxfish
 		BitBoard snipers = ((GetSlidingAttacks<PIECE_ROOK>(square, ZERO_BB) & position.GetPieces(PIECE_QUEEN, PIECE_ROOK))
 			| (GetSlidingAttacks<PIECE_BISHOP>(square, ZERO_BB) & position.GetPieces(PIECE_QUEEN, PIECE_BISHOP))) & sliders;
 		BitBoard occupancy = position.GetAllPieces() ^ snipers;
-		Team teamAtSquare = GetTeamAt(position, square);
+		Team teamAtSquare = position.GetTeamAt(square);
 		while (snipers)
 		{
 			SquareIndex sniperSquare = PopLeastSignificantBit(snipers);
@@ -361,14 +361,6 @@ namespace Boxfish
 			}
 		}
 		return blockers;
-	}
-
-	Team GetTeamAt(const Position& position, SquareIndex square)
-	{
-		BOX_ASSERT(position.GetAllPieces() & square, "No piece on square");
-		if (position.GetTeamPieces(TEAM_WHITE) & square)
-			return TEAM_WHITE;
-		return TEAM_BLACK;
 	}
 
 	void CalculateKingBlockers(Position& position, Team team)
@@ -385,16 +377,6 @@ namespace Boxfish
 	void CalculateKingSquare(Position& position, Team team)
 	{
 		position.InfoCache.KingSquare[team] = BackwardBitScan(position.Teams[team].Pieces[PIECE_KING]);
-	}
-
-	bool IsSquareOccupied(const Position& position, Team team, const Square& square)
-	{
-		return IsSquareOccupied(position, team, BitBoard::SquareToBitIndex(square));
-	}
-
-	bool IsSquareOccupied(const Position& position, Team team, SquareIndex square)
-	{
-		return position.GetTeamPieces(team) & square;
 	}
 
 	bool IsSquareUnderAttack(const Position& position, Team byTeam, const Square& square)
@@ -832,7 +814,7 @@ namespace Boxfish
 
 	bool SanityCheckMove(const Position& position, Move move)
 	{
-		if (!IsSquareOccupied(position, position.TeamToPlay, move.GetFromSquareIndex()))
+		if (!position.IsPieceOnSquare(position.TeamToPlay, move.GetMovingPiece(), move.GetFromSquareIndex()))
 		{
 			// There is no piece at the position to move
 			return false;
@@ -842,7 +824,7 @@ namespace Boxfish
 			// The wrong piece type is at the square
 			return false;
 		}
-		if (move.IsCapture() && !IsSquareOccupied(position, OtherTeam(position.TeamToPlay), move.GetToSquareIndex()))
+		if (move.IsCapture() && !position.IsPieceOnSquare(OtherTeam(position.TeamToPlay), move.GetCapturedPiece(), move.GetToSquareIndex()))
 		{
 			// No piece to capture
 			return false;
@@ -932,36 +914,35 @@ namespace Boxfish
 	{
 		for (Rank rank = RANK_8; rank >= RANK_1; rank--)
 		{
-			stream << ' ' << '+';
-			for (Rank rank = RANK_8; rank >= RANK_1; rank--)
+			stream << "   +";
+			for (File file = FILE_A; file < FILE_MAX; file++)
 			{
 				stream << "---+";
 			}
-			stream << std::endl << ' ' << '|';
+			stream << "\n " << char('1' + (rank - RANK_1)) << " |";
 			for (File file = FILE_A; file < FILE_MAX; file++)
 			{
 				char pieceFen = ' ';
-				for (Piece piece = PIECE_PAWN; piece < PIECE_MAX; piece++)
+				SquareIndex square = BitBoard::SquareToBitIndex({ file, rank });
+				Piece piece = position.GetPieceOnSquare(square);
+				if (piece != PIECE_INVALID)
 				{
-					if (position.Teams[TEAM_WHITE].Pieces[piece].GetAt({ file, rank }))
-					{
-						pieceFen = PieceToFEN(piece, true);
-						break;
-					}
-					if (position.Teams[TEAM_BLACK].Pieces[piece].GetAt({ file, rank }))
-					{
-						pieceFen = PieceToFEN(piece, false);
-						break;
-					}
+					Team team = position.GetTeamAt(square);
+					pieceFen = PieceToFEN(piece, team == TEAM_WHITE);
 				}
-				stream << ' ' << pieceFen << ' ' << '|';
+				stream << ' ' << pieceFen << " |";
 			}
-			stream << std::endl;
+			stream << '\n';
 		}
-		stream << ' ' << '+';
-		for (Rank rank = RANK_8; rank >= RANK_1; rank--)
+		stream << "   +";
+		for (File file = FILE_A; file < FILE_MAX; file++)
 		{
 			stream << "---+";
+		}
+		stream << "\n    ";
+		for (File file = FILE_A; file < FILE_MAX; file++)
+		{
+			stream << ' ' << char('A' + (file - FILE_A)) << "  ";
 		}
 		return stream;
 	}

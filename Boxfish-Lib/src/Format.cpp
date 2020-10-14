@@ -88,7 +88,7 @@ namespace Boxfish
 		}
 		Position pos = position;
 		ApplyMove(pos, move);
-		if (IsInCheck(pos))
+		if (pos.InCheck())
 		{
 			Move buffer[MAX_MOVES];
 			MoveGenerator generator(pos);

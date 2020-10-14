@@ -30,18 +30,11 @@ namespace Boxfish
 	// Returns a bitboard containing all the pieces that are pinned by sliders to the square
 	// 'sliders' is a bitboard containing a superset of all sliding pieces to check against
 	BitBoard GetSliderBlockers(const Position& position, const BitBoard& sliders, SquareIndex square, BitBoard* pinners);
-	Team GetTeamAt(const Position& position, SquareIndex square);
 
 	void CalculateKingBlockers(Position& position, Team team);
 	void CalculateCheckers(Position& position, Team team);
 	void CalculateKingSquare(Position& position, Team team);
 
-	bool IsSquareOccupied(const Position& position, Team team, const Square& square);
-	bool IsSquareOccupied(const Position& position, Team team, SquareIndex square);
-	inline bool IsPieceOnSquare(const Position& position, Team team, Piece piece, SquareIndex square) { return position.GetTeamPieces(team, piece) & square; }
-
-	inline bool IsInCheck(const Position& position, Team team) { return position.InfoCache.InCheck[team]; }
-	inline bool IsInCheck(const Position& position) { return IsInCheck(position, position.TeamToPlay); }
 	bool IsSquareUnderAttack(const Position& position, Team byTeam, const Square& square);
 	bool IsSquareUnderAttack(const Position& position, Team byTeam, SquareIndex square);
 

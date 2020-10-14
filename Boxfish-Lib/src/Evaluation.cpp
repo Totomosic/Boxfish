@@ -656,56 +656,56 @@ namespace Boxfish
 			constexpr ValueType TRAPPED_ROOK[GAME_STAGE_MAX] = { -25, -25 };
 
 			// Trapped Bishops
-			if (IsPieceOnSquare(position, team, PIECE_BISHOP, RelativeSquare(team, a7)) && IsPieceOnSquare(position, otherTeam, PIECE_PAWN, RelativeSquare(team, b6)))
+			if (position.IsPieceOnSquare(team, PIECE_BISHOP, RelativeSquare(team, a7)) && position.IsPieceOnSquare(otherTeam, PIECE_PAWN, RelativeSquare(team, b6)))
 			{
 				mg += TRAPPED_BISHOP_A7[MIDGAME];
 				eg += TRAPPED_BISHOP_A7[ENDGAME];
 			}
-			if (IsPieceOnSquare(position, team, PIECE_BISHOP, RelativeSquare(team, h7)) && IsPieceOnSquare(position, otherTeam, PIECE_PAWN, RelativeSquare(team, g6)))
+			if (position.IsPieceOnSquare(team, PIECE_BISHOP, RelativeSquare(team, h7)) && position.IsPieceOnSquare(otherTeam, PIECE_PAWN, RelativeSquare(team, g6)))
 			{
 				mg += TRAPPED_BISHOP_A7[MIDGAME];
 				eg += TRAPPED_BISHOP_A7[ENDGAME];
 			}
-			if (IsPieceOnSquare(position, team, PIECE_BISHOP, RelativeSquare(team, a6)) && IsPieceOnSquare(position, otherTeam, PIECE_PAWN, RelativeSquare(team, b5)))
+			if (position.IsPieceOnSquare(team, PIECE_BISHOP, RelativeSquare(team, a6)) && position.IsPieceOnSquare(otherTeam, PIECE_PAWN, RelativeSquare(team, b5)))
 			{
 				mg += TRAPPED_BISHOP_A6[MIDGAME];
 				eg += TRAPPED_BISHOP_A6[ENDGAME];
 			}
-			if (IsPieceOnSquare(position, team, PIECE_BISHOP, RelativeSquare(team, h6)) && IsPieceOnSquare(position, otherTeam, PIECE_PAWN, RelativeSquare(team, g5)))
+			if (position.IsPieceOnSquare(team, PIECE_BISHOP, RelativeSquare(team, h6)) && position.IsPieceOnSquare(otherTeam, PIECE_PAWN, RelativeSquare(team, g5)))
 			{
 				mg += TRAPPED_BISHOP_A6[MIDGAME];
 				eg += TRAPPED_BISHOP_A6[ENDGAME];
 			}
-			if (IsPieceOnSquare(position, team, PIECE_BISHOP, RelativeSquare(team, b8)) && IsPieceOnSquare(position, otherTeam, PIECE_PAWN, RelativeSquare(team, c7)))
+			if (position.IsPieceOnSquare(team, PIECE_BISHOP, RelativeSquare(team, b8)) && position.IsPieceOnSquare(otherTeam, PIECE_PAWN, RelativeSquare(team, c7)))
 			{
 				mg += TRAPPED_BISHOP_B8[MIDGAME];
 				eg += TRAPPED_BISHOP_B8[ENDGAME];
 			}
-			if (IsPieceOnSquare(position, team, PIECE_BISHOP, RelativeSquare(team, g8)) && IsPieceOnSquare(position, otherTeam, PIECE_PAWN, RelativeSquare(team, f7)))
+			if (position.IsPieceOnSquare(team, PIECE_BISHOP, RelativeSquare(team, g8)) && position.IsPieceOnSquare(otherTeam, PIECE_PAWN, RelativeSquare(team, f7)))
 			{
 				mg += TRAPPED_BISHOP_B8[MIDGAME];
 				eg += TRAPPED_BISHOP_B8[ENDGAME];
 			}
-			if (IsPieceOnSquare(position, team, PIECE_BISHOP, RelativeSquare(team, a8)) && IsPieceOnSquare(position, otherTeam, PIECE_PAWN, RelativeSquare(team, b7)))
+			if (position.IsPieceOnSquare(team, PIECE_BISHOP, RelativeSquare(team, a8)) && position.IsPieceOnSquare(otherTeam, PIECE_PAWN, RelativeSquare(team, b7)))
 			{
 				mg += TRAPPED_BISHOP_A8[MIDGAME];
 				eg += TRAPPED_BISHOP_A8[ENDGAME];
 			}
-			if (IsPieceOnSquare(position, team, PIECE_BISHOP, RelativeSquare(team, h8)) && IsPieceOnSquare(position, otherTeam, PIECE_PAWN, RelativeSquare(team, g7)))
+			if (position.IsPieceOnSquare(team, PIECE_BISHOP, RelativeSquare(team, h8)) && position.IsPieceOnSquare(otherTeam, PIECE_PAWN, RelativeSquare(team, g7)))
 			{
 				mg += TRAPPED_BISHOP_A8[MIDGAME];
 				eg += TRAPPED_BISHOP_A8[ENDGAME];
 			}
 
 			// Blocked Rook
-			if ((IsPieceOnSquare(position, team, PIECE_ROOK, RelativeSquare(team, g1)) || IsPieceOnSquare(position, team, PIECE_ROOK, RelativeSquare(team, h1)))
-				&& (IsPieceOnSquare(position, team, PIECE_KING, RelativeSquare(team, g1)) || IsPieceOnSquare(position, team, PIECE_KING, RelativeSquare(team, f1))))
+			if ((position.IsPieceOnSquare(team, PIECE_ROOK, RelativeSquare(team, g1)) || position.IsPieceOnSquare(team, PIECE_ROOK, RelativeSquare(team, h1)))
+				&& (position.IsPieceOnSquare(team, PIECE_KING, RelativeSquare(team, g1)) || position.IsPieceOnSquare(team, PIECE_KING, RelativeSquare(team, f1))))
 			{
 				mg += TRAPPED_ROOK[MIDGAME];
 				eg += TRAPPED_ROOK[ENDGAME];
 			}
-			else if ((IsPieceOnSquare(position, team, PIECE_ROOK, RelativeSquare(team, a1)) || IsPieceOnSquare(position, team, PIECE_ROOK, RelativeSquare(team, b1)))
-				&& (IsPieceOnSquare(position, team, PIECE_KING, RelativeSquare(team, b1)) || IsPieceOnSquare(position, team, PIECE_KING, RelativeSquare(team, c1))))
+			else if ((position.IsPieceOnSquare(team, PIECE_ROOK, RelativeSquare(team, a1)) || position.IsPieceOnSquare(team, PIECE_ROOK, RelativeSquare(team, b1)))
+				&& (position.IsPieceOnSquare(team, PIECE_KING, RelativeSquare(team, b1)) || position.IsPieceOnSquare(team, PIECE_KING, RelativeSquare(team, c1))))
 			{
 				mg += TRAPPED_ROOK[MIDGAME];
 				eg += TRAPPED_ROOK[ENDGAME];
@@ -1083,138 +1083,56 @@ namespace Boxfish
 
 	std::string FormatEvaluation(const EvaluationResult& evaluation)
 	{
-		int scoreLength = 6;
+		constexpr int SCORE_LENGTH = 6;
 
-		std::string whiteMidgameTotal = FormatScore(
-			evaluation.Material[MIDGAME][TEAM_WHITE] +
-			evaluation.PieceSquares[MIDGAME][TEAM_WHITE] +
-			evaluation.DoubledPawns[MIDGAME][TEAM_WHITE] +
-			evaluation.WeakPawns[MIDGAME][TEAM_WHITE] +
-			evaluation.PassedPawns[MIDGAME][TEAM_WHITE] +
-			evaluation.BlockedPieces[MIDGAME][TEAM_WHITE] +
-			evaluation.Knights[MIDGAME][TEAM_WHITE] +
-			evaluation.Bishops[MIDGAME][TEAM_WHITE] +
-			evaluation.Rooks[MIDGAME][TEAM_WHITE] +
-			evaluation.Queens[MIDGAME][TEAM_WHITE] +
-			evaluation.Space[MIDGAME][TEAM_WHITE] +
-			evaluation.KingSafety[MIDGAME][TEAM_WHITE] +
-			evaluation.Tempo[MIDGAME][TEAM_WHITE],
-			scoreLength
-		);
+		ValueType totals[GAME_STAGE_MAX][TEAM_MAX];
 
-		std::string whiteEndgameTotal = FormatScore(
-			evaluation.Material[ENDGAME][TEAM_WHITE] +
-			evaluation.PieceSquares[ENDGAME][TEAM_WHITE] +
-			evaluation.DoubledPawns[ENDGAME][TEAM_WHITE] +
-			evaluation.WeakPawns[ENDGAME][TEAM_WHITE] +
-			evaluation.PassedPawns[ENDGAME][TEAM_WHITE] +
-			evaluation.BlockedPieces[ENDGAME][TEAM_WHITE] +
-			evaluation.Knights[ENDGAME][TEAM_WHITE] +
-			evaluation.Bishops[ENDGAME][TEAM_WHITE] +
-			evaluation.Rooks[ENDGAME][TEAM_WHITE] +
-			evaluation.Queens[ENDGAME][TEAM_WHITE] +
-			evaluation.Space[ENDGAME][TEAM_WHITE] +
-			evaluation.KingSafety[ENDGAME][TEAM_WHITE] +
-			evaluation.Tempo[ENDGAME][TEAM_WHITE],
-			scoreLength
-		);
+		for (GameStage stage : { MIDGAME, ENDGAME })
+		{
+			for (Team team : { TEAM_WHITE, TEAM_BLACK })
+			{
+				totals[stage][team] =
+					evaluation.Material[stage][team] +
+					evaluation.PieceSquares[stage][team] +
+					evaluation.DoubledPawns[stage][team] +
+					evaluation.WeakPawns[stage][team] +
+					evaluation.PassedPawns[stage][team] +
+					evaluation.BlockedPieces[stage][team] +
+					evaluation.Knights[stage][team] +
+					evaluation.Bishops[stage][team] +
+					evaluation.Rooks[stage][team] +
+					evaluation.Queens[stage][team] +
+					evaluation.Space[stage][team] +
+					evaluation.KingSafety[stage][team] +
+					evaluation.Tempo[stage][team];
+			}
+		}
 
-		std::string blackMidgameTotal = FormatScore(
-			evaluation.Material[MIDGAME][TEAM_BLACK] +
-			evaluation.PieceSquares[MIDGAME][TEAM_BLACK] +
-			evaluation.DoubledPawns[MIDGAME][TEAM_BLACK] +
-			evaluation.WeakPawns[MIDGAME][TEAM_BLACK] +
-			evaluation.PassedPawns[MIDGAME][TEAM_BLACK] +
-			evaluation.BlockedPieces[MIDGAME][TEAM_BLACK] +
-			evaluation.Knights[MIDGAME][TEAM_BLACK] +
-			evaluation.Bishops[MIDGAME][TEAM_BLACK] +
-			evaluation.Rooks[MIDGAME][TEAM_BLACK] +
-			evaluation.Queens[MIDGAME][TEAM_BLACK] +
-			evaluation.Space[MIDGAME][TEAM_BLACK] +
-			evaluation.KingSafety[MIDGAME][TEAM_BLACK] +
-			evaluation.Tempo[MIDGAME][TEAM_BLACK],
-			scoreLength
-		);
-
-		std::string blackEndgameTotal = FormatScore(
-			evaluation.Material[ENDGAME][TEAM_BLACK] +
-			evaluation.PieceSquares[ENDGAME][TEAM_BLACK] +
-			evaluation.DoubledPawns[ENDGAME][TEAM_BLACK] +
-			evaluation.WeakPawns[ENDGAME][TEAM_BLACK] +
-			evaluation.PassedPawns[ENDGAME][TEAM_BLACK] +
-			evaluation.BlockedPieces[ENDGAME][TEAM_BLACK] +
-			evaluation.Knights[ENDGAME][TEAM_BLACK] +
-			evaluation.Bishops[ENDGAME][TEAM_BLACK] +
-			evaluation.Rooks[ENDGAME][TEAM_BLACK] +
-			evaluation.Queens[ENDGAME][TEAM_BLACK] +
-			evaluation.Space[ENDGAME][TEAM_BLACK] +
-			evaluation.KingSafety[ENDGAME][TEAM_BLACK] +
-			evaluation.Tempo[ENDGAME][TEAM_BLACK],
-			scoreLength
-		);
-
-		std::string midgameTotal = FormatScore(
-			evaluation.Material[MIDGAME][TEAM_WHITE] - evaluation.Material[MIDGAME][TEAM_BLACK] +
-			evaluation.PieceSquares[MIDGAME][TEAM_WHITE] - evaluation.PieceSquares[MIDGAME][TEAM_BLACK] +
-			evaluation.DoubledPawns[MIDGAME][TEAM_WHITE] - evaluation.DoubledPawns[MIDGAME][TEAM_BLACK] +
-			evaluation.WeakPawns[MIDGAME][TEAM_WHITE] - evaluation.WeakPawns[MIDGAME][TEAM_BLACK] +
-			evaluation.PassedPawns[MIDGAME][TEAM_WHITE] - evaluation.PassedPawns[MIDGAME][TEAM_BLACK] +
-			evaluation.BlockedPieces[MIDGAME][TEAM_WHITE] - evaluation.BlockedPieces[MIDGAME][TEAM_BLACK] +
-			evaluation.Knights[MIDGAME][TEAM_WHITE] - evaluation.Knights[MIDGAME][TEAM_BLACK] +
-			evaluation.Bishops[MIDGAME][TEAM_WHITE] - evaluation.Bishops[MIDGAME][TEAM_BLACK] +
-			evaluation.Rooks[MIDGAME][TEAM_WHITE] - evaluation.Rooks[MIDGAME][TEAM_BLACK] +
-			evaluation.Queens[MIDGAME][TEAM_WHITE] - evaluation.Queens[MIDGAME][TEAM_BLACK] +
-			evaluation.Space[MIDGAME][TEAM_WHITE] - evaluation.Space[MIDGAME][TEAM_BLACK] +
-			evaluation.KingSafety[MIDGAME][TEAM_WHITE] - evaluation.KingSafety[MIDGAME][TEAM_BLACK] +
-			evaluation.Tempo[MIDGAME][TEAM_WHITE] - evaluation.Tempo[MIDGAME][TEAM_BLACK],
-			scoreLength
-		);
-
-		std::string endgameTotal = FormatScore(
-			evaluation.Material[ENDGAME][TEAM_WHITE] - evaluation.Material[ENDGAME][TEAM_BLACK] +
-			evaluation.PieceSquares[ENDGAME][TEAM_WHITE] - evaluation.PieceSquares[ENDGAME][TEAM_BLACK] +
-			evaluation.DoubledPawns[ENDGAME][TEAM_WHITE] - evaluation.DoubledPawns[ENDGAME][TEAM_BLACK] +
-			evaluation.WeakPawns[ENDGAME][TEAM_WHITE] - evaluation.WeakPawns[ENDGAME][TEAM_BLACK] +
-			evaluation.PassedPawns[ENDGAME][TEAM_WHITE] - evaluation.PassedPawns[ENDGAME][TEAM_BLACK] +
-			evaluation.BlockedPieces[ENDGAME][TEAM_WHITE] - evaluation.BlockedPieces[ENDGAME][TEAM_BLACK] +
-			evaluation.Knights[ENDGAME][TEAM_WHITE] - evaluation.Knights[ENDGAME][TEAM_BLACK] +
-			evaluation.Bishops[ENDGAME][TEAM_WHITE] - evaluation.Bishops[ENDGAME][TEAM_BLACK] +
-			evaluation.Rooks[ENDGAME][TEAM_WHITE] - evaluation.Rooks[ENDGAME][TEAM_BLACK] +
-			evaluation.Queens[ENDGAME][TEAM_WHITE] - evaluation.Queens[ENDGAME][TEAM_BLACK] +
-			evaluation.Space[ENDGAME][TEAM_WHITE] - evaluation.Space[ENDGAME][TEAM_BLACK] +
-			evaluation.KingSafety[ENDGAME][TEAM_WHITE] - evaluation.KingSafety[ENDGAME][TEAM_BLACK] +
-			evaluation.Tempo[ENDGAME][TEAM_WHITE] - evaluation.Tempo[ENDGAME][TEAM_BLACK],
-			scoreLength
-		);
-
+#define FORMAT_TABLE_ROW(Score, Length) (FormatScore(Score[MIDGAME][TEAM_WHITE], Length) + " " + FormatScore(Score[ENDGAME][TEAM_WHITE], Length) + " | " + FormatScore(Score[MIDGAME][TEAM_BLACK], Length) + " " + FormatScore(Score[ENDGAME][TEAM_BLACK], Length) + " | " + FormatScore(Score[MIDGAME][TEAM_WHITE] - Score[MIDGAME][TEAM_BLACK], Length) + " " + FormatScore(Score[ENDGAME][TEAM_WHITE] - Score[ENDGAME][TEAM_BLACK], Length))
 		std::string result = "";
 		result += "       Term     |     White     |     Black     |     Total     \n";
 		result += "                |   MG     EG   |   MG     EG   |   MG     EG   \n";
 		result += " ---------------+---------------+---------------+---------------\n";
-		result += "       Material | " + FormatScore(evaluation.Material[MIDGAME][TEAM_WHITE], scoreLength)      + " " + FormatScore(evaluation.Material[ENDGAME][TEAM_WHITE], scoreLength)      + " | " + FormatScore(evaluation.Material[MIDGAME][TEAM_BLACK], scoreLength)      + " " + FormatScore(evaluation.Material[ENDGAME][TEAM_BLACK], scoreLength)      + " | " + FormatScore(evaluation.Material[MIDGAME][TEAM_WHITE] - evaluation.Material[MIDGAME][TEAM_BLACK], scoreLength)           + " " + FormatScore(evaluation.Material[ENDGAME][TEAM_WHITE] - evaluation.Material[ENDGAME][TEAM_BLACK], scoreLength)           + '\n';
-		result += "  Piece Squares | " + FormatScore(evaluation.PieceSquares[MIDGAME][TEAM_WHITE], scoreLength)  + " " + FormatScore(evaluation.PieceSquares[ENDGAME][TEAM_WHITE], scoreLength)  + " | " + FormatScore(evaluation.PieceSquares[MIDGAME][TEAM_BLACK], scoreLength)  + " " + FormatScore(evaluation.PieceSquares[ENDGAME][TEAM_BLACK], scoreLength)  + " | " + FormatScore(evaluation.PieceSquares[MIDGAME][TEAM_WHITE] - evaluation.PieceSquares[MIDGAME][TEAM_BLACK], scoreLength)   + " " + FormatScore(evaluation.PieceSquares[ENDGAME][TEAM_WHITE] - evaluation.PieceSquares[ENDGAME][TEAM_BLACK], scoreLength)   + '\n';
-		result += " Blocked Pieces | " + FormatScore(evaluation.BlockedPieces[MIDGAME][TEAM_WHITE], scoreLength) + " " + FormatScore(evaluation.BlockedPieces[ENDGAME][TEAM_WHITE], scoreLength) + " | " + FormatScore(evaluation.BlockedPieces[MIDGAME][TEAM_BLACK], scoreLength) + " " + FormatScore(evaluation.BlockedPieces[ENDGAME][TEAM_BLACK], scoreLength) + " | " + FormatScore(evaluation.BlockedPieces[MIDGAME][TEAM_WHITE] - evaluation.BlockedPieces[MIDGAME][TEAM_BLACK], scoreLength) + " " + FormatScore(evaluation.BlockedPieces[ENDGAME][TEAM_WHITE] - evaluation.BlockedPieces[ENDGAME][TEAM_BLACK], scoreLength) + '\n';
-		result += "  Doubled Pawns | " + FormatScore(evaluation.DoubledPawns[MIDGAME][TEAM_WHITE], scoreLength)  + " " + FormatScore(evaluation.DoubledPawns[ENDGAME][TEAM_WHITE], scoreLength)  + " | " + FormatScore(evaluation.DoubledPawns[MIDGAME][TEAM_BLACK], scoreLength)  + " " + FormatScore(evaluation.DoubledPawns[ENDGAME][TEAM_BLACK], scoreLength)  + " | " + FormatScore(evaluation.DoubledPawns[MIDGAME][TEAM_WHITE] - evaluation.DoubledPawns[MIDGAME][TEAM_BLACK], scoreLength)   + " " + FormatScore(evaluation.DoubledPawns[ENDGAME][TEAM_WHITE] - evaluation.DoubledPawns[ENDGAME][TEAM_BLACK], scoreLength)   + '\n';
-		result += "     Weak Pawns | " + FormatScore(evaluation.WeakPawns[MIDGAME][TEAM_WHITE], scoreLength)     + " " + FormatScore(evaluation.WeakPawns[ENDGAME][TEAM_WHITE], scoreLength)     + " | " + FormatScore(evaluation.WeakPawns[MIDGAME][TEAM_BLACK], scoreLength)     + " " + FormatScore(evaluation.WeakPawns[ENDGAME][TEAM_BLACK], scoreLength)     + " | " + FormatScore(evaluation.WeakPawns[MIDGAME][TEAM_WHITE] - evaluation.WeakPawns[MIDGAME][TEAM_BLACK], scoreLength)         + " " + FormatScore(evaluation.WeakPawns[ENDGAME][TEAM_WHITE] - evaluation.WeakPawns[ENDGAME][TEAM_BLACK], scoreLength)         + '\n';
-		result += "   Passed Pawns | " + FormatScore(evaluation.PassedPawns[MIDGAME][TEAM_WHITE], scoreLength)   + " " + FormatScore(evaluation.PassedPawns[ENDGAME][TEAM_WHITE], scoreLength)   + " | " + FormatScore(evaluation.PassedPawns[MIDGAME][TEAM_BLACK], scoreLength)   + " " + FormatScore(evaluation.PassedPawns[ENDGAME][TEAM_BLACK], scoreLength)   + " | " + FormatScore(evaluation.PassedPawns[MIDGAME][TEAM_WHITE] - evaluation.PassedPawns[MIDGAME][TEAM_BLACK], scoreLength)     + " " + FormatScore(evaluation.PassedPawns[ENDGAME][TEAM_WHITE] - evaluation.PassedPawns[ENDGAME][TEAM_BLACK], scoreLength)     + '\n';
-		result += "        Knights | " + FormatScore(evaluation.Knights[MIDGAME][TEAM_WHITE], scoreLength)       + " " + FormatScore(evaluation.Knights[ENDGAME][TEAM_WHITE], scoreLength)       + " | " + FormatScore(evaluation.Knights[MIDGAME][TEAM_BLACK], scoreLength)       + " " + FormatScore(evaluation.Knights[ENDGAME][TEAM_BLACK], scoreLength)       + " | " + FormatScore(evaluation.Knights[MIDGAME][TEAM_WHITE] - evaluation.Knights[MIDGAME][TEAM_BLACK], scoreLength)             + " " + FormatScore(evaluation.Knights[ENDGAME][TEAM_WHITE] - evaluation.Knights[ENDGAME][TEAM_BLACK], scoreLength)             + '\n';
-		result += "        Bishops | " + FormatScore(evaluation.Bishops[MIDGAME][TEAM_WHITE], scoreLength)       + " " + FormatScore(evaluation.Bishops[ENDGAME][TEAM_WHITE], scoreLength)       + " | " + FormatScore(evaluation.Bishops[MIDGAME][TEAM_BLACK], scoreLength)       + " " + FormatScore(evaluation.Bishops[ENDGAME][TEAM_BLACK], scoreLength)       + " | " + FormatScore(evaluation.Bishops[MIDGAME][TEAM_WHITE] - evaluation.Bishops[MIDGAME][TEAM_BLACK], scoreLength)             + " " + FormatScore(evaluation.Bishops[ENDGAME][TEAM_WHITE] - evaluation.Bishops[ENDGAME][TEAM_BLACK], scoreLength)             + '\n';
-		result += "          Rooks | " + FormatScore(evaluation.Rooks[MIDGAME][TEAM_WHITE], scoreLength)         + " " + FormatScore(evaluation.Rooks[ENDGAME][TEAM_WHITE], scoreLength)         + " | " + FormatScore(evaluation.Rooks[MIDGAME][TEAM_BLACK], scoreLength)         + " " + FormatScore(evaluation.Rooks[ENDGAME][TEAM_BLACK], scoreLength)         + " | " + FormatScore(evaluation.Rooks[MIDGAME][TEAM_WHITE] - evaluation.Rooks[MIDGAME][TEAM_BLACK], scoreLength)                 + " " + FormatScore(evaluation.Rooks[ENDGAME][TEAM_WHITE] - evaluation.Rooks[ENDGAME][TEAM_BLACK], scoreLength)                 + '\n';
-		result += "         Queens | " + FormatScore(evaluation.Queens[MIDGAME][TEAM_WHITE], scoreLength)        + " " + FormatScore(evaluation.Queens[ENDGAME][TEAM_WHITE], scoreLength)        + " | " + FormatScore(evaluation.Queens[MIDGAME][TEAM_BLACK], scoreLength)        + " " + FormatScore(evaluation.Queens[ENDGAME][TEAM_BLACK], scoreLength)        + " | " + FormatScore(evaluation.Queens[MIDGAME][TEAM_WHITE] - evaluation.Queens[MIDGAME][TEAM_BLACK], scoreLength)               + " " + FormatScore(evaluation.Queens[ENDGAME][TEAM_WHITE] - evaluation.Queens[ENDGAME][TEAM_BLACK], scoreLength)               + '\n';
-		result += "          Space | " + FormatScore(evaluation.Space[MIDGAME][TEAM_WHITE], scoreLength)         + " " + FormatScore(evaluation.Space[ENDGAME][TEAM_WHITE], scoreLength)         + " | " + FormatScore(evaluation.Space[MIDGAME][TEAM_BLACK], scoreLength)         + " " + FormatScore(evaluation.Space[ENDGAME][TEAM_BLACK], scoreLength)         + " | " + FormatScore(evaluation.Space[MIDGAME][TEAM_WHITE] - evaluation.Space[MIDGAME][TEAM_BLACK], scoreLength)                 + " " + FormatScore(evaluation.Space[ENDGAME][TEAM_WHITE] - evaluation.Space[ENDGAME][TEAM_BLACK], scoreLength)                 + '\n';
-		result += "    King Safety | " + FormatScore(evaluation.KingSafety[MIDGAME][TEAM_WHITE], scoreLength)    + " " + FormatScore(evaluation.KingSafety[ENDGAME][TEAM_WHITE], scoreLength)    + " | " + FormatScore(evaluation.KingSafety[MIDGAME][TEAM_BLACK], scoreLength)    + " " + FormatScore(evaluation.KingSafety[ENDGAME][TEAM_BLACK], scoreLength)    + " | " + FormatScore(evaluation.KingSafety[MIDGAME][TEAM_WHITE] - evaluation.KingSafety[MIDGAME][TEAM_BLACK], scoreLength)       + " " + FormatScore(evaluation.KingSafety[ENDGAME][TEAM_WHITE] - evaluation.KingSafety[ENDGAME][TEAM_BLACK], scoreLength)       + '\n';
-		result += "          Tempo | " + FormatScore(evaluation.Tempo[MIDGAME][TEAM_WHITE], scoreLength)         + " " + FormatScore(evaluation.Tempo[ENDGAME][TEAM_WHITE], scoreLength)         + " | " + FormatScore(evaluation.Tempo[MIDGAME][TEAM_BLACK], scoreLength)         + " " + FormatScore(evaluation.Tempo[ENDGAME][TEAM_BLACK], scoreLength)         + " | " + FormatScore(evaluation.Tempo[MIDGAME][TEAM_WHITE] - evaluation.Tempo[MIDGAME][TEAM_BLACK], scoreLength)                 + " " + FormatScore(evaluation.Tempo[ENDGAME][TEAM_WHITE] - evaluation.Tempo[ENDGAME][TEAM_BLACK], scoreLength)                 + '\n';
+		result += "       Material | " + FORMAT_TABLE_ROW(evaluation.Material, SCORE_LENGTH)		+ '\n';
+		result += "  Piece Squares | " + FORMAT_TABLE_ROW(evaluation.PieceSquares, SCORE_LENGTH)	+ '\n';
+		result += " Blocked Pieces | " + FORMAT_TABLE_ROW(evaluation.BlockedPieces, SCORE_LENGTH)	+ '\n';
+		result += "  Doubled Pawns | " + FORMAT_TABLE_ROW(evaluation.DoubledPawns, SCORE_LENGTH)	+ '\n';
+		result += "     Weak Pawns | " + FORMAT_TABLE_ROW(evaluation.WeakPawns, SCORE_LENGTH)		+ '\n';
+		result += "   Passed Pawns | " + FORMAT_TABLE_ROW(evaluation.PassedPawns, SCORE_LENGTH)		+ '\n';
+		result += "        Knights | " + FORMAT_TABLE_ROW(evaluation.Knights, SCORE_LENGTH)			+ '\n';
+		result += "        Bishops | " + FORMAT_TABLE_ROW(evaluation.Bishops, SCORE_LENGTH)			+ '\n';
+		result += "          Rooks | " + FORMAT_TABLE_ROW(evaluation.Rooks, SCORE_LENGTH)			+ '\n';
+		result += "         Queens | " + FORMAT_TABLE_ROW(evaluation.Queens, SCORE_LENGTH)			+ '\n';
+		result += "          Space | " + FORMAT_TABLE_ROW(evaluation.Space, SCORE_LENGTH)			+ '\n';
+		result += "    King Safety | " + FORMAT_TABLE_ROW(evaluation.KingSafety, SCORE_LENGTH)		+ '\n';
+		result += "          Tempo | " + FORMAT_TABLE_ROW(evaluation.Tempo, SCORE_LENGTH)			+ '\n';
 		result += " ---------------+---------------+---------------+--------------\n";
-		result += "          Total | " + whiteMidgameTotal + " " + whiteEndgameTotal + " | " + blackMidgameTotal + " " + blackEndgameTotal + " | " + midgameTotal + " " + endgameTotal + "\n";
+		result += "          Total | " + FORMAT_TABLE_ROW(totals, SCORE_LENGTH)						+ "\n";
 		result += "\n";
-		result += "Game stage: " + std::to_string(evaluation.GameStage) + '\n';
-		result += "Total evaluation: " + std::to_string(evaluation.GetTotal(TEAM_WHITE));
-		if (evaluation.GetTotal(TEAM_WHITE) > 0)
-			result += " (white side)";
-		else
-			result += " (black side)";
-
+		result += "Game stage: " + std::to_string(evaluation.GameStage) + " / " + std::to_string(s_MaxPhaseValue) + '\n';
+		result += "Total evaluation: " + std::to_string(evaluation.GetTotal(TEAM_WHITE)) + " (white side)";
 		return result;
+#undef FORMAT_TABLE_ROW
 	}
 
 }
