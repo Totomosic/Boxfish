@@ -229,29 +229,29 @@ namespace Test
 		Init();
 		Position position = CreatePositionFromFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
 
-		REQUIRE(IsInCheck(position, TEAM_WHITE) == false);
-		REQUIRE(IsInCheck(position, TEAM_BLACK) == false);
+		REQUIRE(position.InCheck(TEAM_WHITE) == false);
+		REQUIRE(position.InCheck(TEAM_BLACK) == false);
 
 		position = CreatePositionFromFEN("rnbqkbnr/ppppQppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
 
-		REQUIRE(IsInCheck(position, TEAM_WHITE) == false);
-		REQUIRE(IsInCheck(position, TEAM_BLACK) == true);
+		REQUIRE(position.InCheck(TEAM_WHITE) == false);
+		REQUIRE(position.InCheck(TEAM_BLACK) == true);
 
 		position = CreatePositionFromFEN("rnbqkbnr/ppppQppp/8/8/8/8/PPPPrPPP/RNBQKBNR w KQkq - 0 1");
 
-		REQUIRE(IsInCheck(position, TEAM_WHITE) == true);
-		REQUIRE(IsInCheck(position, TEAM_BLACK) == true);
+		REQUIRE(position.InCheck(TEAM_WHITE) == true);
+		REQUIRE(position.InCheck(TEAM_BLACK) == true);
 
 		position = CreatePositionFromFEN("rnbqkbnr/pppppppp/8/1B6/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 1");
 
-		REQUIRE(IsInCheck(position, TEAM_WHITE) == false);
-		REQUIRE(IsInCheck(position, TEAM_BLACK) == false);
+		REQUIRE(position.InCheck(TEAM_WHITE) == false);
+		REQUIRE(position.InCheck(TEAM_BLACK) == false);
 
 		Move move = CreateMoveFromString(position, "b5d7");
 		ApplyMove(position, move);
 
-		REQUIRE(IsInCheck(position, TEAM_WHITE) == false);
-		REQUIRE(IsInCheck(position, TEAM_BLACK) == true);
+		REQUIRE(position.InCheck(TEAM_WHITE) == false);
+		REQUIRE(position.InCheck(TEAM_BLACK) == true);
 	}
 
 	TEST_CASE("Mirror", "[Evaluation]")
