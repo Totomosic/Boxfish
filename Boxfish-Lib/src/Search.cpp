@@ -572,8 +572,8 @@ namespace Boxfish
 				return beta;
 		}
 
-		if (IsPvNode && depth >= 6 && ttMove == MOVE_NONE)
-			depth -= 2;
+		if (IsPvNode && depth >= 6 && ttMove == MOVE_NONE && !inCheck)
+			depth -= 1;
 
 		Move bestMove = MOVE_NONE;
 		MoveGenerator movegen(position);
@@ -618,9 +618,8 @@ namespace Boxfish
 			stack->CurrentMove = move;
 			stack->MoveCount = moveIndex;
 
-			const bool isGoodCapture = move.IsCapture() && SeeGE(position, move);
 			const bool givesCheck = movedPosition.InCheck();
-			const bool givesGoodCheck = givesCheck && isGoodCapture;
+			const bool givesGoodCheck = givesCheck && SeeGE(position, move);
 
 			if (!IsRoot && position.GetNonPawnMaterial(position.TeamToPlay) > 0 && !IsMateScore(bestValue))
 			{
@@ -628,7 +627,7 @@ namespace Boxfish
 				{
 					int lmrDepth = std::max(depth - 1 - GetReduction<PV>(improving, depth, moveIndex), 0);
 
-					if (!SeeGE(position, move, -40 * lmrDepth * lmrDepth))
+					if (!SeeGE(position, move, -45 * lmrDepth * lmrDepth))
 						continue;
 				}
 				else if (!SeeGE(position, move, -(GetPieceValue(PIECE_PAWN, ENDGAME) + 20) * depth))
@@ -636,7 +635,7 @@ namespace Boxfish
 			}
 
 			// Singular extension
-			if (depth >= 7 && ttFound && move == ttMove && !IsRoot && stack->ExcludedMove == MOVE_NONE && !IsMateScore(ttValue) && (ttEntry->GetFlag() & LOWER_BOUND) && ttEntry->GetDepth() >= depth - 3)
+			if (!IsRoot && depth >= 7 && ttFound && move == ttMove && stack->ExcludedMove == MOVE_NONE && !IsMateScore(ttValue) && (ttEntry->GetFlag() & LOWER_BOUND) && ttEntry->GetDepth() >= depth - 3)
 			{
 				ValueType singularBeta = ttValue - 2 * depth;
 				int singularDepth = (depth - 1) / 2;
@@ -679,15 +678,23 @@ namespace Boxfish
 			ValueType value = -SCORE_MATE;
 
 			// Late move reduction
-			if (depth >= 3 && moveIndex > FirstMoveIndex + 2 * IsRoot && (!isCaptureOrPromotion || cutNode))
+			if (depth >= 3 && moveIndex > FirstMoveIndex + 2 * IsRoot)
 			{
 				int reduction = GetReduction<NT>(improving, depth, moveIndex);
 				if ((stack - 1)->MoveCount > 13)
 					reduction--;
-				if (ttMoveIsCapture)
-					reduction++;
-				if (cutNode)
-					reduction += 2;
+				if (!isCaptureOrPromotion)
+				{
+					if (ttMoveIsCapture)
+						reduction++;
+					if (cutNode)
+						reduction += 2;
+				}
+				else
+				{
+					if (depth < 8 && moveIndex > FirstMoveIndex + 1 && !givesCheck)
+						reduction++;
+				}
 
 				int d = std::clamp(extendedDepth - reduction, 1, extendedDepth);
 
