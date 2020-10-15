@@ -129,22 +129,6 @@ namespace Boxfish
         return ZERO_BB;
     }
 
-	/*inline BitBoard GetSlidingAttacks(Piece piece, SquareIndex fromSquare, const BitBoard& blockers)
-    {
-        switch (piece)
-        {
-        case PIECE_BISHOP:
-            return GetBishopAttacks(fromSquare, blockers);
-        case PIECE_ROOK:
-            return GetRookAttacks(fromSquare, blockers);
-        case PIECE_QUEEN:
-            return GetBishopAttacks(fromSquare, blockers) | GetRookAttacks(fromSquare, blockers);
-        default:
-            BOX_ASSERT(false, "Not a sliding piece");
-        }
-        return ZERO_BB;
-    }*/
-
 	// Return a bitboard representing the squares between a and b not including a or b
 	// If not on same rank/file/diagonal return 0
     inline BitBoard GetBitBoardBetween(SquareIndex a, SquareIndex b)
