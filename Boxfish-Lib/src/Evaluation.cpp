@@ -8,8 +8,6 @@ namespace Boxfish
 	constexpr bool UseMaterial = true;
 	constexpr bool UsePieceSquares = true;
 	constexpr bool UseBlockedPieces = true;
-	constexpr bool UsePassedPawns = true;
-	constexpr bool UseWeakPawns = true;
 	constexpr bool UseKingSafety = true;
 	constexpr bool UseSpace = true;
 	constexpr bool UseInitiative = true;
@@ -610,33 +608,40 @@ namespace Boxfish
 		EvaluateDoubledPawns<TEAM_BLACK>(result, position);
 	}
 
-	template<Team team>
-	void EvaluateWeakPawns(EvaluationResult& result, const Position& position)
+	template<Team TEAM>
+	void EvaluatePawns(EvaluationResult& result, const Position& position)
 	{
-		if constexpr (UseWeakPawns)
+		ValueType mg = 0;
+		ValueType eg = 0;
+
+		// Weak pawns
+		BitBoard pawns = position.GetTeamPieces(TEAM, PIECE_PAWN);
+		while (pawns)
 		{
-			int count = 0;
-			BitBoard pawns = position.GetTeamPieces(team, PIECE_PAWN);
-			while (pawns)
+			SquareIndex square = PopLeastSignificantBit(pawns);
+			if (!IsPawnSupported(position, square, TEAM))
 			{
-				SquareIndex square = PopLeastSignificantBit(pawns);
-				if (!IsPawnSupported(position, square, team))
-					count++;
+				mg -= 10;
+				eg -= 20;
 			}
-			result.WeakPawns[MIDGAME][team] = count * -10;
-			result.WeakPawns[ENDGAME][team] = count * -20;
 		}
-		else
+
+		// Doubled pawns
+		int doubledCount = 0;
+		for (File file = FILE_A; file < FILE_MAX; file++)
 		{
-			result.WeakPawns[MIDGAME][team] = 0;
-			result.WeakPawns[ENDGAME][team] = 0;
+			int pawnsOnFile = (position.GetTeamPieces(TEAM, PIECE_PAWN) & FILE_MASKS[file]).GetCount();
+			if (pawnsOnFile > 0)
+				doubledCount += pawnsOnFile - 1;
 		}
+		ValueType mg = -5 * doubledCount;
+		ValueType eg = -30 * doubledCount;
 	}
 
-	void EvaluateWeakPawns(EvaluationResult& result, const Position& position)
+	void EvaluatePawns(EvaluationResult& result, const Position& position)
 	{
-		EvaluateWeakPawns<TEAM_WHITE>(result, position);
-		EvaluateWeakPawns<TEAM_BLACK>(result, position);
+		EvaluatePawns<TEAM_WHITE>(result, position);
+		EvaluatePawns<TEAM_BLACK>(result, position);
 	}
 
 	template<Team team>
@@ -1011,9 +1016,7 @@ namespace Boxfish
 		EvaluatePieces<PIECE_ROOK>(result, position);
 		EvaluatePieces<PIECE_QUEEN>(result, position);
 
-		EvaluatePassedPawns(result, position);
-		EvaluateDoubledPawns(result, position);
-		EvaluateWeakPawns(result, position);
+		EvaluatePawns(result, position);
 		EvaluateBlockedPieces(result, position);
 		EvaluateSpace(result, position);
 		EvaluateKingSafety(result, position);
@@ -1094,10 +1097,8 @@ namespace Boxfish
 				totals[stage][team] =
 					evaluation.Material[stage][team] +
 					evaluation.PieceSquares[stage][team] +
-					evaluation.DoubledPawns[stage][team] +
-					evaluation.WeakPawns[stage][team] +
-					evaluation.PassedPawns[stage][team] +
 					evaluation.BlockedPieces[stage][team] +
+					evaluation.Pawns[stage][team] +
 					evaluation.Knights[stage][team] +
 					evaluation.Bishops[stage][team] +
 					evaluation.Rooks[stage][team] +
@@ -1116,9 +1117,7 @@ namespace Boxfish
 		result += "       Material | " + FORMAT_TABLE_ROW(evaluation.Material, SCORE_LENGTH)		+ '\n';
 		result += "  Piece Squares | " + FORMAT_TABLE_ROW(evaluation.PieceSquares, SCORE_LENGTH)	+ '\n';
 		result += " Blocked Pieces | " + FORMAT_TABLE_ROW(evaluation.BlockedPieces, SCORE_LENGTH)	+ '\n';
-		result += "  Doubled Pawns | " + FORMAT_TABLE_ROW(evaluation.DoubledPawns, SCORE_LENGTH)	+ '\n';
-		result += "     Weak Pawns | " + FORMAT_TABLE_ROW(evaluation.WeakPawns, SCORE_LENGTH)		+ '\n';
-		result += "   Passed Pawns | " + FORMAT_TABLE_ROW(evaluation.PassedPawns, SCORE_LENGTH)		+ '\n';
+		result += "          Pawns | " + FORMAT_TABLE_ROW(evaluation.Pawns, SCORE_LENGTH)			+ '\n';
 		result += "        Knights | " + FORMAT_TABLE_ROW(evaluation.Knights, SCORE_LENGTH)			+ '\n';
 		result += "        Bishops | " + FORMAT_TABLE_ROW(evaluation.Bishops, SCORE_LENGTH)			+ '\n';
 		result += "          Rooks | " + FORMAT_TABLE_ROW(evaluation.Rooks, SCORE_LENGTH)			+ '\n';

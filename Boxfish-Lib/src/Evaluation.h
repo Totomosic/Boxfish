@@ -35,10 +35,8 @@ namespace Boxfish
 
 		ValueType Material[GAME_STAGE_MAX][TEAM_MAX];
 		ValueType PieceSquares[GAME_STAGE_MAX][TEAM_MAX];
-		ValueType PassedPawns[GAME_STAGE_MAX][TEAM_MAX];
-		ValueType WeakPawns[GAME_STAGE_MAX][TEAM_MAX];
-		ValueType DoubledPawns[GAME_STAGE_MAX][TEAM_MAX];
 		ValueType BlockedPieces[GAME_STAGE_MAX][TEAM_MAX];
+		ValueType Pawns[GAME_STAGE_MAX][TEAM_MAX];
 		ValueType Knights[GAME_STAGE_MAX][TEAM_MAX];
 		ValueType Bishops[GAME_STAGE_MAX][TEAM_MAX];
 		ValueType Rooks[GAME_STAGE_MAX][TEAM_MAX];
@@ -83,10 +81,8 @@ namespace Boxfish
 			ValueType midgame =
 				(Material[MIDGAME][team] - Material[MIDGAME][other]) +
 				(PieceSquares[MIDGAME][team] - PieceSquares[MIDGAME][other]) +
-				(PassedPawns[MIDGAME][team] - PassedPawns[MIDGAME][other]) +
-				(WeakPawns[MIDGAME][team] - WeakPawns[MIDGAME][other]) +
-				(DoubledPawns[MIDGAME][team] - DoubledPawns[MIDGAME][other]) +
 				(BlockedPieces[MIDGAME][team] - BlockedPieces[MIDGAME][other]) +
+				(Pawns[MIDGAME][team] - Pawns[MIDGAME][other]) +
 				(Knights[MIDGAME][team] - Knights[MIDGAME][other]) +
 				(Bishops[MIDGAME][team] - Bishops[MIDGAME][other]) +
 				(Rooks[MIDGAME][team] - Rooks[MIDGAME][other]) +
@@ -97,10 +93,8 @@ namespace Boxfish
 			ValueType endgame = 
 				(Material[ENDGAME][team] - Material[ENDGAME][other]) +
 				(PieceSquares[ENDGAME][team] - PieceSquares[ENDGAME][other]) +
-				(PassedPawns[ENDGAME][team] - PassedPawns[ENDGAME][other]) +
-				(WeakPawns[ENDGAME][team] - WeakPawns[ENDGAME][other]) +
-				(DoubledPawns[ENDGAME][team] - DoubledPawns[ENDGAME][other]) +
 				(BlockedPieces[ENDGAME][team] - BlockedPieces[ENDGAME][other]) +
+				(Pawns[ENDGAME][team] - Pawns[ENDGAME][other]) +
 				(Knights[ENDGAME][team] - Knights[ENDGAME][other]) +
 				(Bishops[ENDGAME][team] - Bishops[ENDGAME][other]) +
 				(Rooks[ENDGAME][team] - Rooks[ENDGAME][other]) +
