@@ -468,11 +468,11 @@ namespace Boxfish
 		int blackPawnCount = EvaluateMaterial<TEAM_BLACK>(result, position);
 
 		// Draw if only 1 minor piece
-		if (result.Material[TEAM_WHITE] > result.Material[TEAM_BLACK] && whitePawnCount == 0)
+		if (result.Material[ENDGAME][TEAM_WHITE] > result.Material[ENDGAME][TEAM_BLACK] && whitePawnCount == 0)
 		{
 			result.IsDraw = position.GetNonPawnMaterial(TEAM_WHITE) < GetPieceValue(PIECE_ROOK, MIDGAME);
 		}
-		else if (result.Material[TEAM_BLACK] > result.Material[TEAM_WHITE] && blackPawnCount == 0)
+		else if (result.Material[ENDGAME][TEAM_BLACK] > result.Material[ENDGAME][TEAM_WHITE] && blackPawnCount == 0)
 		{
 			result.IsDraw = position.GetNonPawnMaterial(TEAM_BLACK) < GetPieceValue(PIECE_ROOK, MIDGAME);
 		}
