@@ -71,10 +71,10 @@ namespace Boxfish
 
     void InitAttacks();
 
-    template<Team team>
+    template<Team TEAM>
     inline BitBoard GetPawnAttacks(const BitBoard& pawns)
     {
-        return (team == TEAM_WHITE) ? (Shift<NORTH_WEST>(pawns) | Shift<NORTH_EAST>(pawns))
+        return (TEAM == TEAM_WHITE) ? (Shift<NORTH_WEST>(pawns) | Shift<NORTH_EAST>(pawns))
                                     : (Shift<SOUTH_EAST>(pawns) | Shift<SOUTH_WEST>(pawns));
     }
 

@@ -24,7 +24,7 @@ namespace Boxfish
 	constexpr BitBoard KingSide = FILE_E_MASK | FILE_F_MASK | FILE_G_MASK | FILE_H_MASK;
 	constexpr BitBoard Center = (FILE_D_MASK | FILE_E_MASK) & (RANK_4_MASK | RANK_5_MASK);
 
-	static constexpr SquareIndex s_OppositeSquare[FILE_MAX * RANK_MAX] = {
+	static constexpr SquareIndex s_OppositeSquare[SQUARE_MAX] = {
 		a8, b8, c8, d8, e8, f8, g8, h8,
 		a7, b7, c7, d7, e7, f7, g7, h7,
 		a6, b6, c6, d6, e6, f6, g6, h6,
@@ -40,26 +40,23 @@ namespace Boxfish
 		return (team == TEAM_WHITE) ? whiteSquare : s_OppositeSquare[whiteSquare];
 	}
 
-	static Move s_MoveBuffer[MAX_MOVES];
-	static MoveList s_MoveList(s_MoveBuffer);
-
 	static int s_PhaseWeights[PIECE_MAX];
 	int s_MaxPhaseValue = 0;
 
-	static int s_DistanceTable[FILE_MAX * RANK_MAX][FILE_MAX * RANK_MAX];
+	static int s_DistanceTable[SQUARE_MAX][SQUARE_MAX];
 
 	static ValueType s_MaterialValues[GAME_STAGE_MAX][PIECE_MAX];
-	static ValueType s_PieceSquareTables[GAME_STAGE_MAX][TEAM_MAX][PIECE_MAX][FILE_MAX * RANK_MAX];
+	static ValueType s_PieceSquareTables[GAME_STAGE_MAX][TEAM_MAX][PIECE_MAX][SQUARE_MAX];
 
 	static constexpr ValueType s_KnightAdjust[9] = { -20, -16, -12, -8, -4, 0, 4, 8, 12 };
 	static constexpr ValueType s_RookAdjust[9] = { 15, 12, 9, 6, 3, 0, -3, -6, -9 };
 
-	static BitBoard s_PawnShieldMasks[TEAM_MAX][FILE_MAX * RANK_MAX];
-	static BitBoard s_PassedPawnMasks[TEAM_MAX][FILE_MAX * RANK_MAX];
+	static BitBoard s_PawnShieldMasks[TEAM_MAX][SQUARE_MAX];
+	static BitBoard s_PassedPawnMasks[TEAM_MAX][SQUARE_MAX];
 	static ValueType s_PassedPawnRankWeights[GAME_STAGE_MAX][TEAM_MAX][RANK_MAX];
-	static BitBoard s_SupportedPawnMasks[TEAM_MAX][FILE_MAX * RANK_MAX];
+	static BitBoard s_SupportedPawnMasks[TEAM_MAX][SQUARE_MAX];
 
-	static BitBoard s_KingRings[TEAM_MAX][FILE_MAX * RANK_MAX];
+	static BitBoard s_KingRings[TEAM_MAX][SQUARE_MAX];
 	static constexpr BitBoard s_KingFlanks[FILE_MAX] = {
 		QueenSide & ~FILE_D_MASK,
 		QueenSide,
@@ -171,7 +168,7 @@ namespace Boxfish
 
 	void InitPawnShieldMasks()
 	{
-		for (SquareIndex square = a1; square < FILE_MAX * RANK_MAX; square++)
+		for (SquareIndex square = a1; square < SQUARE_MAX; square++)
 		{
 			s_PawnShieldMasks[TEAM_WHITE][square] = ((square << 8) | ((square << 7) & ~FILE_H_MASK) | ((square << 9) & ~FILE_A_MASK)) & (RANK_2_MASK | RANK_3_MASK);
 			s_PawnShieldMasks[TEAM_BLACK][square] = ((square >> 8) | ((square >> 7) & ~FILE_H_MASK) | ((square >> 9) & ~FILE_A_MASK)) & (RANK_7_MASK | RANK_6_MASK);
@@ -180,7 +177,7 @@ namespace Boxfish
 
 	void InitPassedPawnMasks()
 	{
-		for (SquareIndex square = a1; square < FILE_MAX * RANK_MAX; square++)
+		for (SquareIndex square = a1; square < SQUARE_MAX; square++)
 		{
 			BitBoard north = GetRay(RAY_NORTH, square);
 			BitBoard south = GetRay(RAY_SOUTH, square);
@@ -231,23 +228,23 @@ namespace Boxfish
 	{
 		// For now only pawns can have different endgame value
 		s_MaterialValues[MIDGAME][PIECE_PAWN] = 100;
-		s_MaterialValues[MIDGAME][PIECE_KNIGHT] = 325;
-		s_MaterialValues[MIDGAME][PIECE_BISHOP] = 335;
-		s_MaterialValues[MIDGAME][PIECE_ROOK] = 500;
+		s_MaterialValues[MIDGAME][PIECE_KNIGHT] = 350;
+		s_MaterialValues[MIDGAME][PIECE_BISHOP] = 375;
+		s_MaterialValues[MIDGAME][PIECE_ROOK] = 515;
 		s_MaterialValues[MIDGAME][PIECE_QUEEN] = 1050;
 		s_MaterialValues[MIDGAME][PIECE_KING] = 20000;
 
 		s_MaterialValues[ENDGAME][PIECE_PAWN] = 140;
-		s_MaterialValues[ENDGAME][PIECE_KNIGHT] = 325;
-		s_MaterialValues[ENDGAME][PIECE_BISHOP] = 335;
-		s_MaterialValues[ENDGAME][PIECE_ROOK] = 500;
+		s_MaterialValues[ENDGAME][PIECE_KNIGHT] = 350;
+		s_MaterialValues[ENDGAME][PIECE_BISHOP] = 375;
+		s_MaterialValues[ENDGAME][PIECE_ROOK] = 515;
 		s_MaterialValues[ENDGAME][PIECE_QUEEN] = 1050;
 		s_MaterialValues[ENDGAME][PIECE_KING] = 20000;
 	}
 
 	void InitPieceSquareTables()
 	{
-		ValueType whitePawnsTable[FILE_MAX * RANK_MAX] = {
+		ValueType whitePawnsTable[SQUARE_MAX] = {
 			 0,  0,  0,  0,  0,  0,  0,  0,
 			50, 50, 50, 50, 50, 50, 50, 50,
 			10, 10, 20, 40, 30, 20, 10, 10,
@@ -262,7 +259,7 @@ namespace Boxfish
 		MirrorTable(s_PieceSquareTables[ENDGAME][TEAM_WHITE][PIECE_PAWN], s_PieceSquareTables[MIDGAME][TEAM_BLACK][PIECE_PAWN]);
 		MirrorTable(s_PieceSquareTables[ENDGAME][TEAM_BLACK][PIECE_PAWN], s_PieceSquareTables[MIDGAME][TEAM_WHITE][PIECE_PAWN]);
 
-		ValueType whiteKnightsTable[FILE_MAX * RANK_MAX] = {
+		ValueType whiteKnightsTable[SQUARE_MAX] = {
 			-50,-40,-30,-30,-30,-30,-40,-50,
 			-40,-20,  0,  0,  0,  0,-20,-40,
 			-30,  0, 10, 15, 15, 10,  0,-30,
@@ -277,7 +274,7 @@ namespace Boxfish
 		MirrorTable(s_PieceSquareTables[ENDGAME][TEAM_WHITE][PIECE_KNIGHT], s_PieceSquareTables[MIDGAME][TEAM_BLACK][PIECE_KNIGHT]);
 		MirrorTable(s_PieceSquareTables[ENDGAME][TEAM_BLACK][PIECE_KNIGHT], s_PieceSquareTables[MIDGAME][TEAM_WHITE][PIECE_KNIGHT]);
 
-		ValueType whiteBishopsTable[FILE_MAX * RANK_MAX] = {
+		ValueType whiteBishopsTable[SQUARE_MAX] = {
 			-20,-10,-10,-10,-10,-10,-10,-20,
 			-10,  0,  0,  0,  0,  0,  0,-10,
 			-10,  0,  5, 10, 10,  5,  0,-10,
@@ -292,7 +289,7 @@ namespace Boxfish
 		MirrorTable(s_PieceSquareTables[ENDGAME][TEAM_WHITE][PIECE_BISHOP], s_PieceSquareTables[MIDGAME][TEAM_BLACK][PIECE_BISHOP]);
 		MirrorTable(s_PieceSquareTables[ENDGAME][TEAM_BLACK][PIECE_BISHOP], s_PieceSquareTables[MIDGAME][TEAM_WHITE][PIECE_BISHOP]);
 
-		ValueType whiteRooksTable[FILE_MAX * RANK_MAX] = {
+		ValueType whiteRooksTable[SQUARE_MAX] = {
 			  0,  0,  0,  0,  0,  0,  0,  0,
 			  5, 10, 10, 10, 10, 10, 10,  5,
 			 -5,  0,  0,  0,  0,  0,  0, -5,
@@ -307,7 +304,7 @@ namespace Boxfish
 		MirrorTable(s_PieceSquareTables[ENDGAME][TEAM_WHITE][PIECE_ROOK], s_PieceSquareTables[MIDGAME][TEAM_BLACK][PIECE_ROOK]);
 		MirrorTable(s_PieceSquareTables[ENDGAME][TEAM_BLACK][PIECE_ROOK], s_PieceSquareTables[MIDGAME][TEAM_WHITE][PIECE_ROOK]);
 
-		ValueType whiteQueensTable[FILE_MAX * RANK_MAX] = {
+		ValueType whiteQueensTable[SQUARE_MAX] = {
 			-20,-10,-10, -5, -5,-10,-10,-20,
 			-10,  0,  0,  0,  0,  0,  0,-10,
 			-10,  0,  5,  5,  5,  5,  0,-10,
@@ -322,7 +319,7 @@ namespace Boxfish
 		MirrorTable(s_PieceSquareTables[ENDGAME][TEAM_WHITE][PIECE_QUEEN], s_PieceSquareTables[MIDGAME][TEAM_BLACK][PIECE_QUEEN]);
 		MirrorTable(s_PieceSquareTables[ENDGAME][TEAM_BLACK][PIECE_QUEEN], s_PieceSquareTables[MIDGAME][TEAM_WHITE][PIECE_QUEEN]);
 
-		ValueType whiteKingsTableMidgame[FILE_MAX * RANK_MAX] = {
+		ValueType whiteKingsTableMidgame[SQUARE_MAX] = {
 			-30,-40,-40,-50,-50,-40,-40,-30,
 			-30,-40,-40,-50,-50,-40,-40,-30,
 			-30,-40,-40,-50,-50,-40,-40,-30,
@@ -335,7 +332,7 @@ namespace Boxfish
 		MirrorTable(s_PieceSquareTables[MIDGAME][TEAM_WHITE][PIECE_KING], whiteKingsTableMidgame);
 		MirrorTable(s_PieceSquareTables[MIDGAME][TEAM_BLACK][PIECE_KING], s_PieceSquareTables[MIDGAME][TEAM_WHITE][PIECE_KING]);
 
-		ValueType whiteKingsTableEndgame[FILE_MAX * RANK_MAX] = {
+		ValueType whiteKingsTableEndgame[SQUARE_MAX] = {
 			-50,-40,-30,-20,-20,-30,-40,-50,
 			-30,-20,-10,  0,  0,-10,-20,-30,
 			-30,-10, 20, 30, 30, 20,-10,-30,
@@ -351,7 +348,7 @@ namespace Boxfish
 
 	void InitKingRings()
 	{
-		for (SquareIndex square = a1; square < FILE_MAX * RANK_MAX; square++)
+		for (SquareIndex square = a1; square < SQUARE_MAX; square++)
 		{
 			BitBoard ring = GetNonSlidingAttacks<PIECE_KING>(square) | square;
 
@@ -362,13 +359,13 @@ namespace Boxfish
 
 	void InitDistanceTable()
 	{
-		for (SquareIndex i = a1; i < FILE_MAX * RANK_MAX; i++)
+		for (SquareIndex i = a1; i < SQUARE_MAX; i++)
 		{
-			for (SquareIndex j = a1; j < FILE_MAX * RANK_MAX; j++)
+			for (SquareIndex j = a1; j < SQUARE_MAX; j++)
 			{
 				Square sqi = BitBoard::BitIndexToSquare(i);
 				Square sqj = BitBoard::BitIndexToSquare(j);
-				s_DistanceTable[i][j] = std::abs(sqi.File - sqj.File) + std::abs(sqi.Rank - sqi.Rank);
+				s_DistanceTable[i][j] = std::abs(sqi.File - sqj.File) + std::abs(sqi.Rank - sqj.Rank);
 			}
 		}
 	}
@@ -377,8 +374,8 @@ namespace Boxfish
 	{
 		s_AttackUnits[PIECE_PAWN] = 0;
 		s_AttackUnits[PIECE_KNIGHT] = 8;
-		s_AttackUnits[PIECE_BISHOP] = 4;
-		s_AttackUnits[PIECE_ROOK] = 4;
+		s_AttackUnits[PIECE_BISHOP] = 3;
+		s_AttackUnits[PIECE_ROOK] = 3;
 		s_AttackUnits[PIECE_QUEEN] = 5;
 		s_AttackUnits[PIECE_KING] = 0;
 	}
@@ -652,10 +649,11 @@ namespace Boxfish
 	template<Team TEAM, Piece PIECE>
 	void EvaluatePieces(EvaluationResult& result, const Position& position)
 	{
+		static_assert(PIECE == PIECE_KNIGHT || PIECE == PIECE_BISHOP || PIECE == PIECE_ROOK || PIECE == PIECE_QUEEN);
 		constexpr Team OTHER_TEAM = OtherTeam(TEAM);
 		constexpr BitBoard OutpostZone =
 			(TEAM == TEAM_WHITE ? (RANK_4_MASK | RANK_5_MASK | RANK_6_MASK)
-							   : (RANK_5_MASK | RANK_4_MASK | RANK_3_MASK)) & CenterFiles;
+							    : (RANK_5_MASK | RANK_4_MASK | RANK_3_MASK)) & CenterFiles;
 		constexpr Direction Down = TEAM == TEAM_WHITE ? SOUTH : NORTH;
 
 		ValueType mg = 0;
@@ -672,7 +670,7 @@ namespace Boxfish
 				PIECE == PIECE_BISHOP ? GetSlidingAttacks<PIECE_BISHOP>(square, position.GetAllPieces() ^ position.GetPieces(PIECE_QUEEN)) :
 				PIECE == PIECE_ROOK ? GetSlidingAttacks<PIECE_ROOK>(square, position.GetAllPieces() ^ position.GetPieces(PIECE_QUEEN) ^ position.GetTeamPieces(TEAM, PIECE_ROOK)) :
 				PIECE == PIECE_QUEEN ? GetSlidingAttacks<PIECE_QUEEN>(square, position.GetAllPieces()) :
-				PIECE == PIECE_KNIGHT ? GetNonSlidingAttacks<PIECE_KNIGHT>(square, TEAM) : ZERO_BB;
+				PIECE == PIECE_KNIGHT ? GetNonSlidingAttacks<PIECE_KNIGHT>(square) : ZERO_BB;
 
 			if (position.GetBlockersForKing(TEAM) & square)
 				attacks &= GetLineBetween(position.GetKingSquare(TEAM), square);
@@ -693,7 +691,7 @@ namespace Boxfish
 			else if (PIECE == PIECE_ROOK && (FILE_MASKS[BitBoard::FileOfIndex(square)] & result.Data.KingAttackZone[OTHER_TEAM]))
 				mg += 5;
 
-			int reachableSquares = (position.GetBlockersForKing(TEAM) & square) ? 0 : (attacks & ~position.GetTeamPieces(TEAM) & ~result.Data.AttackedBy[OTHER_TEAM][PIECE_PAWN]).GetCount();
+			int reachableSquares = (attacks & ~position.GetTeamPieces(TEAM) & ~result.Data.AttackedBy[OTHER_TEAM][PIECE_PAWN]).GetCount();
 			mg += s_MobilityWeights[MIDGAME][PIECE] * (reachableSquares - s_MobilityOffsets[PIECE]);
 			eg += s_MobilityWeights[ENDGAME][PIECE] * (reachableSquares - s_MobilityOffsets[PIECE]);
 
@@ -721,17 +719,14 @@ namespace Boxfish
 			}
 			if constexpr (PIECE == PIECE_BISHOP)
 			{
-				if (attacks & Center)
+				if (MoreThanOne(attacks & Center))
 					mg += 30;
 			}
 			if constexpr (PIECE == PIECE_ROOK)
 			{
 				int pawnCountOnFile = (FILE_MASKS[BitBoard::FileOfIndex(square)] & position.GetPieces(PIECE_PAWN)).GetCount();
-				if (pawnCountOnFile < 2)
-				{
-					mg += 25 * (2 - pawnCountOnFile);
-					eg += 10 * (2 - pawnCountOnFile);
-				}
+				mg += 25 * (2 - pawnCountOnFile);
+				eg += 10 * (2 - pawnCountOnFile);
 			}
 			if constexpr (PIECE == PIECE_QUEEN)
 			{
@@ -808,7 +803,9 @@ namespace Boxfish
 			int minDistance = 6;
 
 			if (pawns & GetNonSlidingAttacks<PIECE_KING>(kngSq, TEAM))
+			{
 				minDistance = 1;
+			}
 			else
 			{
 				while (pawns)
@@ -850,20 +847,21 @@ namespace Boxfish
 
 			constexpr Team OTHER_TEAM = OtherTeam(TEAM);
 			constexpr Direction Up = (TEAM == TEAM_WHITE) ? NORTH : SOUTH;
-			constexpr BitBoard spaceMask =
+			constexpr Direction Down = (TEAM == TEAM_WHITE) ? SOUTH : NORTH;
+			constexpr BitBoard SpaceMask =
 				(TEAM == TEAM_WHITE) ? (FILE_C_MASK | FILE_D_MASK | FILE_E_MASK | FILE_F_MASK) & (RANK_2_MASK | RANK_3_MASK | RANK_4_MASK)
 									 : (FILE_C_MASK | FILE_D_MASK | FILE_E_MASK | FILE_F_MASK) & (RANK_7_MASK | RANK_6_MASK | RANK_5_MASK);
 
-			BitBoard safe = spaceMask & ~position.GetTeamPieces(TEAM, PIECE_PAWN) & ~result.Data.AttackedBy[OTHER_TEAM][PIECE_PAWN];
+			BitBoard safe = SpaceMask & ~position.GetTeamPieces(TEAM, PIECE_PAWN) & ~result.Data.AttackedBy[OTHER_TEAM][PIECE_PAWN];
 			BitBoard behind = position.GetTeamPieces(TEAM, PIECE_PAWN);
-			behind |= ((TEAM == TEAM_WHITE) ? behind >> 8 : behind << 8);
-			behind |= ((TEAM == TEAM_WHITE) ? behind >> 8 : behind << 8);
-			behind |= ((TEAM == TEAM_WHITE) ? behind >> 8 : behind << 8);
+			behind |= Shift<Down>(behind);
+			behind |= Shift<Down>(behind);
+			behind |= Shift<Down>(behind);
 
-			int count = safe.GetCount() + (behind & safe).GetCount();
+			int count = safe.GetCount() + (behind & safe & ~result.Data.AttackedBy[OTHER_TEAM][PIECE_ALL]).GetCount();
 			int weight = position.GetTeamPieces(TEAM).GetCount() - 3 + std::min(blockedPawns, 9);
 
-			result.Space[MIDGAME][TEAM] = count * weight * weight / 28;
+			result.Space[MIDGAME][TEAM] = count * weight * weight / 24;
 			result.Space[ENDGAME][TEAM] = 0;
 		}
 		else
@@ -891,7 +889,7 @@ namespace Boxfish
 	{
 		if constexpr (UseInitiative)
 		{
-			constexpr ValueType tempo = 10;
+			constexpr ValueType tempo = 12;
 			Team other = OtherTeam(position.TeamToPlay);
 			result.Tempo[MIDGAME][position.TeamToPlay] = tempo;
 			result.Tempo[ENDGAME][position.TeamToPlay] = tempo;
@@ -930,8 +928,8 @@ namespace Boxfish
 
 		result.Data.AttackedBy[TEAM_WHITE][PIECE_PAWN] = GetPawnAttacks<TEAM_WHITE>(position.GetTeamPieces(TEAM_WHITE, PIECE_PAWN));
 		result.Data.AttackedBy[TEAM_BLACK][PIECE_PAWN] = GetPawnAttacks<TEAM_BLACK>(position.GetTeamPieces(TEAM_BLACK, PIECE_PAWN));
-		result.Data.AttackedBy[TEAM_WHITE][PIECE_KING] = GetNonSlidingAttacks<PIECE_KING>(position.GetKingSquare(TEAM_WHITE), TEAM_WHITE);
-		result.Data.AttackedBy[TEAM_BLACK][PIECE_KING] = GetNonSlidingAttacks<PIECE_KING>(position.GetKingSquare(TEAM_BLACK), TEAM_BLACK);
+		result.Data.AttackedBy[TEAM_WHITE][PIECE_KING] = GetNonSlidingAttacks<PIECE_KING>(position.GetKingSquare(TEAM_WHITE));
+		result.Data.AttackedBy[TEAM_BLACK][PIECE_KING] = GetNonSlidingAttacks<PIECE_KING>(position.GetKingSquare(TEAM_BLACK));
 		result.Data.AttackedByTwice[TEAM_WHITE] = whiteDoublePawnAttacks | (result.Data.AttackedBy[TEAM_WHITE][PIECE_PAWN] & result.Data.AttackedBy[TEAM_WHITE][PIECE_KING]);
 		result.Data.AttackedByTwice[TEAM_BLACK] = blackDoublePawnAttacks | (result.Data.AttackedBy[TEAM_BLACK][PIECE_PAWN] & result.Data.AttackedBy[TEAM_BLACK][PIECE_KING]);
 

@@ -62,7 +62,7 @@ namespace Boxfish
 	public:
 		constexpr static SquareIndex SquareToBitIndex(const Square& square)
 		{
-			BOX_ASSERT(square.File >= 0 && square.File < FILE_MAX&& square.Rank >= 0 && square.Rank < RANK_MAX, "Invalid square");
+			BOX_ASSERT(square.File >= 0 && square.File < FILE_MAX && square.Rank >= 0 && square.Rank < RANK_MAX, "Invalid square");
 			return (SquareIndex)(square.File + square.Rank * FILE_MAX);
 		}
 
