@@ -93,7 +93,8 @@ namespace Boxfish
     template<Piece PIECE>
 	inline constexpr BitBoard GetNonSlidingAttacks(SquareIndex fromSquare, Team team)
     {
-        if constexpr (PIECE == PIECE_PAWN || PIECE == PIECE_KING || PIECE == PIECE_KNIGHT)
+        static_assert(PIECE == PIECE_PAWN);
+        if constexpr (PIECE == PIECE_PAWN)
             return s_NonSlidingAttacks[team][PIECE][fromSquare];
         else
             BOX_ASSERT(false, "Not a non sliding piece");
@@ -120,6 +121,7 @@ namespace Boxfish
     template<Piece PIECE>
     inline BitBoard GetSlidingAttacks(SquareIndex fromSquare, const BitBoard& blockers)
     {
+        static_assert(PIECE == PIECE_BISHOP || PIECE == PIECE_ROOK || PIECE == PIECE_QUEEN);
         if constexpr (PIECE == PIECE_BISHOP)
             return GetBishopAttacks(fromSquare, blockers);
         else if constexpr (PIECE == PIECE_ROOK)

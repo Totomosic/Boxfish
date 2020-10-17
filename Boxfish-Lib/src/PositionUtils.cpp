@@ -1,5 +1,4 @@
 #include "PositionUtils.h"
-#include "Utils.h"
 #include "Attacks.h"
 #include "Format.h"
 
@@ -36,8 +35,8 @@ namespace Boxfish
 			}
 		}
 
-		CalculateKingSquare(position, TEAM_WHITE);
-		CalculateKingSquare(position, TEAM_BLACK);
+		position.InfoCache.KingSquare[TEAM_WHITE] = BackwardBitScan(position.GetTeamPieces(TEAM_WHITE, PIECE_KING));
+		position.InfoCache.KingSquare[TEAM_BLACK] = BackwardBitScan(position.GetTeamPieces(TEAM_BLACK, PIECE_KING));
 		CalculateKingBlockers(position, TEAM_WHITE);
 		CalculateKingBlockers(position, TEAM_BLACK);
 		CalculateCheckers(position, TEAM_WHITE);
@@ -201,7 +200,7 @@ namespace Boxfish
 
 		if (fen[index] != '-')
 		{
-			position.EnpassantSquare = SquareFromString(fen.substr(index, 2));
+			position.EnpassantSquare = SquareFromAlgebraic(fen.substr(index, 2));
 			index += 3;
 		}
 		else
@@ -295,7 +294,7 @@ namespace Boxfish
 		if (position.EnpassantSquare == INVALID_SQUARE)
 			result += " -";
 		else
-			result += " " + SquareToString(position.EnpassantSquare);
+			result += " " + SquareToAlgebraic(position.EnpassantSquare);
 
 		result += " " + std::to_string(position.HalfTurnsSinceCaptureOrPush);
 		result += " " + std::to_string(position.TotalTurns + 1);
@@ -334,8 +333,8 @@ namespace Boxfish
 	BitBoard GetAttackers(const Position& position, Team team, SquareIndex square, const BitBoard& blockers)
 	{
 		return (GetNonSlidingAttacks<PIECE_PAWN>(square, OtherTeam(team)) & position.GetTeamPieces(team, PIECE_PAWN)) |
-			(GetNonSlidingAttacks<PIECE_KNIGHT>(square, team) & position.GetTeamPieces(team, PIECE_KNIGHT)) |
-			(GetNonSlidingAttacks<PIECE_KING>(square, team) & position.GetTeamPieces(team, PIECE_KING)) |
+			(GetNonSlidingAttacks<PIECE_KNIGHT>(square) & position.GetTeamPieces(team, PIECE_KNIGHT)) |
+			(GetNonSlidingAttacks<PIECE_KING>(square) & position.GetTeamPieces(team, PIECE_KING)) |
 			(GetSlidingAttacks<PIECE_BISHOP>(square, blockers) & position.GetTeamPieces(team, PIECE_BISHOP, PIECE_QUEEN)) |
 			(GetSlidingAttacks<PIECE_ROOK>(square, blockers) & position.GetTeamPieces(team, PIECE_ROOK, PIECE_QUEEN));
 	}
@@ -365,18 +364,13 @@ namespace Boxfish
 
 	void CalculateKingBlockers(Position& position, Team team)
 	{
-		position.InfoCache.BlockersForKing[team] = GetSliderBlockers(position, position.GetTeamPieces(OtherTeam(team)), position.InfoCache.KingSquare[team], &position.InfoCache.Pinners[OtherTeam(team)]);
+		position.InfoCache.BlockersForKing[team] = GetSliderBlockers(position, position.GetTeamPieces(OtherTeam(team)), position.GetKingSquare(team), &position.InfoCache.Pinners[OtherTeam(team)]);
 	}
 
 	void CalculateCheckers(Position& position, Team team)
 	{
 		position.InfoCache.CheckedBy[team] = GetAttackers(position, OtherTeam(team), position.InfoCache.KingSquare[team], position.GetAllPieces());
 		position.InfoCache.InCheck[team] = (bool)position.InfoCache.CheckedBy[team];
-	}
-
-	void CalculateKingSquare(Position& position, Team team)
-	{
-		position.InfoCache.KingSquare[team] = BackwardBitScan(position.Teams[team].Pieces[PIECE_KING]);
 	}
 
 	bool IsSquareUnderAttack(const Position& position, Team byTeam, const Square& square)
@@ -388,9 +382,9 @@ namespace Boxfish
 	{
 		if (GetNonSlidingAttacks<PIECE_PAWN>(square, OtherTeam(byTeam)) & position.GetTeamPieces(byTeam, PIECE_PAWN))
 			return true;
-		if (GetNonSlidingAttacks<PIECE_KNIGHT>(square, OtherTeam(byTeam)) & position.GetTeamPieces(byTeam, PIECE_KNIGHT))
+		if (GetNonSlidingAttacks<PIECE_KNIGHT>(square) & position.GetTeamPieces(byTeam, PIECE_KNIGHT))
 			return true;
-		if (GetNonSlidingAttacks<PIECE_KING>(square, OtherTeam(byTeam)) & position.GetTeamPieces(byTeam, PIECE_KING))
+		if (GetNonSlidingAttacks<PIECE_KING>(square) & position.GetTeamPieces(byTeam, PIECE_KING))
 			return true;
 		if (GetSlidingAttacks<PIECE_BISHOP>(square, position.GetAllPieces()) & position.GetTeamPieces(byTeam, PIECE_BISHOP, PIECE_QUEEN))
 			return true;
@@ -577,31 +571,13 @@ namespace Boxfish
 
 	void ApplyMove(Position& position, Move move)
 	{
-		return ApplyMove(position, move, nullptr);
-	}
-
-	void ApplyMove(Position& position, Move move, UndoInfo* outUndoInfo)
-	{
 		BOX_ASSERT(!(move.IsCapture() && move.GetCapturedPiece() == PIECE_KING), "Cannot capture king");
-		if (outUndoInfo)
-		{
-			outUndoInfo->CheckedBy[TEAM_WHITE] = position.InfoCache.CheckedBy[TEAM_WHITE];
-			outUndoInfo->CheckedBy[TEAM_BLACK] = position.InfoCache.CheckedBy[TEAM_BLACK];
-			outUndoInfo->InCheck[TEAM_WHITE] = position.InfoCache.InCheck[TEAM_WHITE];
-			outUndoInfo->InCheck[TEAM_BLACK] = position.InfoCache.InCheck[TEAM_BLACK];
-			outUndoInfo->EnpassantSquare = position.EnpassantSquare;
-			outUndoInfo->HalfTurnsSinceCaptureOrPush = position.HalfTurnsSinceCaptureOrPush;
-			outUndoInfo->CastleKingSide[TEAM_WHITE] = position.Teams[TEAM_WHITE].CastleKingSide;
-			outUndoInfo->CastleKingSide[TEAM_BLACK] = position.Teams[TEAM_BLACK].CastleKingSide;
-			outUndoInfo->CastleQueenSide[TEAM_WHITE] = position.Teams[TEAM_WHITE].CastleQueenSide;
-			outUndoInfo->CastleQueenSide[TEAM_BLACK] = position.Teams[TEAM_BLACK].CastleQueenSide;
-		}
 		if (position.EnpassantSquare != INVALID_SQUARE)
 		{
 			position.Hash.RemoveEnPassant(position.EnpassantSquare.File);
 			position.EnpassantSquare = INVALID_SQUARE;
 		}
-		
+
 		MoveFlag flags = move.GetFlags();
 		const Team currentTeam = position.TeamToPlay;
 		const Team otherTeam = OtherTeam(currentTeam);
@@ -673,11 +649,29 @@ namespace Boxfish
 			position.HalfTurnsSinceCaptureOrPush = 0;
 		else
 			position.HalfTurnsSinceCaptureOrPush++;
-		
+
 		if (currentTeam == TEAM_BLACK)
 			position.TotalTurns++;
 		position.TeamToPlay = otherTeam;
 		position.Hash.FlipTeamToPlay();
+	}
+
+	void ApplyMove(Position& position, Move move, UndoInfo* outUndoInfo)
+	{
+		if (outUndoInfo)
+		{
+			outUndoInfo->CheckedBy[TEAM_WHITE] = position.InfoCache.CheckedBy[TEAM_WHITE];
+			outUndoInfo->CheckedBy[TEAM_BLACK] = position.InfoCache.CheckedBy[TEAM_BLACK];
+			outUndoInfo->InCheck[TEAM_WHITE] = position.InfoCache.InCheck[TEAM_WHITE];
+			outUndoInfo->InCheck[TEAM_BLACK] = position.InfoCache.InCheck[TEAM_BLACK];
+			outUndoInfo->EnpassantSquare = position.EnpassantSquare;
+			outUndoInfo->HalfTurnsSinceCaptureOrPush = position.HalfTurnsSinceCaptureOrPush;
+			outUndoInfo->CastleKingSide[TEAM_WHITE] = position.Teams[TEAM_WHITE].CastleKingSide;
+			outUndoInfo->CastleKingSide[TEAM_BLACK] = position.Teams[TEAM_BLACK].CastleKingSide;
+			outUndoInfo->CastleQueenSide[TEAM_WHITE] = position.Teams[TEAM_WHITE].CastleQueenSide;
+			outUndoInfo->CastleQueenSide[TEAM_BLACK] = position.Teams[TEAM_BLACK].CastleQueenSide;
+		}
+		ApplyMove(position, move);
 	}
 
 	void UndoMove(Position& position, Move move, const UndoInfo& undo)
@@ -867,47 +861,6 @@ namespace Boxfish
 		if (to == position.EnpassantSquare && move.GetMovingPiece() == PIECE_PAWN)
 			move.SetFlags(MOVE_EN_PASSANT);
 		return move;
-	}
-
-	Move CreateMoveFromString(const Position& position, const std::string& uciString)
-	{
-		BOX_ASSERT(uciString.size() >= 4, "Invalid UCI move string");
-		if (uciString.size() > 5)
-		{
-			BOX_WARN("Move string is too long {} characters, expected 4 or 5.", uciString.size());
-		}
-		File startFile = (File)(uciString[0] - 'a');
-		Rank startRank = (Rank)(uciString[1] - '1');
-		File endFile = (File)(uciString[2] - 'a');
-		Rank endRank = (Rank)(uciString[3] - '1');
-		BOX_ASSERT(startFile >= 0 && startFile < FILE_MAX && startRank >= 0 && startRank < RANK_MAX && endFile >= 0 && endFile < FILE_MAX && endRank >= 0 && endRank < RANK_MAX,
-			"Invalid UCI move string. Ranks/Files out of range.");
-		Piece promotion = PIECE_QUEEN;
-		if (uciString.size() >= 5)
-		{
-			// support lower case or upper case
-			char promotionChar = uciString[4];
-			if (promotionChar - 'a' < 0)
-				promotionChar += 'a' - 'A';
-			switch (promotionChar)
-			{
-			case 'q':
-				promotion = PIECE_QUEEN;
-				break;
-			case 'n':
-				promotion = PIECE_KNIGHT;
-				break;
-			case 'r':
-				promotion = PIECE_ROOK;
-				break;
-			case 'b':
-				promotion = PIECE_BISHOP;
-				break;
-			default:
-				BOX_ASSERT(false, "Invalid promotion type: {}", promotionChar);
-			}
-		}
-		return CreateMove(position, { startFile, startRank }, { endFile, endRank }, promotion);
 	}
 
 	std::ostream& operator<<(std::ostream& stream, const Position& position)

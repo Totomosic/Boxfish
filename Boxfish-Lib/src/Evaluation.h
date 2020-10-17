@@ -43,6 +43,7 @@ namespace Boxfish
 		ValueType Queens[GAME_STAGE_MAX][TEAM_MAX];
 		ValueType Space[GAME_STAGE_MAX][TEAM_MAX];
 		ValueType KingSafety[GAME_STAGE_MAX][TEAM_MAX];
+		ValueType Threats[GAME_STAGE_MAX][TEAM_MAX];
 		ValueType Tempo[GAME_STAGE_MAX][TEAM_MAX];
 		int GameStage;
 		bool IsDraw;
@@ -89,6 +90,7 @@ namespace Boxfish
 				(Queens[MIDGAME][team] - Queens[MIDGAME][other]) +
 				(Space[MIDGAME][team] - Space[MIDGAME][other]) +
 				(KingSafety[MIDGAME][team] - KingSafety[MIDGAME][other]) +
+				(Threats[MIDGAME][team] - Threats[MIDGAME][other]) +
 				(Tempo[MIDGAME][team] - Tempo[MIDGAME][other]);
 			ValueType endgame = 
 				(Material[ENDGAME][team] - Material[ENDGAME][other]) +
@@ -101,6 +103,7 @@ namespace Boxfish
 				(Queens[ENDGAME][team] - Queens[ENDGAME][other]) +
 				(Space[ENDGAME][team] - Space[ENDGAME][other]) +
 				(KingSafety[ENDGAME][team] - KingSafety[ENDGAME][other]) +
+				(Threats[ENDGAME][team] - Threats[ENDGAME][other]) +
 				(Tempo[ENDGAME][team] - Tempo[ENDGAME][other]);
 			return InterpolateGameStage(GameStage, midgame, endgame);
 		}

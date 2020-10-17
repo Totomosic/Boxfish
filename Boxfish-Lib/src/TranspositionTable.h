@@ -16,7 +16,7 @@ namespace Boxfish
 
 	struct BOX_API TranspositionTableEntry
 	{
-	public:
+	private:
 		ZobristHash Hash;
 		Move BestMove;
 		int8_t Depth;

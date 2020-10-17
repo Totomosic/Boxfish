@@ -6,6 +6,7 @@ namespace Boxfish
 
 	constexpr ValueType SCORE_GOOD_CAPTURE = 10000;
 	constexpr ValueType SCORE_PROMOTION = 3000;
+	constexpr ValueType SCORE_BAD_PROMOTION = -500;
 	constexpr ValueType SCORE_KILLER = 2000;
 	constexpr ValueType SCORE_BAD_CAPTURE = -1000;
 
@@ -20,7 +21,7 @@ namespace Boxfish
 			Move& move = m_Moves->Moves[index];
 			if (move.IsCapture())
 			{
-				if (SeeGE(*currentPosition, move, -50))
+				if (SeeGE(*currentPosition, move, -30))
 				{
 					score = SCORE_GOOD_CAPTURE + GetPieceValue(move.GetCapturedPiece()) - GetPieceValue(move.GetMovingPiece());
 				}
@@ -28,21 +29,25 @@ namespace Boxfish
 				{
 					score = SCORE_BAD_CAPTURE + GetPieceValue(move.GetCapturedPiece()) - GetPieceValue(move.GetMovingPiece());
 				}
-				if (prevMove != MOVE_NONE && move.IsCapture() && move.GetToSquareIndex() == prevMove.GetToSquareIndex())
+				if (prevMove != MOVE_NONE && move.GetToSquareIndex() == prevMove.GetToSquareIndex())
 					score += 250; // Recapture
 			}
 			else if (move.IsPromotion())
 			{
-				score = SCORE_PROMOTION + GetPieceValue(move.GetPromotionPiece());
+				Piece promotion = move.GetPromotionPiece();
+				if (promotion == PIECE_QUEEN || promotion == PIECE_KNIGHT)
+					score = SCORE_PROMOTION + GetPieceValue(promotion);
+				else
+					score = SCORE_BAD_PROMOTION + GetPieceValue(promotion);
 			}
 			else
 			{
 				if (killers)
 				{
-					if (move == killers[1])
-						score = SCORE_KILLER - 200;
-					else if (move == killers[0])
+					if (move == killers[0])
 						score = SCORE_KILLER;
+					else if (move == killers[1])
+						score = SCORE_KILLER - 200;
 				}
 
 				if (move.IsAdvancedPawnPush(currentPosition->TeamToPlay) || (move.GetFlags() & (MOVE_DOUBLE_PAWN_PUSH | MOVE_KINGSIDE_CASTLE | MOVE_QUEENSIDE_CASTLE)))
@@ -59,14 +64,11 @@ namespace Boxfish
 					score += 1500;
 				}
 				// History Heuristic
-				if (m_Tables->History && m_Tables->Butterfly)
+				ValueType history = m_Tables->History[currentPosition->TeamToPlay][move.GetFromSquareIndex()][move.GetToSquareIndex()];
+				ValueType butterfly = m_Tables->Butterfly[currentPosition->TeamToPlay][move.GetFromSquareIndex()][move.GetToSquareIndex()];
+				if (butterfly != 0 && history > butterfly)
 				{
-					ValueType history = m_Tables->History[currentPosition->TeamToPlay][move.GetFromSquareIndex()][move.GetToSquareIndex()];
-					ValueType butterfly = m_Tables->Butterfly[currentPosition->TeamToPlay][move.GetFromSquareIndex()][move.GetToSquareIndex()];
-					if (butterfly != 0 && history > butterfly)
-					{
-						score += history / butterfly;
-					}
+					score += history * 20 / butterfly;
 				}
 			}
 
@@ -114,7 +116,7 @@ namespace Boxfish
 			if (move.IsCapture())
 			{
 				if (SeeGE(position, move, -30))
-					move.SetValue(SCORE_GOOD_CAPTURE + GetPieceValue(move.GetCapturedPiece()) - GetPieceValue(move.GetMovingPiece()));
+					move.SetValue(SCORE_GOOD_CAPTURE + GetPieceValue(move.GetCapturedPiece()));
 				else
 					move.SetValue(SCORE_NONE);
 			}

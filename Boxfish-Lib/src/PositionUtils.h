@@ -33,7 +33,6 @@ namespace Boxfish
 
 	void CalculateKingBlockers(Position& position, Team team);
 	void CalculateCheckers(Position& position, Team team);
-	void CalculateKingSquare(Position& position, Team team);
 
 	bool IsSquareUnderAttack(const Position& position, Team byTeam, const Square& square);
 	bool IsSquareUnderAttack(const Position& position, Team byTeam, SquareIndex square);
@@ -47,8 +46,6 @@ namespace Boxfish
 	void UndoNullMove(Position& position, const UndoInfo& undo);
 	bool SanityCheckMove(const Position& position, Move move);
 	Move CreateMove(const Position& position, const Square& from, const Square& to, Piece promotionPiece = PIECE_QUEEN);
-	// e7d8q - Move piece from e7 -> d8 and promote to queen
-	Move CreateMoveFromString(const Position& position, const std::string& uciString);
 
 	std::ostream& operator<<(std::ostream& stream, const Position& position);
 

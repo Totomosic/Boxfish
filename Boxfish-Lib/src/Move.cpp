@@ -1,6 +1,5 @@
 #include "Move.h"
 #include "PositionUtils.h"
-#include "Utils.h"
 
 namespace Boxfish
 {

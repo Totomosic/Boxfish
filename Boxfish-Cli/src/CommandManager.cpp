@@ -268,17 +268,19 @@ namespace Boxfish
 				MoveList moves(moveBuffer);
 				MoveGenerator generator(m_CurrentPosition);
 				generator.GetPseudoLegalMoves(moves);
-				generator.FilterLegalMoves(moves);
-				Move move = CreateMoveFromString(m_CurrentPosition, moveString);
+				Move move = UCI::CreateMoveFromString(m_CurrentPosition, moveString);
 
 				bool legal = false;
 				for (int i = 0; i < moves.MoveCount; i++)
 				{
 					if (move == moves.Moves[i])
 					{
-						ApplyMove(m_CurrentPosition, move);
-						m_Search.PushPosition(m_CurrentPosition);
-						legal = true;
+						if (generator.IsLegal(move))
+						{
+							ApplyMove(m_CurrentPosition, move);
+							m_Search.PushPosition(m_CurrentPosition);
+							legal = true;
+						}
 						break;
 					}
 				}

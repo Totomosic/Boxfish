@@ -67,8 +67,8 @@ namespace Boxfish
 		}
 
 		constexpr static Square BitIndexToSquare(SquareIndex index) { return { FileOfIndex(index), RankOfIndex(index) }; }
-		constexpr static Rank RankOfIndex(int index) { return (Rank)(index >> 3); }
-		constexpr static File FileOfIndex(int index) { return (File)(index & 7); }
+		constexpr static Rank RankOfIndex(SquareIndex index) { return (Rank)((int8_t)index >> 3); }
+		constexpr static File FileOfIndex(SquareIndex index) { return (File)((int8_t)index & 7); }
 	};
 
 #ifdef BOX_PLATFORM_WINDOWS
@@ -216,13 +216,13 @@ namespace Boxfish
 	};
 
 	// Includes rank
-	constexpr BitBoard InFront(Rank rank, Team team)
+	constexpr BitBoard InFrontOrEqual(Rank rank, Team team)
 	{
 		return (team == TEAM_WHITE) ? INFRONT_BB[rank] : BEHIND_BB[rank];
 	}
 
 	// Includes rank
-	constexpr BitBoard Behind(Rank rank, Team team)
+	constexpr BitBoard BehindOrEqual(Rank rank, Team team)
 	{
 		return (team == TEAM_WHITE) ? BEHIND_BB[rank] : INFRONT_BB[rank];
 	}

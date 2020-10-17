@@ -2,7 +2,6 @@
 #include "Logging.h"
 #include "Position.h"
 #include "PositionUtils.h"
-#include "Utils.h"
 #include "Rays.h"
 #include "ZobristHash.h"
 #include "TranspositionTable.h"

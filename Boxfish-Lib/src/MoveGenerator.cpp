@@ -158,7 +158,7 @@ namespace Boxfish
 
 	BitBoard MoveGenerator::GetReachableKingSquares(const Position& position, Team team)
 	{
-		return GetNonSlidingAttacks<PIECE_KING>(position.GetKingSquare(team), team) & ~position.GetTeamPieces(team);
+		return GetNonSlidingAttacks<PIECE_KING>(position.GetKingSquare(team)) & ~position.GetTeamPieces(team);
 	}
 
 	void MoveGenerator::GeneratePseudoLegalMoves(MoveList& moves)
@@ -378,7 +378,7 @@ namespace Boxfish
 		while (knights)
 		{
 			SquareIndex index = PopLeastSignificantBit(knights);
-			BitBoard moves = GetNonSlidingAttacks<PIECE_KNIGHT>(index, team) & ~position.GetTeamPieces(team);
+			BitBoard moves = GetNonSlidingAttacks<PIECE_KNIGHT>(index) & ~position.GetTeamPieces(team);
 			AddMoves(moveList, position, team, index, PIECE_KNIGHT, moves, position.GetTeamPieces(OtherTeam(team)));
 		}
 	}
@@ -419,7 +419,7 @@ namespace Boxfish
 	void MoveGenerator::GenerateKingMoves(MoveList& moveList, Team team, const Position& position)
 	{
 		SquareIndex square = position.GetKingSquare(team);
-		BitBoard moves = GetNonSlidingAttacks<PIECE_KING>(square, team) & ~position.GetTeamPieces(team);
+		BitBoard moves = GetNonSlidingAttacks<PIECE_KING>(square) & ~position.GetTeamPieces(team);
 		AddMoves(moveList, position, team, square, PIECE_KING, moves, position.GetTeamPieces(OtherTeam(team)));
 		BitBoard occupied = position.GetAllPieces();
 		const bool inCheck = position.InCheck();

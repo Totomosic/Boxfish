@@ -31,7 +31,7 @@ namespace Boxfish
 		int samples = 1023 * 64;
 		for (uint64_t i = 0; i < samples; i++)
 		{
-			if (m_Entries[(i * 67) & m_Mask].Age >= 0)
+			if (m_Entries[(i * 67) & m_Mask].GetAge() >= 0)
 				count++;
 		}
 		return (int)(count * 1000 / samples);

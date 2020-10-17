@@ -6,13 +6,13 @@ namespace Boxfish
 
 	static bool s_Initialized = false;
 
-	static BitBoard s_Rays[8][FILE_MAX * RANK_MAX];
+	static BitBoard s_Rays[8][SQUARE_MAX];
 
 	void InitRays()
 	{
 		if (!s_Initialized)
 		{
-			for (int index = 0; index < FILE_MAX * RANK_MAX; index++)
+			for (SquareIndex index = a1; index < SQUARE_MAX; index++)
 			{
 				s_Rays[RAY_NORTH][index] = 0x0101010101010100ULL << index;
 				s_Rays[RAY_SOUTH][index] = 0x0080808080808080ULL >> (63 - index);

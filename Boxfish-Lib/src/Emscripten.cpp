@@ -125,7 +125,6 @@ EMSCRIPTEN_BINDINGS(my_module) {
 	function("CreatePositionFromFEN", &CreatePositionFromFEN);
 	function("GetFENFromPosition", &GetFENFromPosition);
 	function("CreateMove", &CreateMove);
-	function("CreateMoveFromString", &CreateMoveFromString);
 	function("ApplyMove", select_overload<void(Position&, Move)>(&ApplyMove));
 	function("ApplyUndoableMove", &ApplyUndoableMove);
 	function("UndoMove", &UndoMove);
@@ -248,9 +247,11 @@ EMSCRIPTEN_BINDINGS(my_module) {
 	class_<UndoInfo>("UndoInfo")
 		.constructor<>();
 	class_<UCI>("UCI")
-		.class_function("FormatMove", &UCI::FormatMove);
+		.class_function("FormatMove", &UCI::FormatMove)
+		.class_function("CreateMoveFromString", &UCI::CreateMoveFromString);
 	class_<PGN>("PGN")
-		.class_function("FormatMove", &PGN::FormatMove);
+		.class_function("FormatMove", &PGN::FormatMove)
+		.class_function("CreateMoveFromString", &PGN::CreateMoveFromString);
 	class_<Move>("Move")
 		.constructor<>()
 		.function("GetFromSquareIndex", &Move::GetFromSquareIndex)

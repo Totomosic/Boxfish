@@ -58,7 +58,7 @@ namespace Boxfish
 		inline Piece GetPromotionPiece() const { return (Piece)((m_Move >> 3) & 0x7); }
 		void SetPromotionPiece(Piece piece);
 
-		inline bool IsCapture() const { return GetFlags() & MOVE_CAPTURE; }
+		inline bool IsCapture() const { return GetFlags() & (MOVE_CAPTURE | MOVE_EN_PASSANT); }
 		inline bool IsPromotion() const { return GetFlags() & MOVE_PROMOTION; }
 		inline bool IsCaptureOrPromotion() const { return GetFlags() & (MOVE_CAPTURE | MOVE_PROMOTION); }
 		inline bool IsCastle() const { return GetFlags() & (MOVE_KINGSIDE_CASTLE | MOVE_QUEENSIDE_CASTLE); }
