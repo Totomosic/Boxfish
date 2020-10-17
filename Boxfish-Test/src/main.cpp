@@ -7,79 +7,79 @@ namespace Test
 
 	using namespace Boxfish;
 
-	TEST_CASE("SquareFromString", "[SquareFromString]")
+	TEST_CASE("SquareFromAlgebraic", "[SquareFromAlgebraic]")
 	{
-		REQUIRE(SquareFromString("a1") == Square{ FILE_A, RANK_1 });
-		REQUIRE(SquareFromString("b1") == Square{ FILE_B, RANK_1 });
-		REQUIRE(SquareFromString("c1") == Square{ FILE_C, RANK_1 });
-		REQUIRE(SquareFromString("d1") == Square{ FILE_D, RANK_1 });
-		REQUIRE(SquareFromString("e1") == Square{ FILE_E, RANK_1 });
-		REQUIRE(SquareFromString("f1") == Square{ FILE_F, RANK_1 });
-		REQUIRE(SquareFromString("g1") == Square{ FILE_G, RANK_1 });
-		REQUIRE(SquareFromString("h1") == Square{ FILE_H, RANK_1 });
+		REQUIRE(SquareFromAlgebraic("a1") == Square{ FILE_A, RANK_1 });
+		REQUIRE(SquareFromAlgebraic("b1") == Square{ FILE_B, RANK_1 });
+		REQUIRE(SquareFromAlgebraic("c1") == Square{ FILE_C, RANK_1 });
+		REQUIRE(SquareFromAlgebraic("d1") == Square{ FILE_D, RANK_1 });
+		REQUIRE(SquareFromAlgebraic("e1") == Square{ FILE_E, RANK_1 });
+		REQUIRE(SquareFromAlgebraic("f1") == Square{ FILE_F, RANK_1 });
+		REQUIRE(SquareFromAlgebraic("g1") == Square{ FILE_G, RANK_1 });
+		REQUIRE(SquareFromAlgebraic("h1") == Square{ FILE_H, RANK_1 });
 
-		REQUIRE(SquareFromString("a2") == Square{ FILE_A, RANK_2 });
-		REQUIRE(SquareFromString("b2") == Square{ FILE_B, RANK_2 });
-		REQUIRE(SquareFromString("c2") == Square{ FILE_C, RANK_2 });
-		REQUIRE(SquareFromString("d2") == Square{ FILE_D, RANK_2 });
-		REQUIRE(SquareFromString("e2") == Square{ FILE_E, RANK_2 });
-		REQUIRE(SquareFromString("f2") == Square{ FILE_F, RANK_2 });
-		REQUIRE(SquareFromString("g2") == Square{ FILE_G, RANK_2 });
-		REQUIRE(SquareFromString("h2") == Square{ FILE_H, RANK_2 });
+		REQUIRE(SquareFromAlgebraic("a2") == Square{ FILE_A, RANK_2 });
+		REQUIRE(SquareFromAlgebraic("b2") == Square{ FILE_B, RANK_2 });
+		REQUIRE(SquareFromAlgebraic("c2") == Square{ FILE_C, RANK_2 });
+		REQUIRE(SquareFromAlgebraic("d2") == Square{ FILE_D, RANK_2 });
+		REQUIRE(SquareFromAlgebraic("e2") == Square{ FILE_E, RANK_2 });
+		REQUIRE(SquareFromAlgebraic("f2") == Square{ FILE_F, RANK_2 });
+		REQUIRE(SquareFromAlgebraic("g2") == Square{ FILE_G, RANK_2 });
+		REQUIRE(SquareFromAlgebraic("h2") == Square{ FILE_H, RANK_2 });
 
-		REQUIRE(SquareFromString("a3") == Square{ FILE_A, RANK_3 });
-		REQUIRE(SquareFromString("b3") == Square{ FILE_B, RANK_3 });
-		REQUIRE(SquareFromString("c3") == Square{ FILE_C, RANK_3 });
-		REQUIRE(SquareFromString("d3") == Square{ FILE_D, RANK_3 });
-		REQUIRE(SquareFromString("e3") == Square{ FILE_E, RANK_3 });
-		REQUIRE(SquareFromString("f3") == Square{ FILE_F, RANK_3 });
-		REQUIRE(SquareFromString("g3") == Square{ FILE_G, RANK_3 });
-		REQUIRE(SquareFromString("h3") == Square{ FILE_H, RANK_3 });
+		REQUIRE(SquareFromAlgebraic("a3") == Square{ FILE_A, RANK_3 });
+		REQUIRE(SquareFromAlgebraic("b3") == Square{ FILE_B, RANK_3 });
+		REQUIRE(SquareFromAlgebraic("c3") == Square{ FILE_C, RANK_3 });
+		REQUIRE(SquareFromAlgebraic("d3") == Square{ FILE_D, RANK_3 });
+		REQUIRE(SquareFromAlgebraic("e3") == Square{ FILE_E, RANK_3 });
+		REQUIRE(SquareFromAlgebraic("f3") == Square{ FILE_F, RANK_3 });
+		REQUIRE(SquareFromAlgebraic("g3") == Square{ FILE_G, RANK_3 });
+		REQUIRE(SquareFromAlgebraic("h3") == Square{ FILE_H, RANK_3 });
 
-		REQUIRE(SquareFromString("a4") == Square{ FILE_A, RANK_4 });
-		REQUIRE(SquareFromString("b4") == Square{ FILE_B, RANK_4 });
-		REQUIRE(SquareFromString("c4") == Square{ FILE_C, RANK_4 });
-		REQUIRE(SquareFromString("d4") == Square{ FILE_D, RANK_4 });
-		REQUIRE(SquareFromString("e4") == Square{ FILE_E, RANK_4 });
-		REQUIRE(SquareFromString("f4") == Square{ FILE_F, RANK_4 });
-		REQUIRE(SquareFromString("g4") == Square{ FILE_G, RANK_4 });
-		REQUIRE(SquareFromString("h4") == Square{ FILE_H, RANK_4 });
+		REQUIRE(SquareFromAlgebraic("a4") == Square{ FILE_A, RANK_4 });
+		REQUIRE(SquareFromAlgebraic("b4") == Square{ FILE_B, RANK_4 });
+		REQUIRE(SquareFromAlgebraic("c4") == Square{ FILE_C, RANK_4 });
+		REQUIRE(SquareFromAlgebraic("d4") == Square{ FILE_D, RANK_4 });
+		REQUIRE(SquareFromAlgebraic("e4") == Square{ FILE_E, RANK_4 });
+		REQUIRE(SquareFromAlgebraic("f4") == Square{ FILE_F, RANK_4 });
+		REQUIRE(SquareFromAlgebraic("g4") == Square{ FILE_G, RANK_4 });
+		REQUIRE(SquareFromAlgebraic("h4") == Square{ FILE_H, RANK_4 });
 
-		REQUIRE(SquareFromString("a5") == Square{ FILE_A, RANK_5 });
-		REQUIRE(SquareFromString("b5") == Square{ FILE_B, RANK_5 });
-		REQUIRE(SquareFromString("c5") == Square{ FILE_C, RANK_5 });
-		REQUIRE(SquareFromString("d5") == Square{ FILE_D, RANK_5 });
-		REQUIRE(SquareFromString("e5") == Square{ FILE_E, RANK_5 });
-		REQUIRE(SquareFromString("f5") == Square{ FILE_F, RANK_5 });
-		REQUIRE(SquareFromString("g5") == Square{ FILE_G, RANK_5 });
-		REQUIRE(SquareFromString("h5") == Square{ FILE_H, RANK_5 });
+		REQUIRE(SquareFromAlgebraic("a5") == Square{ FILE_A, RANK_5 });
+		REQUIRE(SquareFromAlgebraic("b5") == Square{ FILE_B, RANK_5 });
+		REQUIRE(SquareFromAlgebraic("c5") == Square{ FILE_C, RANK_5 });
+		REQUIRE(SquareFromAlgebraic("d5") == Square{ FILE_D, RANK_5 });
+		REQUIRE(SquareFromAlgebraic("e5") == Square{ FILE_E, RANK_5 });
+		REQUIRE(SquareFromAlgebraic("f5") == Square{ FILE_F, RANK_5 });
+		REQUIRE(SquareFromAlgebraic("g5") == Square{ FILE_G, RANK_5 });
+		REQUIRE(SquareFromAlgebraic("h5") == Square{ FILE_H, RANK_5 });
 
-		REQUIRE(SquareFromString("a6") == Square{ FILE_A, RANK_6 });
-		REQUIRE(SquareFromString("b6") == Square{ FILE_B, RANK_6 });
-		REQUIRE(SquareFromString("c6") == Square{ FILE_C, RANK_6 });
-		REQUIRE(SquareFromString("d6") == Square{ FILE_D, RANK_6 });
-		REQUIRE(SquareFromString("e6") == Square{ FILE_E, RANK_6 });
-		REQUIRE(SquareFromString("f6") == Square{ FILE_F, RANK_6 });
-		REQUIRE(SquareFromString("g6") == Square{ FILE_G, RANK_6 });
-		REQUIRE(SquareFromString("h6") == Square{ FILE_H, RANK_6 });
+		REQUIRE(SquareFromAlgebraic("a6") == Square{ FILE_A, RANK_6 });
+		REQUIRE(SquareFromAlgebraic("b6") == Square{ FILE_B, RANK_6 });
+		REQUIRE(SquareFromAlgebraic("c6") == Square{ FILE_C, RANK_6 });
+		REQUIRE(SquareFromAlgebraic("d6") == Square{ FILE_D, RANK_6 });
+		REQUIRE(SquareFromAlgebraic("e6") == Square{ FILE_E, RANK_6 });
+		REQUIRE(SquareFromAlgebraic("f6") == Square{ FILE_F, RANK_6 });
+		REQUIRE(SquareFromAlgebraic("g6") == Square{ FILE_G, RANK_6 });
+		REQUIRE(SquareFromAlgebraic("h6") == Square{ FILE_H, RANK_6 });
 
-		REQUIRE(SquareFromString("a7") == Square{ FILE_A, RANK_7 });
-		REQUIRE(SquareFromString("b7") == Square{ FILE_B, RANK_7 });
-		REQUIRE(SquareFromString("c7") == Square{ FILE_C, RANK_7 });
-		REQUIRE(SquareFromString("d7") == Square{ FILE_D, RANK_7 });
-		REQUIRE(SquareFromString("e7") == Square{ FILE_E, RANK_7 });
-		REQUIRE(SquareFromString("f7") == Square{ FILE_F, RANK_7 });
-		REQUIRE(SquareFromString("g7") == Square{ FILE_G, RANK_7 });
-		REQUIRE(SquareFromString("h7") == Square{ FILE_H, RANK_7 });
+		REQUIRE(SquareFromAlgebraic("a7") == Square{ FILE_A, RANK_7 });
+		REQUIRE(SquareFromAlgebraic("b7") == Square{ FILE_B, RANK_7 });
+		REQUIRE(SquareFromAlgebraic("c7") == Square{ FILE_C, RANK_7 });
+		REQUIRE(SquareFromAlgebraic("d7") == Square{ FILE_D, RANK_7 });
+		REQUIRE(SquareFromAlgebraic("e7") == Square{ FILE_E, RANK_7 });
+		REQUIRE(SquareFromAlgebraic("f7") == Square{ FILE_F, RANK_7 });
+		REQUIRE(SquareFromAlgebraic("g7") == Square{ FILE_G, RANK_7 });
+		REQUIRE(SquareFromAlgebraic("h7") == Square{ FILE_H, RANK_7 });
 
-		REQUIRE(SquareFromString("a8") == Square{ FILE_A, RANK_8 });
-		REQUIRE(SquareFromString("b8") == Square{ FILE_B, RANK_8 });
-		REQUIRE(SquareFromString("c8") == Square{ FILE_C, RANK_8 });
-		REQUIRE(SquareFromString("d8") == Square{ FILE_D, RANK_8 });
-		REQUIRE(SquareFromString("e8") == Square{ FILE_E, RANK_8 });
-		REQUIRE(SquareFromString("f8") == Square{ FILE_F, RANK_8 });
-		REQUIRE(SquareFromString("g8") == Square{ FILE_G, RANK_8 });
-		REQUIRE(SquareFromString("h8") == Square{ FILE_H, RANK_8 });
+		REQUIRE(SquareFromAlgebraic("a8") == Square{ FILE_A, RANK_8 });
+		REQUIRE(SquareFromAlgebraic("b8") == Square{ FILE_B, RANK_8 });
+		REQUIRE(SquareFromAlgebraic("c8") == Square{ FILE_C, RANK_8 });
+		REQUIRE(SquareFromAlgebraic("d8") == Square{ FILE_D, RANK_8 });
+		REQUIRE(SquareFromAlgebraic("e8") == Square{ FILE_E, RANK_8 });
+		REQUIRE(SquareFromAlgebraic("f8") == Square{ FILE_F, RANK_8 });
+		REQUIRE(SquareFromAlgebraic("g8") == Square{ FILE_G, RANK_8 });
+		REQUIRE(SquareFromAlgebraic("h8") == Square{ FILE_H, RANK_8 });
 	}
 
 	TEST_CASE("ZobristHash", "[Hash]")
@@ -247,7 +247,7 @@ namespace Test
 		REQUIRE(position.InCheck(TEAM_WHITE) == false);
 		REQUIRE(position.InCheck(TEAM_BLACK) == false);
 
-		Move move = CreateMoveFromString(position, "b5d7");
+		Move move = UCI::CreateMoveFromString(position, "b5d7");
 		ApplyMove(position, move);
 
 		REQUIRE(position.InCheck(TEAM_WHITE) == false);
