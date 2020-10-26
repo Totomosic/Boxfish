@@ -158,14 +158,14 @@ namespace Boxfish
 	Move PGN::CreateMoveFromString(const Position& position, const std::string& pgnString)
 	{
 		Move move = MOVE_NONE;
-		if (pgnString == "O-O")
+		if (pgnString.substr(0, 3) == "O-O")
 		{
 			if (position.TeamToPlay == TEAM_WHITE)
 				return CreateMove(position, { FILE_E, RANK_1 }, { FILE_G, RANK_1 });
 			else
 				return CreateMove(position, { FILE_E, RANK_8 }, { FILE_G, RANK_8 });
 		}
-		if (pgnString == "O-O-O")
+		if (pgnString.substr(0, 5) == "O-O-O")
 		{
 			if (position.TeamToPlay == TEAM_WHITE)
 				return CreateMove(position, { FILE_E, RANK_1 }, { FILE_C, RANK_1 });

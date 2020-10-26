@@ -1,7 +1,7 @@
 #pragma once
-#include "BoxfishDefines.h"
+#pragma warning( disable : 26812 )
 #include "Logging.h"
-#include <cstdint>
+
 
 namespace Boxfish
 {

@@ -208,6 +208,7 @@ namespace Test
 		REQUIRE(search.Perft(position, 4) == 3894594);
 		REQUIRE(search.Perft(position, 5) == 164075551);
 
+		// From Stockfish
 		position = CreatePositionFromFEN("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -");
 		REQUIRE(search.Perft(position, 5) == 193690690);
 
@@ -222,6 +223,59 @@ namespace Test
 
 		position = CreatePositionFromFEN("r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10");
 		REQUIRE(search.Perft(position, 5) == 164075551);
+	}
+
+	TEST_CASE("Transposition", "[Transposition]")
+	{
+		TranspositionTable tt;
+
+		Position position = CreateStartingPosition();
+
+		TranspositionTableEntry tte;
+		tte.Update(position.Hash, MOVE_NONE, 10, 487, UPPER_BOUND, 160, false);
+
+		REQUIRE(tte.GetHash() == position.Hash);
+		REQUIRE(tte.GetMove() == MOVE_NONE);
+		REQUIRE(tte.GetDepth() == 10);
+		REQUIRE(tte.GetScore() == 487);
+		REQUIRE(tte.GetFlag() == UPPER_BOUND);
+		REQUIRE(tte.GetAge() == 160);
+		REQUIRE(tte.IsPv() == false);
+
+		bool found;
+		TranspositionTableEntry* entry = tt.GetEntry(position.Hash, found);
+		REQUIRE(!found);
+		*entry = tte;
+		TranspositionTableEntry* newEntry = tt.GetEntry(position.Hash, found);
+		REQUIRE(newEntry == entry);
+		REQUIRE(found);
+		REQUIRE(newEntry->GetHash() == position.Hash);
+		REQUIRE(newEntry->GetMove() == MOVE_NONE);
+		REQUIRE(newEntry->GetDepth() == 10);
+		REQUIRE(newEntry->GetScore() == 487);
+		REQUIRE(newEntry->GetFlag() == UPPER_BOUND);
+		REQUIRE(newEntry->GetAge() == 160);
+		REQUIRE(newEntry->IsPv() == false);
+
+		tte.Update(position.Hash, MOVE_NONE, 0, -23, EXACT, 2, true);
+		REQUIRE(tte.GetHash() == position.Hash);
+		REQUIRE(tte.GetMove() == MOVE_NONE);
+		REQUIRE(tte.GetDepth() == 0);
+		REQUIRE(tte.GetScore() == -23);
+		REQUIRE(tte.GetFlag() == EXACT);
+		REQUIRE(tte.GetAge() == 2);
+		REQUIRE(tte.IsPv() == true);
+
+		Move move = PGN::CreateMoveFromString(position, "e4");
+
+		tte.Update(position.Hash, move, -5, SCORE_MATE - 10, EXACT, 22, true);
+		REQUIRE(tte.GetHash() == position.Hash);
+		REQUIRE(tte.GetMove() == move);
+		REQUIRE(tte.GetDepth() == -5);
+		REQUIRE(tte.GetScore() == SCORE_MATE - 10);
+		REQUIRE(tte.GetFlag() == EXACT);
+		REQUIRE(tte.GetAge() == 22);
+		REQUIRE(tte.IsPv() == true);
 	}
 
 	TEST_CASE("Checks", "[Check]")

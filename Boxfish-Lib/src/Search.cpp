@@ -788,13 +788,16 @@ namespace Boxfish
 		constexpr bool IsPvNode = NT == PV;
 		const bool inCheck = position.InCheck();
 
+		MoveList pvMoveList = m_MovePool.GetList();
+		Move* pv = pvMoveList.Moves;
+
 		ValueType originalAlpha = alpha;
 
 		bool ttFound;
 		TranspositionTableEntry* ttEntry = m_TranspositionTable.GetEntry(position.Hash, ttFound);
 		ValueType ttValue = ttFound ? GetValueFromTT(ttEntry->GetScore(), stack->Ply) : SCORE_NONE;
 
-		if (!IsPvNode && ttFound && ttEntry->GetHash() == position.Hash && ttValue != SCORE_NONE && !IsMateScore(ttValue))
+		if (!IsPvNode && ttFound && !IsMateScore(ttValue))
 		{
 			if (ttEntry->GetFlag() == EXACT)
 				return ttValue;
@@ -807,15 +810,15 @@ namespace Boxfish
 		if (IsDraw(position, nullptr))
 			return EvaluateDraw(position, stack->Contempt);
 
-		ValueType evaluation = 0;
+		ValueType evaluation = MatedIn(stack->Ply);
 		if (!inCheck)
 		{
-			if (ttFound && ttEntry->GetDepth() >= depth - 3 && (ttEntry->GetFlag() == EXACT || ttEntry->GetFlag() == LOWER_BOUND) && !IsMateScore(ttValue))
+			if (ttFound && ttEntry->GetDepth() >= depth - 3 && (ttEntry->GetFlag() & LOWER_BOUND) && !IsMateScore(ttValue))
 				evaluation = ttValue;
 			else
 				evaluation = StaticEvalPosition(position, alpha, beta, stack->Ply);
 
-			if (evaluation >= beta && !inCheck)
+			if (evaluation >= beta)
 			{
 				if (!ttFound || ReplaceTT(depth, position.GetTotalHalfMoves(), LOWER_BOUND, ttEntry))
 				{
@@ -844,10 +847,14 @@ namespace Boxfish
 			return EvaluateDraw(position, stack->Contempt);
 		}
 
-		if (!inCheck && evaluation >= beta + 250 && !IsMateScore(evaluation))
-			return beta;
+		if (!inCheck && evaluation >= beta + 250)
+		{
+			if (IsMateScore(evaluation))
+				return evaluation;
+			return evaluation - 250;
+		}
 
-		ValueType bestValue = -SCORE_MATE;
+		ValueType bestValue = MatedIn(stack->Ply);
 
 		constexpr int FIRST_MOVE_INDEX = 1;
 		int moveIndex = 0;
@@ -875,6 +882,12 @@ namespace Boxfish
 				else
 					(stack + 1)->PlySinceCaptureOrPawnPush = stack->PlySinceCaptureOrPawnPush + 1;
 
+				if (IsPvNode)
+				{
+					pv[0] = MOVE_NONE;
+					(stack + 1)->PV = pv;
+				}
+
 				ValueType score = -QuiescenceSearch<NT>(movedPosition, stack + 1, depth - 1, -beta, -alpha);
 				if (score > bestValue)
 					bestValue = score;
@@ -885,6 +898,15 @@ namespace Boxfish
 					return SCORE_NONE;
 				}
 
+				if (score > alpha)
+				{
+					alpha = score;
+					if (IsPvNode && (stack + 1)->PV)
+					{
+						UpdatePV(stack->PV, move, (stack + 1)->PV);
+					}
+				}
+
 				if (score >= beta)
 				{
 					if (!ttFound || ReplaceTT(depth, position.GetTotalHalfMoves(), LOWER_BOUND, ttEntry))
@@ -893,8 +915,6 @@ namespace Boxfish
 					}
 					return score;
 				}
-				if (score > alpha)
-					alpha = score;
 			}
 		}
 
@@ -1001,6 +1021,7 @@ namespace Boxfish
 
 	ValueType Search::StaticEvalPosition(const Position& position, ValueType alpha, ValueType beta, int ply) const
 	{
+		BOX_ASSERT(!position.InCheck(), "Cannot evaluate position in check");
 		return Evaluate(position, position.TeamToPlay, alpha, beta);
 	}
 

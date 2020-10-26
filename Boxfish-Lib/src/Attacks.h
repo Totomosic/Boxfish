@@ -49,7 +49,7 @@ namespace Boxfish
         11, 10, 10, 10, 10, 10, 10, 11,
         11, 10, 10, 10, 10, 10, 10, 11,
         11, 10, 10, 10, 10, 10, 10, 11,
-        12, 11, 11, 11, 11, 11, 11, 12
+        12, 11, 11, 11, 11, 11, 11, 12,
     };
 
     constexpr int s_BishopIndexBits[FILE_MAX * RANK_MAX] = {
@@ -60,7 +60,7 @@ namespace Boxfish
         5, 5, 7, 9, 9, 7, 5, 5,
         5, 5, 7, 7, 7, 7, 5, 5,
         5, 5, 5, 5, 5, 5, 5, 5,
-        6, 5, 5, 5, 5, 5, 5, 6
+        6, 5, 5, 5, 5, 5, 5, 6,
     };
 
     extern BitBoard s_BishopMasks[FILE_MAX * RANK_MAX];

@@ -101,21 +101,21 @@ namespace Boxfish
 	// Pawns can never be on the 8th rank (1st rank used as a sentinel for when there is no pawn)
 	static constexpr ValueType s_KingShieldStength[FILE_MAX / 2][RANK_MAX] = {
 		{ -3, 40, 45, 26, 20, 9, 13 },
-		{ -21, 29, 17, -25, -14, -5, -32 },
-		{ -5, 36, 12, -1, 16, 1, -22 },
+		{ -21, 22, 17, -25, -14, -5, -32 },
+		{ -5, 38, 12, -1, 16, 1, -22 },
 		{ -20, -7, -14, -15, -24, -33, -88 },
 	};
 
 	// Pawns can never be on the 8th rank (1st rank used as a sentinel for when there is no pawn)
 	static constexpr ValueType s_PawnStormStrength[FILE_MAX / 2][RANK_MAX] = {
-		{ 45, -140, -80, 45, 27, 23, 25 },
-		{ 22, -9, 62, 23, 18, -3, 11 },
+		{ 45, -145, -85, 48, 27, 23, 27 },
+		{ 22, -13, 62, 23, 18, -3, 11 },
 		{ -3, 25, 81, 17, -1, -10, -5 },
 		{ -8, -6, 50, 2, 5, -8, -11 },
 	};
 
 	static constexpr ValueType s_BlockedStormStrength[RANK_MAX] = {
-		0, 0, 30, -5, -4, -2, -1
+		0, 0, 36, -5, -4, -2, -1
 	};
 
 	static int s_AttackUnits[PIECE_MAX];
@@ -799,7 +799,7 @@ namespace Boxfish
 			{
 				// Only include pawns in front of our king
 				BitBoard ourPawns = FILE_MASKS[file] & position.GetTeamPieces(TEAM, PIECE_PAWN) & pawnMask & ~result.Data.AttackedBy[OTHER_TEAM][PIECE_PAWN];
-				BitBoard theirPawns = FILE_MASKS[file] & position.GetTeamPieces(OTHER_TEAM, PIECE_PAWN);
+				BitBoard theirPawns = FILE_MASKS[file] & position.GetTeamPieces(OTHER_TEAM, PIECE_PAWN) & pawnMask;
 
 				int ourRank = (ourPawns) ? RelativeRank(TEAM, BitBoard::RankOfIndex(FrontmostSquare(ourPawns, OTHER_TEAM))) : 0;
 				int theirRank = (theirPawns) ? RelativeRank(TEAM, BitBoard::RankOfIndex(FrontmostSquare(theirPawns, OTHER_TEAM))) : 0;
@@ -977,7 +977,6 @@ namespace Boxfish
 
 	EvaluationResult EvaluateDetailed(const Position& position, Team team, ValueType alpha, ValueType beta)
 	{
-		BOX_ASSERT(!position.InCheck(), "Cannot evaluate position in check");
 		EvaluationResult result;
 		result.GameStage = CalculateGameStage(position);
 		result.IsDraw = false;
