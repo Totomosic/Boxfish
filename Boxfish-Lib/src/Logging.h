@@ -4,12 +4,12 @@
 #include <functional>
 #include <cstdint>
 
+#define BOX_API
+
 #if (!defined(EMSCRIPTEN) || !defined(BOX_DIST))
 #include "spdlog/spdlog.h"
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/fmt/ostr.h>
-
-#define BOX_API
 
 namespace Boxfish
 {
