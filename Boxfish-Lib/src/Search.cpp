@@ -746,12 +746,15 @@ namespace Boxfish
 
 			if (value > bestValue)
 			{
-				bestMove = move;
 				bestValue = value;
-				if (IsPvNode && !IsRoot && (stack + 1)->PV)
-					UpdatePV(stack->PV, move, (stack + 1)->PV);
-				if (value > alpha && IsPvNode)
-					alpha = value;
+				if (value > alpha)
+				{
+					bestMove = move;
+					if (IsPvNode && !IsRoot)
+						UpdatePV(stack->PV, move, (stack + 1)->PV);
+					if (IsPvNode && value < beta)
+						alpha = value;
+				}
 			}
 
 			// Beta cutoff - Fail high
@@ -775,7 +778,7 @@ namespace Boxfish
 		}
 
 		EntryFlag entryFlag = (bestValue > originalAlpha) ? EXACT : UPPER_BOUND;
-		if (!ttFound || ReplaceTT(depth, position.GetTotalHalfMoves(), entryFlag, ttEntry))
+		if ((stack->ExcludedMove == MOVE_NONE && !(IsRoot && rootInfo.PVIndex == 0)) && (!ttFound || ReplaceTT(depth, position.GetTotalHalfMoves(), entryFlag, ttEntry)))
 		{
 			ttEntry->Update(position.Hash, bestMove, depth, GetValueForTT(bestValue, stack->Ply), entryFlag, position.GetTotalHalfMoves(), IsPvNode);
 		}

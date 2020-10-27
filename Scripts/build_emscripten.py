@@ -12,7 +12,6 @@ SOURCE_FILES = [
     "Evaluation.cpp",
     "Format.cpp",
     "Logging.cpp",
-    "Move.cpp",
     "MoveGenerator.cpp",
     "MoveSelector.cpp",
     "Position.cpp",

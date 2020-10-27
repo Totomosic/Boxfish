@@ -134,7 +134,7 @@ namespace Boxfish
 	QuiescenceMoveSelector::QuiescenceMoveSelector(const Position& position, MoveList& legalMoves, bool generateChecks)
 		: m_LegalMoves(legalMoves), m_CurrentIndex(0), m_NumberOfCaptures(0), m_InCheck(generateChecks)
 	{
-		ScoreMovesQuiescence(position, legalMoves);
+		ScoreMovesQuiescence(position, m_LegalMoves);
 		if (m_InCheck)
 		{
 			m_NumberOfCaptures = m_LegalMoves.MoveCount;
@@ -144,7 +144,7 @@ namespace Boxfish
 			for (int i = 0; i < m_LegalMoves.MoveCount; ++i)
 			{
 				const Move& m = m_LegalMoves.Moves[i];
-				if (m.IsCaptureOrPromotion() && m.GetValue() > SCORE_NONE)
+				if (m.GetValue() > SCORE_NONE)
 					m_NumberOfCaptures++;
 			}
 		}

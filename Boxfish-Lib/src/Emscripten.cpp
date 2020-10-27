@@ -113,7 +113,7 @@ EMSCRIPTEN_BINDINGS(my_module) {
 
 	constant("INVALID_SQUARE", INVALID_SQUARE);
 	constant("MOVE_NONE", MOVE_NONE);
-	constant("SQUARE_MAX", SQUARE_MAX);
+	constant("SQUARE_MAX", (int)SQUARE_MAX);
 	constant("SCORE_MATE", SCORE_MATE);
 	constant("SCORE_NONE", SCORE_NONE);
 	constant("SCORE_DRAW", SCORE_DRAW);
