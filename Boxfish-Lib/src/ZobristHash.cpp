@@ -7,7 +7,7 @@ namespace Boxfish
 
 	static bool s_Initialized = false;
 
-	static constexpr uint32_t s_Seed = 0xDABDABDA;
+	static constexpr uint32_t s_Seed = 0x412FDA8F;//0xDABDABDA;
 
 	uint64_t s_PieceOnSquare[TEAM_MAX][PIECE_MAX][FILE_MAX * RANK_MAX];
 	uint64_t s_BlackToMove;

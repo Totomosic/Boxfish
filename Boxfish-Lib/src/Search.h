@@ -61,6 +61,7 @@ namespace Boxfish
 		{
 		public:
 			ValueType Score;
+			int SelDepth;
 			std::vector<Move> PV;
 
 		public:
