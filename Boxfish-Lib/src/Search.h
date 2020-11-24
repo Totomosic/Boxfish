@@ -35,6 +35,7 @@ namespace Boxfish
 		ValueType StaticEvaluation = -SCORE_MATE;
 		ValueType Contempt = 0;
 		Move ExcludedMove = MOVE_NONE;
+		bool TTIsPv;
 	};
 
 	struct BOX_API SearchResult

@@ -9,7 +9,7 @@ namespace Boxfish
 	constexpr bool UsePieceSquares = true;
 	constexpr bool UseBlockedPieces = true;
 	constexpr bool UseKingSafety = true;
-	constexpr bool UseThreats = false;
+	constexpr bool UseThreats = true;
 	constexpr bool UseSpace = true;
 	constexpr bool UseInitiative = true;
 
@@ -232,14 +232,14 @@ namespace Boxfish
 		s_MaterialValues[MIDGAME][PIECE_KNIGHT] = 350;
 		s_MaterialValues[MIDGAME][PIECE_BISHOP] = 375;
 		s_MaterialValues[MIDGAME][PIECE_ROOK] = 515;
-		s_MaterialValues[MIDGAME][PIECE_QUEEN] = 1050;
+		s_MaterialValues[MIDGAME][PIECE_QUEEN] = 975;
 		s_MaterialValues[MIDGAME][PIECE_KING] = 20000;
 
 		s_MaterialValues[ENDGAME][PIECE_PAWN] = 140;
 		s_MaterialValues[ENDGAME][PIECE_KNIGHT] = 350;
 		s_MaterialValues[ENDGAME][PIECE_BISHOP] = 375;
 		s_MaterialValues[ENDGAME][PIECE_ROOK] = 515;
-		s_MaterialValues[ENDGAME][PIECE_QUEEN] = 1050;
+		s_MaterialValues[ENDGAME][PIECE_QUEEN] = 975;
 		s_MaterialValues[ENDGAME][PIECE_KING] = 20000;
 	}
 
