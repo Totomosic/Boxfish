@@ -51,7 +51,11 @@ namespace Boxfish
 				}
 
 				if (move.IsAdvancedPawnPush(currentPosition->TeamToPlay) || (move.GetFlags() & (MOVE_DOUBLE_PAWN_PUSH | MOVE_KINGSIDE_CASTLE | MOVE_QUEENSIDE_CASTLE)))
+				{
 					score += 250;
+					if (move.GetMovingPiece() == PIECE_PAWN && BitBoard::FileOfIndex(move.GetToSquareIndex()) == FILE_H)
+						score += 45;
+				}
 
 				// Central pawn push
 				constexpr BitBoard Center = (RANK_4_MASK | RANK_5_MASK) & (FILE_C_MASK | FILE_D_MASK | FILE_E_MASK | FILE_F_MASK);

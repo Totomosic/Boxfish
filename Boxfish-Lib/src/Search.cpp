@@ -102,6 +102,15 @@ namespace Boxfish
 		m_PositionHistory.clear();
 	}
 
+	const TranspositionTableEntry* Search::ProbeTranspostionTable(const Position& position) const
+	{
+		bool found;
+		const TranspositionTableEntry* entry = m_TranspositionTable.GetEntry(position.Hash, found);
+		if (found)
+			return entry;
+		return nullptr;
+	}
+
 #define BOX_UNDO_MOVES 0
 
 	size_t Search::Perft(const Position& pos, int depth)
@@ -300,7 +309,7 @@ namespace Boxfish
 				if (rootDepth >= 4)
 				{
 					ValueType prevMaxScore = bestScore;
-					delta = 18;
+					delta = 16;
 					alpha = std::max(prevMaxScore - delta, -SCORE_MATE);
 					beta = std::min(prevMaxScore + delta, SCORE_MATE);
 				}
@@ -334,7 +343,7 @@ namespace Boxfish
 						m_WasStopped = true;
 						break;
 					}
-					delta += delta / 6 + 3;
+					delta += delta / 5 + 3;
 				}
 
 				if (CheckLimits())
@@ -587,7 +596,7 @@ namespace Boxfish
 		// TODO: Investigate - creates very short PVs
 		if (IsPvNode && depth >= 6 && ttMove == MOVE_NONE && !inCheck)
 		{
-			depth -= 1;
+			// depth -= 1;
 		}
 
 		Move bestMove = MOVE_NONE;
@@ -782,7 +791,7 @@ namespace Boxfish
 					m_OrderingTables.CounterMoves[previousMove.GetFromSquareIndex()][previousMove.GetToSquareIndex()] = move;
 					UpdateQuietStats(position, stack, depth, move);
 				}
-				if ((stack->ExcludedMove == MOVE_NONE && !(IsRoot && rootInfo.PVIndex == 0)) && (!ttFound || ReplaceTT(depth, position.GetTotalHalfMoves(), LOWER_BOUND, ttEntry)))
+				if ((stack->ExcludedMove == MOVE_NONE && rootInfo.PVIndex == 0) && (!ttFound || ReplaceTT<IsPvNode>(depth, position.GetTotalHalfMoves(), LOWER_BOUND, ttEntry)))
 				{
 					ttEntry->Update(ttHash, move, depth, GetValueForTT(value, stack->Ply), LOWER_BOUND, position.GetTotalHalfMoves(), IsPvNode);
 				}
@@ -800,7 +809,7 @@ namespace Boxfish
 			stack->TTIsPv = stack->TTIsPv && (stack + 1)->TTIsPv;
 
 		EntryFlag entryFlag = (bestValue > originalAlpha) ? EXACT : UPPER_BOUND;
-		if ((stack->ExcludedMove == MOVE_NONE && !(IsRoot && rootInfo.PVIndex == 0)) && (!ttFound || ReplaceTT(depth, position.GetTotalHalfMoves(), entryFlag, ttEntry)))
+		if ((stack->ExcludedMove == MOVE_NONE && rootInfo.PVIndex == 0) && (!ttFound || ReplaceTT<IsPvNode>(depth, position.GetTotalHalfMoves(), entryFlag, ttEntry)))
 		{
 			ttEntry->Update(ttHash, bestMove, depth, GetValueForTT(bestValue, stack->Ply), entryFlag, position.GetTotalHalfMoves(), IsPvNode);
 		}
@@ -848,7 +857,7 @@ namespace Boxfish
 
 			if (evaluation >= beta)
 			{
-				if (!ttFound || ReplaceTT(depth, position.GetTotalHalfMoves(), LOWER_BOUND, ttEntry))
+				if (!ttFound || ReplaceTT<IsPvNode>(depth, position.GetTotalHalfMoves(), LOWER_BOUND, ttEntry))
 				{
 					ttEntry->Update(ttHash, MOVE_NONE, depth, GetValueForTT(evaluation, stack->Ply), LOWER_BOUND, position.GetTotalHalfMoves(), IsPvNode);
 				}
@@ -937,7 +946,7 @@ namespace Boxfish
 
 				if (score >= beta)
 				{
-					if (stack->ExcludedMove != MOVE_NONE && (!ttFound || ReplaceTT(depth, position.GetTotalHalfMoves(), LOWER_BOUND, ttEntry)))
+					if (stack->ExcludedMove != MOVE_NONE && (!ttFound || ReplaceTT<IsPvNode>(depth, position.GetTotalHalfMoves(), LOWER_BOUND, ttEntry)))
 					{
 						ttEntry->Update(ttHash, move, depth, GetValueForTT(score, stack->Ply), LOWER_BOUND, position.GetTotalHalfMoves(), IsPvNode);
 					}
@@ -947,7 +956,7 @@ namespace Boxfish
 		}
 
 		EntryFlag entryFlag = (alpha > originalAlpha) ? EXACT : UPPER_BOUND;
-		if (stack->ExcludedMove == MOVE_NONE && (!ttFound || ReplaceTT(depth, position.GetTotalHalfMoves(), entryFlag, ttEntry)))
+		if (stack->ExcludedMove == MOVE_NONE && (!ttFound || ReplaceTT<IsPvNode>(depth, position.GetTotalHalfMoves(), entryFlag, ttEntry)))
 		{
 			ttEntry->Update(ttHash, MOVE_NONE, depth, GetValueForTT(alpha, stack->Ply), entryFlag, position.GetTotalHalfMoves(), IsPvNode);
 		}
@@ -1063,8 +1072,13 @@ namespace Boxfish
 		m_OrderingTables.History[position.TeamToPlay][move.GetFromSquareIndex()][move.GetToSquareIndex()] += depth * depth;
 	}
 
+	template<bool IsPvNode>
 	bool Search::ReplaceTT(int depth, int age, EntryFlag flag, const TranspositionTableEntry* entry)
 	{
+		if (IsPvNode && !entry->IsPv())
+			return true;
+		if (!IsPvNode && entry->IsPv())
+			return false;
 		return depth * 6 + age >= entry->GetDepth() * 6 + entry->GetAge();
 	}
 

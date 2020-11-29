@@ -113,6 +113,8 @@ namespace Boxfish
 		void PushPosition(const Position& position);
 		void Reset();
 
+		const TranspositionTableEntry* ProbeTranspostionTable(const Position& position) const;
+
 		size_t Perft(const Position& position, int depth);
 		Move SearchBestMove(const Position& position, const SearchLimits& limits);
 		Move SearchBestMove(const Position& position, const SearchLimits& limits, const std::function<void(SearchResult)>& callback);
@@ -142,6 +144,7 @@ namespace Boxfish
 		ValueType StaticEvalPosition(const Position& position, ValueType alpha, ValueType beta, int ply) const;
 
 		void UpdateQuietStats(const Position& position, SearchStack* stack, int depth, Move move);
+		template<bool IsPvNode>
 		bool ReplaceTT(int depth, int age, EntryFlag flag, const TranspositionTableEntry* entry);
 
 		std::vector<RootMove> GenerateRootMoves(const Position& position, SearchStack* stack);

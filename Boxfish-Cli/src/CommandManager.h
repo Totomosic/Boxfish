@@ -36,9 +36,12 @@ namespace Boxfish
 		void GoDepth(int depth);
 		void GoTime(int milliseconds);
 		void GoPonder();
-		void Moves();
 		void Stop();
 		void Quit();
+
+		// Debug helpers
+		void Moves();
+		void ProbeTT();
 
 	};
 

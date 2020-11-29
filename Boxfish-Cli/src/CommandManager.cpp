@@ -19,7 +19,7 @@ namespace Boxfish
 	}
 
 	CommandManager::CommandManager()
-		: m_CommandMap(), m_CurrentPosition(CreateStartingPosition()), m_Search(50 * 1024 * 1024), m_Settings(), m_Searching(false), m_SearchThread()
+		: m_CommandMap(), m_CurrentPosition(CreateStartingPosition()), m_Search(256 * 1024 * 1024), m_Settings(), m_Searching(false), m_SearchThread()
 	{
 		m_CommandMap["help"] = [this](const std::vector<std::string>& args)
 		{
@@ -143,6 +143,11 @@ namespace Boxfish
 		m_CommandMap["moves"] = [this](const std::vector<std::string>& args)
 		{
 			Moves();
+		};
+
+		m_CommandMap["ttprobe"] = [this](const std::vector<std::string>& args)
+		{
+			ProbeTT();
 		};
 
 		m_CommandMap["stop"] = [this](const std::vector<std::string>& args)
@@ -368,6 +373,23 @@ namespace Boxfish
 		for (int i = 0; i < moves.MoveCount; i++)
 		{
 			std::cout << UCI::FormatMove(moves.Moves[i]) << std::endl;
+		}
+	}
+
+	void CommandManager::ProbeTT()
+	{
+		const TranspositionTableEntry* ttEntry = m_Search.ProbeTranspostionTable(m_CurrentPosition);
+		if (ttEntry)
+		{
+			std::cout << "TT Entry" << std::endl;
+			std::cout << "Best Move: " << UCI::FormatMove(ttEntry->GetMove()) << std::endl;
+			std::cout << "Score: " << ttEntry->GetScore() << std::endl;
+			std::cout << "Depth: " << ttEntry->GetDepth() << std::endl;
+			std::cout << "Is PV: " << (ttEntry->IsPv() ? "true" : "false") << std::endl;
+		}
+		else
+		{
+			std::cout << "No Table entry" << std::endl;
 		}
 	}
 
