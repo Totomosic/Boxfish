@@ -870,14 +870,41 @@ namespace Boxfish
 
 			BitBoard pawnsOnMinors = result.Data.AttackedBy[TEAM][PIECE_PAWN] & enemyMinors;
 			int pawnThreats = pawnsOnMinors.GetCount();
-			mg += 50 * pawnThreats;
-			eg += 40 * pawnThreats;
+			mg += 120 * pawnThreats;
+			eg += 120 * pawnThreats;
 
 			BitBoard minorAttacks = (result.Data.AttackedBy[TEAM][PIECE_BISHOP] | result.Data.AttackedBy[TEAM][PIECE_KNIGHT]);
 			BitBoard threatenedMinors = (position.GetTeamPieces(OTHER_TEAM) ^ position.GetTeamPieces(OTHER_TEAM, PIECE_PAWN)) & ~result.Data.AttackedBy[OTHER_TEAM][PIECE_PAWN];
 			int minorThreats = (minorAttacks & threatenedMinors).GetCount();
-			mg += 20 * minorThreats;
-			eg += 10 * minorThreats;
+			mg += 70 * minorThreats;
+			eg += 50 * minorThreats;
+
+			// Pins
+			BitBoard bishopAttacks = result.Data.AttackedBy[TEAM][PIECE_BISHOP];
+			BitBoard pinnedPieces = position.GetBlockersForKing(OTHER_TEAM) & (position.GetTeamPieces(OTHER_TEAM) ^ position.GetTeamPieces(OTHER_TEAM, PIECE_PAWN));
+			int pinnedToKing = pinnedPieces.GetCount();
+			mg += 50 * pinnedToKing;
+			eg += 20 * pinnedToKing;
+
+			BitBoard bishops = position.GetTeamPieces(TEAM, PIECE_BISHOP);
+			BitBoard blockers = position.GetAllPieces() ^ bishopAttacks;
+			while (bishops)
+			{
+				SquareIndex square = PopLeastSignificantBit(bishops);
+				BitBoard attacks = GetSlidingAttacks<PIECE_BISHOP>(square, blockers);
+				BitBoard queenAttacks = attacks & position.GetTeamPieces(OTHER_TEAM, PIECE_QUEEN);
+				BitBoard rookAttacks = attacks & position.GetTeamPieces(OTHER_TEAM, PIECE_ROOK);
+				if (queenAttacks)
+				{
+					mg += 15;
+					eg += 5;
+				}
+				if (rookAttacks)
+				{
+					mg += 5;
+					eg += 0;
+				}
+			}
 
 			result.Threats[MIDGAME][TEAM] = mg;
 			result.Threats[ENDGAME][TEAM] = eg;

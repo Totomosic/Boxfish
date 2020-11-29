@@ -300,7 +300,7 @@ namespace Boxfish
 				if (rootDepth >= 4)
 				{
 					ValueType prevMaxScore = bestScore;
-					delta = 12;
+					delta = 18;
 					alpha = std::max(prevMaxScore - delta, -SCORE_MATE);
 					beta = std::min(prevMaxScore + delta, SCORE_MATE);
 				}
