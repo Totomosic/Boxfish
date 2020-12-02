@@ -10,7 +10,7 @@ namespace Boxfish
 
 	constexpr ValueType SCORE_MATE = 200000;
 	constexpr ValueType SCORE_DRAW = 0;
-	constexpr ValueType SCORE_NONE = -SCORE_MATE * 2;
+	constexpr ValueType SCORE_NONE = -SCORE_MATE - 100;
 
 	inline ValueType InterpolateGameStage(int stage, ValueType midgame, ValueType endgame)
 	{

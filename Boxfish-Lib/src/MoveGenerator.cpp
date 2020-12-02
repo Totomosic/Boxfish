@@ -215,7 +215,7 @@ namespace Boxfish
 		{
 			return !IsSquareUnderAttack(m_Position, OtherTeam(m_Position.TeamToPlay), move.GetToSquareIndex());
 		}
-		return !(m_Position.InfoCache.BlockersForKing[m_Position.TeamToPlay] & move.GetFromSquareIndex())
+		return !(m_Position.GetBlockersForKing(m_Position.TeamToPlay) & move.GetFromSquareIndex())
 					|| IsAligned(move.GetFromSquareIndex(), move.GetToSquareIndex(), kingSquare);
 	}
 
@@ -225,8 +225,8 @@ namespace Boxfish
 		{
 		case PIECE_PAWN:
 		{
-			GeneratePawnSinglePushes(moveList, team, position);
 			GeneratePawnDoublePushes(moveList, team, position);
+			GeneratePawnSinglePushes(moveList, team, position);
 			GeneratePawnLeftAttacks(moveList, team, position);
 			GeneratePawnRightAttacks(moveList, team, position);
 			break;

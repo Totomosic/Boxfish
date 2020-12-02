@@ -248,10 +248,10 @@ namespace Boxfish
 		ValueType whitePawnsTable[SQUARE_MAX] = {
 			 0,  0,  0,  0,  0,  0,  0,  0,
 			50, 50, 50, 50, 50, 50, 50, 50,
-			10, 10, 20, 40, 30, 20, 10, 10,
-			 5,  5, 10, 10, 15, 10,  5,  5,
+			10, 10, 20, 20, 30, 20, 10, 10,
+			 5,  5, 10,  5, 10, 10,  5,  5,
 			 5,  0, 10, 15, 25,  0,  0,  5,
-			 5, -5,-10,  5,  5,-10, -5,  5,
+			 5,  5,  5,  7, 15, 10,  5,  5,
 			 5, 10, 10,-20,-20, 10, 10,  5,
 			 0,  0,  0,  0,  0,  0,  0,  0
 		};
@@ -263,7 +263,7 @@ namespace Boxfish
 		ValueType whiteKnightsTable[SQUARE_MAX] = {
 			-50,-40,-30,-30,-30,-30,-40,-50,
 			-40,-20,  0,  0,  0,  0,-20,-40,
-			-30,  0, 10, 15, 15, 10,  0,-30,
+			-30,  0, 28, 25, 25, 28,  0,-30,
 			-30,  5, 15, 20, 20, 15,  5,-30,
 			-30,  0, 15, 20, 20, 15,  0,-30,
 			-30,  5, 10, 15, 15, 10,  5,-30,
@@ -279,10 +279,10 @@ namespace Boxfish
 			-20,-10,-10,-10,-10,-10,-10,-20,
 			-10,  0,  0,  0,  0,  0,  0,-10,
 			-10,  0,  5, 10, 10,  5,  0,-10,
-			-10,  5,  5, 10, 10,  5,  5,-10,
-			-10,  0, 10, 10, 10, 10,  0,-10,
+			-10,  5,  5, 15, 15,  5,  5,-10,
+			-10,  0, 10, 25, 25, 10,  0,-10,
 			-10, 10, 10, 10, 10, 10, 10,-10,
-			-10, 25,  0,  0,  0,  0, 25,-10,
+			-10, 15, 10,  3,  3, 10, 15,-10,
 			-20,-10,-10,-10,-10,-10,-10,-20,
 		};
 		MirrorTable(s_PieceSquareTables[MIDGAME][TEAM_WHITE][PIECE_BISHOP], whiteBishopsTable);
@@ -474,6 +474,11 @@ namespace Boxfish
 		{
 			result.IsDraw = position.GetNonPawnMaterial(TEAM_BLACK) < GetPieceValue(PIECE_ROOK, MIDGAME);
 		}
+		// King vs King
+		else if (result.Material[ENDGAME][TEAM_WHITE] == 0 && result.Material[ENDGAME][TEAM_BLACK] == 0)
+		{
+			result.IsDraw = true;
+		}
 	}
 
 	template<Team TEAM>
@@ -483,7 +488,8 @@ namespace Boxfish
 		{
 			ValueType mg = 0;
 			ValueType eg = 0;
-			for (Piece piece = PIECE_PAWN; piece < PIECE_MAX; piece++)
+			// Other pieces handled by piece evaluation
+			for (Piece piece : { PIECE_PAWN, PIECE_KING })
 			{
 				BitBoard pieces = position.GetTeamPieces(TEAM, piece);
 				while (pieces)
@@ -682,6 +688,12 @@ namespace Boxfish
 		{
 			SquareIndex square = PopLeastSignificantBit(pieceSquares);
 
+			if constexpr (UsePieceSquares)
+			{
+				result.PieceSquares[MIDGAME][TEAM] += s_PieceSquareTables[MIDGAME][TEAM][PIECE][square];
+				result.PieceSquares[ENDGAME][TEAM] += s_PieceSquareTables[ENDGAME][TEAM][PIECE][square];
+			}
+
 			BitBoard attacks =
 				PIECE == PIECE_BISHOP	? GetSlidingAttacks<PIECE_BISHOP>(square, position.GetAllPieces() ^ position.GetPieces(PIECE_QUEEN)) :
 				PIECE == PIECE_ROOK		? GetSlidingAttacks<PIECE_ROOK>(square, position.GetAllPieces() ^ position.GetPieces(PIECE_QUEEN) ^ position.GetTeamPieces(TEAM, PIECE_ROOK)) :
@@ -862,49 +874,50 @@ namespace Boxfish
 		if constexpr (UseThreats)
 		{
 			constexpr Team OTHER_TEAM = OtherTeam(TEAM);
+			constexpr Direction Up = (TEAM == TEAM_WHITE) ? NORTH : SOUTH;
+			constexpr BitBoard RelativeRank3BB = (TEAM == TEAM_WHITE) ? RANK_3_MASK : RANK_6_MASK;
 
 			ValueType mg = 0;
 			ValueType eg = 0;
 
+			BitBoard stronglyDefended = result.Data.AttackedBy[OTHER_TEAM][PIECE_PAWN] | result.Data.AttackedByTwice[OTHER_TEAM];
+			BitBoard safe = ~result.Data.AttackedBy[OTHER_TEAM][PIECE_ALL] | result.Data.AttackedBy[TEAM][PIECE_ALL];
+			BitBoard nonPawnEnemies = position.GetTeamPieces(OTHER_TEAM) & ~position.GetTeamPieces(OTHER_TEAM, PIECE_PAWN);
+
 			BitBoard enemyMinors = position.GetTeamPieces(OTHER_TEAM, PIECE_BISHOP, PIECE_KNIGHT);
 
-			BitBoard pawnsOnMinors = result.Data.AttackedBy[TEAM][PIECE_PAWN] & enemyMinors;
+			BitBoard safePawns = position.GetTeamPieces(TEAM, PIECE_PAWN) & safe;
+			BitBoard pawnsOnMinors = GetPawnAttacks<TEAM>(safePawns) & result.Data.AttackedBy[TEAM][PIECE_PAWN] & enemyMinors;
 			int pawnThreats = pawnsOnMinors.GetCount();
-			mg += 120 * pawnThreats;
-			eg += 120 * pawnThreats;
+			mg += 70 * pawnThreats;
+			eg += 50 * pawnThreats;
+
+			BitBoard pushedPawns = position.GetTeamPieces(TEAM, PIECE_PAWN) & safe;
+			pushedPawns = Shift<Up>(pushedPawns) & ~position.GetAllPieces();
+			pushedPawns |= Shift<Up>(pushedPawns & RelativeRank3BB) & ~position.GetAllPieces();
+			pushedPawns &= ~result.Data.AttackedBy[OTHER_TEAM][PIECE_PAWN] & safe;
+			BitBoard pushedPawnAttacks = GetPawnAttacks<TEAM>(pushedPawns) & nonPawnEnemies;
+			int threatenedByPushedPawns = pushedPawnAttacks.GetCount();
+			mg += 30 * threatenedByPushedPawns;
+			eg += 10 * threatenedByPushedPawns;
 
 			BitBoard minorAttacks = (result.Data.AttackedBy[TEAM][PIECE_BISHOP] | result.Data.AttackedBy[TEAM][PIECE_KNIGHT]);
-			BitBoard threatenedMinors = (position.GetTeamPieces(OTHER_TEAM) ^ position.GetTeamPieces(OTHER_TEAM, PIECE_PAWN)) & ~result.Data.AttackedBy[OTHER_TEAM][PIECE_PAWN];
+			BitBoard threatenedMinors = nonPawnEnemies & ~result.Data.AttackedBy[OTHER_TEAM][PIECE_PAWN];
 			int minorThreats = (minorAttacks & threatenedMinors).GetCount();
-			mg += 70 * minorThreats;
-			eg += 50 * minorThreats;
+			mg += 45 * minorThreats;
+			eg += 15 * minorThreats;
 
 			// Pins
 			BitBoard bishopAttacks = result.Data.AttackedBy[TEAM][PIECE_BISHOP];
-			BitBoard pinnedPieces = position.GetBlockersForKing(OTHER_TEAM) & (position.GetTeamPieces(OTHER_TEAM) ^ position.GetTeamPieces(OTHER_TEAM, PIECE_PAWN));
+			BitBoard pinnedPieces = position.GetBlockersForKing(OTHER_TEAM) & nonPawnEnemies & bishopAttacks;
 			int pinnedToKing = pinnedPieces.GetCount();
-			mg += 50 * pinnedToKing;
-			eg += 20 * pinnedToKing;
+			mg += 25 * pinnedToKing;
+			eg += 30 * pinnedToKing;
 
-			BitBoard bishops = position.GetTeamPieces(TEAM, PIECE_BISHOP);
-			BitBoard blockers = position.GetAllPieces() ^ bishopAttacks;
-			while (bishops)
-			{
-				SquareIndex square = PopLeastSignificantBit(bishops);
-				BitBoard attacks = GetSlidingAttacks<PIECE_BISHOP>(square, blockers);
-				BitBoard queenAttacks = attacks & position.GetTeamPieces(OTHER_TEAM, PIECE_QUEEN);
-				BitBoard rookAttacks = attacks & position.GetTeamPieces(OTHER_TEAM, PIECE_ROOK);
-				if (queenAttacks)
-				{
-					mg += 15;
-					eg += 5;
-				}
-				if (rookAttacks)
-				{
-					mg += 5;
-					eg += 0;
-				}
-			}
+			BitBoard otherTeamMoves = result.Data.AttackedBy[OTHER_TEAM][PIECE_ALL] & ~stronglyDefended & result.Data.AttackedBy[TEAM][PIECE_ALL];
+			int moveCount = otherTeamMoves.GetCount();
+			mg += 3 * moveCount;
+			eg += 3 * moveCount;
 
 			result.Threats[MIDGAME][TEAM] = mg;
 			result.Threats[ENDGAME][TEAM] = eg;

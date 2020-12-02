@@ -620,7 +620,9 @@ namespace Boxfish
 		int moveIndex = 0;
 		ValueType bestValue = -SCORE_MATE;
 
-		while ((move = selector.GetNextMove()) != MOVE_NONE)
+		bool moveCountPruning = false;
+
+		while ((move = selector.GetNextMove(moveCountPruning)) != MOVE_NONE)
 		{
 			const bool isCaptureOrPromotion = move.IsCaptureOrPromotion();
 
@@ -647,6 +649,8 @@ namespace Boxfish
 
 			if (!IsRoot && position.GetNonPawnMaterial(position.TeamToPlay) > 0 && !IsMateScore(bestValue))
 			{
+				moveCountPruning = moveIndex >= (3 + depth * depth) / (2 - improving);
+
 				if (!isCaptureOrPromotion && !givesCheck && (!move.IsAdvancedPawnPush(position.TeamToPlay) || position.GetNonPawnMaterial() > 3500))
 				{
 					int lmrDepth = std::max(depth - 1 - GetReduction<PV>(improving, depth, moveIndex), 0);
@@ -968,7 +972,8 @@ namespace Boxfish
 	{
 		if (m_Limits.Infinite)
 			return m_ShouldStop;
-		if (m_Limits.Milliseconds > 0)
+		// Only check every 1024 nodes
+		if (m_Limits.Milliseconds > 0 && !(m_Nodes & 1023))
 		{
 			auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - m_StartTime);
 			if (elapsed.count() >= m_Limits.Milliseconds)
@@ -1079,7 +1084,7 @@ namespace Boxfish
 			return true;
 		if (!IsPvNode && entry->IsPv())
 			return false;
-		return depth * 6 + age >= entry->GetDepth() * 6 + entry->GetAge();
+		return depth >= entry->GetDepth();
 	}
 
 	std::vector<Search::RootMove> Search::GenerateRootMoves(const Position& position, SearchStack* stack)

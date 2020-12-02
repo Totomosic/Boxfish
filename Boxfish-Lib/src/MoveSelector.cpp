@@ -72,7 +72,7 @@ namespace Boxfish
 				ValueType butterfly = m_Tables->Butterfly[currentPosition->TeamToPlay][move.GetFromSquareIndex()][move.GetToSquareIndex()];
 				if (butterfly != 0 && history > butterfly)
 				{
-					score += history * 20 / butterfly;
+					score += history * 50 / butterfly;
 				}
 			}
 
@@ -80,7 +80,7 @@ namespace Boxfish
 		}
 	}
 
-	Move MoveSelector::GetNextMove()
+	Move MoveSelector::GetNextMove(bool skipQuiets)
 	{
 		if (m_CurrentStage == TTMove && m_ttMove != MOVE_NONE)
 		{
@@ -91,15 +91,15 @@ namespace Boxfish
 			return MOVE_NONE;
 		int bestIndex = m_CurrentIndex;
 		ValueType bestScore = -SCORE_MATE;
+		ValueType value;
 		for (int index = m_CurrentIndex; index < m_Moves->MoveCount; ++index)
 		{
 			const Move& move = m_Moves->Moves[index];
-			if (move != m_ttMove && move.GetValue() > bestScore)
+			value = move.GetValue();
+			if (value > bestScore)
 			{
 				bestIndex = index;
-				bestScore = move.GetValue();
-				if (bestScore == SCORE_MATE)
-					break;
+				bestScore = value;
 			}
 		}
 		if (m_CurrentIndex != bestIndex)
@@ -108,8 +108,27 @@ namespace Boxfish
 		}
 		Move mv = m_Moves->Moves[m_CurrentIndex++];
 		if (mv == m_ttMove)
-			return GetNextMove();
+			return GetNextMove(skipQuiets);
 		return mv;
+	}
+
+	void ScoreMoveQuiescence(const Position& position, Move& move)
+	{
+		if (move.IsCapture())
+		{
+			if (SeeGE(position, move, -30))
+				move.SetValue(SCORE_GOOD_CAPTURE + GetPieceValue(move.GetCapturedPiece()));
+			else
+				move.SetValue(SCORE_NONE);
+		}
+		else if (move.IsPromotion() && (move.GetPromotionPiece() == PIECE_QUEEN || move.GetPromotionPiece() == PIECE_KNIGHT))
+		{
+			move.SetValue(SCORE_PROMOTION + GetPieceValue(move.GetPromotionPiece()));
+		}
+		else
+		{
+			move.SetValue(SCORE_NONE);
+		}
 	}
 
 	void ScoreMovesQuiescence(const Position& position, MoveList& moves)
@@ -117,21 +136,7 @@ namespace Boxfish
 		for (int i = 0; i < moves.MoveCount; ++i)
 		{
 			Move& move = moves.Moves[i];
-			if (move.IsCapture())
-			{
-				if (SeeGE(position, move, -30))
-					move.SetValue(SCORE_GOOD_CAPTURE + GetPieceValue(move.GetCapturedPiece()));
-				else
-					move.SetValue(SCORE_NONE);
-			}
-			else if (move.IsPromotion() && (move.GetPromotionPiece() == PIECE_QUEEN || move.GetPromotionPiece() == PIECE_KNIGHT))
-			{
-				move.SetValue(SCORE_PROMOTION + GetPieceValue(move.GetPromotionPiece()));
-			}
-			else
-			{
-				move.SetValue(SCORE_NONE);
-			}
+			ScoreMoveQuiescence(position, move);
 		}
 	}
 
@@ -164,10 +169,11 @@ namespace Boxfish
 		BOX_ASSERT(!Empty(), "Move list is empty");
 		size_t bestIndex = 0;
 		ValueType bestScore = SCORE_NONE - 1;
+		ValueType value;
 		for (int index = m_CurrentIndex; index < m_LegalMoves.MoveCount; ++index)
 		{
 			const Move& move = m_LegalMoves.Moves[index];
-			ValueType value = move.GetValue();
+			value = move.GetValue();
 			if (value > bestScore)
 			{
 				bestScore = value;

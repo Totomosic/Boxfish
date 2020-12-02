@@ -24,8 +24,8 @@ namespace Boxfish
 			position.InfoCache.PiecesByType[piece] = position.GetTeamPieces(TEAM_WHITE, piece) | position.GetTeamPieces(TEAM_BLACK, piece);
 			if (piece != PIECE_PAWN && piece != PIECE_KING)
 			{
-				position.InfoCache.NonPawnMaterial[TEAM_WHITE] += position.GetTeamPieces(TEAM_WHITE, piece).GetCount() * GetPieceValue(piece);
-				position.InfoCache.NonPawnMaterial[TEAM_BLACK] += position.GetTeamPieces(TEAM_BLACK, piece).GetCount() * GetPieceValue(piece);
+				position.InfoCache.NonPawnMaterial[TEAM_WHITE] += position.GetTeamPieces(TEAM_WHITE, piece).GetCount() * GetPieceValue(piece, MIDGAME);
+				position.InfoCache.NonPawnMaterial[TEAM_BLACK] += position.GetTeamPieces(TEAM_BLACK, piece).GetCount() * GetPieceValue(piece, MIDGAME);
 			}
 			BitBoard pieces = position.GetPieces(piece);
 			while (pieces)
@@ -489,7 +489,7 @@ namespace Boxfish
 		position.InfoCache.PieceOnSquare[square] = PIECE_INVALID;
 		if (piece != PIECE_PAWN && piece != PIECE_KING)
 		{
-			position.InfoCache.NonPawnMaterial[team] -= GetPieceValue(piece);
+			position.InfoCache.NonPawnMaterial[team] -= GetPieceValue(piece, MIDGAME);
 		}
 		position.Hash.RemovePieceAt(team, piece, square);
 	}
@@ -503,7 +503,7 @@ namespace Boxfish
 		position.InfoCache.PieceOnSquare[square] = piece;
 		if (piece != PIECE_PAWN && piece != PIECE_KING)
 		{
-			position.InfoCache.NonPawnMaterial[team] += GetPieceValue(piece);
+			position.InfoCache.NonPawnMaterial[team] += GetPieceValue(piece, MIDGAME);
 		}
 		position.Hash.AddPieceAt(team, piece, square);
 	}

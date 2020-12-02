@@ -52,7 +52,7 @@ namespace Boxfish
 
 	public:
 		MoveSelector(MoveList* moves, const Position* currentPosition, Move ttMove, Move counterMove, Move prevMove, const OrderingTables* tables, const Move* killers);
-		Move GetNextMove();
+		Move GetNextMove(bool skipQuiets);
 	};
 
 	inline MoveSelector::SelectorStage operator++(MoveSelector::SelectorStage& stage, int)
