@@ -47,6 +47,9 @@ namespace Boxfish
 	bool SanityCheckMove(const Position& position, Move move);
 	Move CreateMove(const Position& position, const Square& from, const Square& to, Piece promotionPiece = PIECE_QUEEN);
 
+	bool IsLegalMoveSlow(const Position& position, Move move);
+	std::vector<Move> GetLegalMovesDebug(const Position& position);
+
 	std::ostream& operator<<(std::ostream& stream, const Position& position);
 
 }

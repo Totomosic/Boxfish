@@ -6,6 +6,7 @@
 #include "ZobristHash.h"
 #include "TranspositionTable.h"
 #include "Random.h"
+#include "Book.h"
 
 #include "Attacks.h"
 #include "MoveGenerator.h"

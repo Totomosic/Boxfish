@@ -1,8 +1,43 @@
 #include "Format.h"
 #include "Attacks.h"
+#include <fstream>
 
 namespace Boxfish
 {
+
+	std::vector<std::string> Split(const std::string& str, const std::string& delimiter)
+	{
+		std::vector<std::string> result;
+		size_t begin = 0;
+		size_t end = str.find(delimiter, begin);
+		while (end != std::string::npos)
+		{
+			result.push_back(str.substr(begin, end - begin));
+			begin = end + delimiter.size();
+			end = str.find(delimiter, begin);
+		}
+		result.push_back(str.substr(begin, end - begin));
+		return result;
+	}
+
+	void CleanupString(std::string& str, const char* charsToRemove, int charCount)
+	{
+		while (true)
+		{
+			bool found = false;
+			for (int i = 0; i < charCount; i++)
+			{
+				size_t pos = str.find(charsToRemove[i]);
+				if (pos != std::string::npos)
+				{
+					found = true;
+					str.erase(str.begin() + pos);
+				}
+			}
+			if (!found)
+				break;
+		}
+	}
 
 	std::string SquareToAlgebraic(const Square& square)
 	{
@@ -72,6 +107,7 @@ namespace Boxfish
 		if (uciString.size() > 5)
 		{
 			BOX_WARN("Move string is too long {} characters, expected 4 or 5.", uciString.size());
+			return MOVE_NONE;
 		}
 		File startFile = (File)(uciString[0] - 'a');
 		Rank startRank = (Rank)(uciString[1] - '1');
@@ -110,36 +146,49 @@ namespace Boxfish
 
 	std::string PGN::FormatMove(const Move& move, const Position& position)
 	{
+		std::string moveString;
 		if (move.GetFlags() & MOVE_KINGSIDE_CASTLE)
-			return "O-O";
-		if (move.GetFlags() & MOVE_QUEENSIDE_CASTLE)
-			return "O-O-O";
-
-		std::string moveString = GetPieceName(move.GetMovingPiece());
-		BitBoard attacks = GetAttacksBy(move.GetMovingPiece(), move.GetToSquareIndex(), position.TeamToPlay, position.GetAllPieces()) & position.GetTeamPieces(position.TeamToPlay, move.GetMovingPiece());
-		BOX_ASSERT(attacks != ZERO_BB, "Invalid move");
-		if (MoreThanOne(attacks) && move.GetMovingPiece() != PIECE_PAWN)
+			moveString = "O-O";
+		else if (move.GetFlags() & MOVE_QUEENSIDE_CASTLE)
+			moveString = "O-O-O";
+		else
 		{
-			// Resolve ambiguity
-			if (!MoreThanOne(attacks & FILE_MASKS[move.GetFromSquare().File]))
-				moveString += GetFileName(move.GetFromSquare().File);
-			else if (!MoreThanOne(attacks & RANK_MASKS[move.GetFromSquare().Rank]))
-				moveString += GetRankName(move.GetFromSquare().Rank);
-			else
-				moveString += SquareToAlgebraic(move.GetFromSquareIndex());
-		}
-		if (move.IsCapture())
-		{
-			if (move.GetMovingPiece() == PIECE_PAWN)
+			moveString = GetPieceName(move.GetMovingPiece());
+			BitBoard pieceAttacks = GetAttacksBy(move.GetMovingPiece(), move.GetToSquareIndex(), OtherTeam(position.TeamToPlay), position.GetAllPieces());
+			BitBoard attacks = pieceAttacks & position.GetTeamPieces(position.TeamToPlay, move.GetMovingPiece());
+			BitBoard pinnedAttacks = attacks & position.GetBlockersForKing(position.TeamToPlay);
+			while (pinnedAttacks)
 			{
-				moveString += GetFileName(move.GetFromSquare().File);
+				SquareIndex square = PopLeastSignificantBit(pinnedAttacks);
+				if (!IsAligned(square, position.GetKingSquare(position.TeamToPlay), move.GetToSquareIndex()))
+				{
+					attacks &= ~square;
+				}
 			}
-			moveString += 'x';
-		}
-		moveString += SquareToAlgebraic(move.GetToSquareIndex());
-		if (move.IsPromotion())
-		{
-			moveString += "=" + GetPieceName(move.GetPromotionPiece());
+			BOX_ASSERT(attacks != ZERO_BB || move.GetMovingPiece() == PIECE_PAWN, "Invalid move");
+			if (MoreThanOne(attacks) && move.GetMovingPiece() != PIECE_PAWN)
+			{
+				// Resolve ambiguity
+				if (!MoreThanOne(attacks & FILE_MASKS[move.GetFromSquare().File]))
+					moveString += GetFileName(move.GetFromSquare().File);
+				else if (!MoreThanOne(attacks & RANK_MASKS[move.GetFromSquare().Rank]))
+					moveString += GetRankName(move.GetFromSquare().Rank);
+				else
+					moveString += SquareToAlgebraic(move.GetFromSquareIndex());
+			}
+			if (move.IsCapture())
+			{
+				if (move.GetMovingPiece() == PIECE_PAWN)
+				{
+					moveString += GetFileName(move.GetFromSquare().File);
+				}
+				moveString += 'x';
+			}
+			moveString += SquareToAlgebraic(move.GetToSquareIndex());
+			if (move.IsPromotion())
+			{
+				moveString += "=" + GetPieceName(move.GetPromotionPiece());
+			}
 		}
 		Position pos = position;
 		ApplyMove(pos, move);
@@ -158,19 +207,19 @@ namespace Boxfish
 	Move PGN::CreateMoveFromString(const Position& position, const std::string& pgnString)
 	{
 		Move move = MOVE_NONE;
-		if (pgnString.substr(0, 3) == "O-O")
-		{
-			if (position.TeamToPlay == TEAM_WHITE)
-				return CreateMove(position, { FILE_E, RANK_1 }, { FILE_G, RANK_1 });
-			else
-				return CreateMove(position, { FILE_E, RANK_8 }, { FILE_G, RANK_8 });
-		}
-		if (pgnString.substr(0, 5) == "O-O-O")
+		if (pgnString.substr(0, 5) == "O-O-O" || pgnString.substr(0, 5) == "0-0-0")
 		{
 			if (position.TeamToPlay == TEAM_WHITE)
 				return CreateMove(position, { FILE_E, RANK_1 }, { FILE_C, RANK_1 });
 			else
 				return CreateMove(position, { FILE_E, RANK_8 }, { FILE_C, RANK_8 });
+		}
+		if (pgnString.substr(0, 3) == "O-O" || pgnString.substr(0, 3) == "0-0")
+		{
+			if (position.TeamToPlay == TEAM_WHITE)
+				return CreateMove(position, { FILE_E, RANK_1 }, { FILE_G, RANK_1 });
+			else
+				return CreateMove(position, { FILE_E, RANK_8 }, { FILE_G, RANK_8 });
 		}
 		size_t equals = pgnString.find('=');
 		Piece promotion = PIECE_INVALID;
@@ -181,6 +230,8 @@ namespace Boxfish
 		size_t endIndex = pgnString.size() - 1;
 		if (pgnString[endIndex] == '#' || pgnString[endIndex] == '+')
 			endIndex--;
+		if (equals != std::string::npos)
+			endIndex -= 2;
 		SquareIndex toSquare = SquareIndexFromAlgebraic(pgnString.substr(endIndex - 1, 2));
 		Piece movingPiece = PIECE_PAWN;
 		File pawnFile = FILE_INVALID;
@@ -197,12 +248,21 @@ namespace Boxfish
 		if (movingPiece == PIECE_PAWN && !isCapture)
 		{
 			Rank toRank = BitBoard::RankOfIndex(toSquare);
-			BitBoard pawns = position.GetTeamPieces(position.TeamToPlay, PIECE_PAWN) & FILE_MASKS[pawnFile] & ~InFrontOrEqual(Rank(toRank - 1), position.TeamToPlay);
+			BitBoard pawns = position.GetTeamPieces(position.TeamToPlay, PIECE_PAWN) & FILE_MASKS[pawnFile] & ~InFrontOrEqual(toRank, position.TeamToPlay);
 			move = CreateMove(position, BitBoard::BitIndexToSquare(FrontmostSquare(pawns, position.TeamToPlay)), BitBoard::BitIndexToSquare(toSquare), promotion);
 		}
 		else
 		{
-			BitBoard attacks = GetAttacksBy(movingPiece, toSquare, OtherTeam(position.TeamToPlay), position.GetAllPieces()) & position.GetTeamPieces(position.TeamToPlay, movingPiece);
+			BitBoard attacks = GetAttacksBy(movingPiece, toSquare, OtherTeam(position.TeamToPlay), position.GetAllPieces()) & (position.GetTeamPieces(position.TeamToPlay, movingPiece));
+			BitBoard pinnedAttacks = attacks & position.GetBlockersForKing(position.TeamToPlay);
+			while (pinnedAttacks)
+			{
+				SquareIndex square = PopLeastSignificantBit(pinnedAttacks);
+				if (!IsAligned(square, position.GetKingSquare(position.TeamToPlay), toSquare))
+				{
+					attacks &= ~square;
+				}
+			}
 			if (movingPiece == PIECE_PAWN && pawnFile != FILE_INVALID)
 				attacks &= FILE_MASKS[pawnFile];
 			if (attacks == ZERO_BB)
@@ -235,7 +295,175 @@ namespace Boxfish
 		}
 		if (move.IsCapture() == isCapture && (promotion != PIECE_INVALID) == move.IsPromotion())
 			return move;
+		std::cout << "HERE" << std::endl;
 		return MOVE_NONE;
+	}
+
+	std::vector<PGNMatch> PGN::ReadFromString(const std::string& pgn)
+	{
+		enum ReadStage
+		{
+			TAGS,
+			MOVES,
+		};
+
+		constexpr char CharsToRemove[] = { '\r' };
+		constexpr char TagCharsToRemove[] = { '\\' };
+		std::vector<PGNMatch> matches;
+		std::vector<std::string> lines = Split(pgn, "\n");
+
+		ReadStage currentStage = TAGS;
+		PGNMatch currentMatch;
+		Position currentPosition = CreateStartingPosition();
+		currentMatch.InitialPosition = currentPosition;
+		bool inComment = false;
+		std::string result = "";
+
+		for (std::string& line : lines)
+		{
+			CleanupString(line, CharsToRemove, sizeof(CharsToRemove) / sizeof(char));
+			if (line.size() > 0)
+			{
+				if (line[0] == '[')
+				{
+					if (currentStage != TAGS)
+					{
+						// Start new Match
+						matches.push_back(currentMatch);
+						currentMatch = PGNMatch();
+						currentStage = TAGS;
+						currentPosition = CreateStartingPosition();
+						inComment = false;
+						currentMatch.InitialPosition = currentPosition;
+						result = "";
+					}
+					size_t firstSpace = line.find_first_of(' ');
+					if (firstSpace != std::string::npos)
+					{
+						std::string tagName = line.substr(1, firstSpace - 1);
+						size_t firstQuote = line.find_first_of('"', firstSpace);
+						size_t lastQuote = line.find_last_of('"');
+						if (firstQuote != std::string::npos && firstQuote != lastQuote)
+						{
+							std::string tagValue = line.substr(firstQuote + 1, lastQuote - firstQuote - 1);
+							CleanupString(tagValue, TagCharsToRemove, sizeof(TagCharsToRemove) / sizeof(char));
+							currentMatch.Tags[tagName] = tagValue;
+
+							if (tagName == "FEN")
+							{
+								currentPosition = CreatePositionFromFEN(tagValue);
+								currentMatch.InitialPosition = currentPosition;
+							}
+							else if (tagName == "Result")
+								result = tagValue;
+							else if (tagName == "Variant")
+								std::cout << tagValue << std::endl;
+						}
+						else
+						{
+							std::cout << "Invalid Tag Line: Missing start or end quote" << std::endl;
+						}
+					}
+					else
+					{
+						std::cout << "Invalid Tag Line: Missing Space" << std::endl;
+					}
+				}
+				if (currentStage == TAGS && std::isdigit(line[0]))
+				{
+					currentStage = MOVES;
+				}
+				if (currentStage == MOVES)
+				{
+					size_t current = 0;
+					if (inComment)
+					{
+						current = line.find_first_of('}');
+						if (current != std::string::npos)
+							current++;
+						else
+							continue;
+					}
+					size_t end = line.find_first_of(' ', current);
+					while (current != std::string::npos && current < line.size())
+					{
+						std::string str;
+						if (end != std::string::npos)
+							str = line.substr(current, end - current);
+						else
+							str = line.substr(current);
+						if (str.size() > 0)
+						{
+							if (str[0] == '{')
+							{
+								inComment = true;
+								end = line.find_first_of('}', current);
+								if (end != std::string::npos)
+									inComment = false;
+							}
+							else if (str[0] == ';' || str == result)
+								break;
+							else
+							{
+								if (str.find('.') == std::string::npos)
+								{
+									Move move = CreateMoveFromString(currentPosition, str);
+									if (move != MOVE_NONE && IsLegalMoveSlow(currentPosition, move))
+									{
+										BOX_ASSERT(FormatMove(move, currentPosition) == str, "Invalid move");
+										currentMatch.Moves.push_back(move);
+										ApplyMove(currentPosition, move);
+									}
+									else
+									{
+										if (move == MOVE_NONE)
+										{
+											std::cout << currentPosition << std::endl;
+											std::cout << "Side to Move: " << ((currentPosition.TeamToPlay == TEAM_WHITE) ? 'w' : 'b') << std::endl;
+											std::cout << "Invalid move: " << str << std::endl;
+										}
+										else
+										{
+											std::cout << currentPosition << std::endl;
+											std::cout << "Side to Move: " << ((currentPosition.TeamToPlay == TEAM_WHITE) ? 'w' : 'b') << std::endl;
+											std::cout << "Illegal move: " << str << std::endl;
+											std::cout << "Legal Moves: " << std::endl;
+											for (const Move& move : GetLegalMovesDebug(currentPosition))
+												std::cout << FormatMove(move, currentPosition) << std::endl;
+										}
+									}
+								}
+							}
+						}
+						if (end != std::string::npos)
+						{
+							current = end + 1;
+							end = line.find_first_of(' ', current);
+						}
+						else
+						{
+							break;
+						}
+					}
+				}
+			}
+		}
+		matches.push_back(currentMatch);
+
+		return matches;
+	}
+
+	std::vector<PGNMatch> PGN::ReadFromFile(const std::string& filename)
+	{
+		std::ifstream file(filename);
+		file.seekg(0, std::ios::end);
+		size_t filesize = file.tellg();
+		file.seekg(0, std::ios::beg);
+		std::string result;
+		result.reserve(filesize / sizeof(char));
+		result.assign((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+		file.close();
+		return ReadFromString(result);
 	}
 
 	char PGN::GetFileName(File file)

@@ -83,6 +83,8 @@ namespace Boxfish
 
 		inline friend bool operator==(const Move& left, const Move& right) { return left.m_Move == right.m_Move; }
 		inline friend bool operator!=(const Move& left, const Move& right) { return left.m_Move != right.m_Move; }
+		
+		friend struct std::hash<Move>;
 	};
 
 	inline bool operator<(const Move& left, const Move& right)
@@ -91,5 +93,20 @@ namespace Boxfish
 	}
 
 	constexpr Move MOVE_NONE = Move(a1, a1, PIECE_PAWN, MOVE_NULL);
+
+}
+
+namespace std
+{
+
+	template<>
+	struct hash<Boxfish::Move>
+	{
+	public:
+		size_t operator()(const Boxfish::Move& move) const
+		{
+			return move.m_Move;
+		}
+	};
 
 }

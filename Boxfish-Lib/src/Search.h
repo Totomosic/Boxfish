@@ -5,9 +5,11 @@
 #include "TranspositionTable.h"
 #include "MoveSelector.h"
 #include "Settings.h"
+#include "Book.h"
 
 #include <chrono>
 #include <atomic>
+#include <unordered_set>
 
 namespace Boxfish
 {
@@ -21,6 +23,7 @@ namespace Boxfish
 		int Depth = -1;
 		int64_t Nodes = -1;
 		int Milliseconds = -1;
+		std::unordered_set<Move> Only = {};
 	};
 
 	struct BOX_API SearchStack
@@ -90,6 +93,7 @@ namespace Boxfish
 		BoxfishSettings m_Settings;
 		SearchLimits m_Limits;
 		std::vector<ZobristHash> m_PositionHistory;
+		const OpeningBook* m_OpeningBook;
 
 		MovePool m_MovePool;
 
@@ -112,12 +116,14 @@ namespace Boxfish
 		void SetLimits(const SearchLimits& limits);
 		void PushPosition(const Position& position);
 		void Reset();
+		void SetOpeningBook(const OpeningBook* book);
 
 		const TranspositionTableEntry* ProbeTranspostionTable(const Position& position) const;
 
 		size_t Perft(const Position& position, int depth);
-		Move SearchBestMove(const Position& position, const SearchLimits& limits);
-		Move SearchBestMove(const Position& position, const SearchLimits& limits, const std::function<void(SearchResult)>& callback);
+		Move SearchBestMove(const Position& position, SearchLimits limits);
+		Move SearchBestMove(const Position& position, SearchLimits limits, const std::function<void(SearchResult)>& callback);
+		void Ponder(const Position& position, SearchLimits limits, const std::function<void(SearchResult)>& callback = {});
 		void Ponder(const Position& position, const std::function<void(SearchResult)>& callback = {});
 
 		void Stop();

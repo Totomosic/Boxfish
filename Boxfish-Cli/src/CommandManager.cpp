@@ -3,21 +3,6 @@
 namespace Boxfish
 {
 
-	std::vector<std::string> Split(const std::string& str, const std::string& delimiter)
-	{
-		std::vector<std::string> result;
-		size_t begin = 0;
-		size_t end = str.find(delimiter, begin);
-		while (end != std::string::npos)
-		{
-			result.push_back(str.substr(begin, end - begin));
-			begin = end + delimiter.size();
-			end = str.find(delimiter, begin);
-		}
-		result.push_back(str.substr(begin, end - begin));
-		return result;
-	}
-
 	CommandManager::CommandManager()
 		: m_CommandMap(), m_CurrentPosition(CreateStartingPosition()), m_Search(256 * 1024 * 1024), m_Settings(), m_Searching(false), m_SearchThread()
 	{
@@ -120,22 +105,22 @@ namespace Boxfish
 		{
 			if (args.size() > 0)
 			{
-				if (args.size() > 1)
+				if (args[0] == "ponder")
+				{
+					GoPonder(GetMoveList(args, 1));
+				}
+				else if (args.size() > 1)
 				{
 					if (args[0] == "depth")
 					{
 						int depth = std::stoi(args[1]);
-						GoDepth(depth);
+						GoDepth(depth, GetMoveList(args, 2));
 					}
 					else if (args[0] == "movetime")
 					{
 						int milliseconds = std::stoi(args[1]);
-						GoTime(milliseconds);
+						GoTime(milliseconds, GetMoveList(args, 2));
 					}
-				}
-				else if (args[0] == "ponder")
-				{
-					GoPonder();
 				}
 			}
 		};
@@ -312,17 +297,18 @@ namespace Boxfish
 		}
 	}
 
-	void CommandManager::GoDepth(int depth)
+	void CommandManager::GoDepth(int depth, const std::unordered_set<Move>& includedMoves)
 	{
 		if (!m_Searching)
 		{
 			m_Searching = true;
 			if (m_SearchThread.joinable())
 				m_SearchThread.join();
-			m_SearchThread = std::thread([this, depth]()
+			m_SearchThread = std::thread([this, depth, includedMoves]()
 			{
 				SearchLimits limits;
 				limits.Depth = depth;
+				limits.Only = includedMoves;
 				Move bestMove = m_Search.SearchBestMove(m_CurrentPosition, limits);
 				std::cout << "bestmove " << UCI::FormatMove(bestMove) << std::endl;
 				m_Searching = false;
@@ -330,17 +316,18 @@ namespace Boxfish
 		}
 	}
 
-	void CommandManager::GoTime(int milliseconds)
+	void CommandManager::GoTime(int milliseconds, const std::unordered_set<Move>& includedMoves)
 	{
 		if (!m_Searching)
 		{
 			m_Searching = true;
 			if (m_SearchThread.joinable())
 				m_SearchThread.join();
-			m_SearchThread = std::thread([this, milliseconds]()
+			m_SearchThread = std::thread([this, milliseconds, includedMoves]()
 			{
 				SearchLimits limits;
 				limits.Milliseconds = milliseconds;
+				limits.Only = includedMoves;
 				Move bestMove = m_Search.SearchBestMove(m_CurrentPosition, limits);
 				std::cout << "bestmove " << UCI::FormatMove(bestMove) << std::endl;
 				m_Searching = false;
@@ -348,16 +335,18 @@ namespace Boxfish
 		}
 	}
 
-	void CommandManager::GoPonder()
+	void CommandManager::GoPonder(const std::unordered_set<Move>& includedMoves)
 	{
 		if (!m_Searching)
 		{
 			m_Searching = true;
 			if (m_SearchThread.joinable())
 				m_SearchThread.join();
-			m_SearchThread = std::thread([this]()
+			m_SearchThread = std::thread([this, includedMoves]()
 			{
-				m_Search.Ponder(m_CurrentPosition);
+				SearchLimits limits;
+				limits.Only = includedMoves;
+				m_Search.Ponder(m_CurrentPosition, limits);
 				m_Searching = false;
 			});
 		}
@@ -406,6 +395,18 @@ namespace Boxfish
 	{
 		Stop();
 		exit(0);
+	}
+
+	std::unordered_set<Move> CommandManager::GetMoveList(const std::vector<std::string>& args, int offset) const
+	{
+		std::unordered_set<Move> includedMoves;
+		for (int i = offset; i < args.size(); i++)
+		{
+			Move mv = UCI::CreateMoveFromString(m_CurrentPosition, args[i]);
+			if (mv != MOVE_NONE)
+				includedMoves.insert(mv);
+		}
+		return includedMoves;
 	}
 
 }

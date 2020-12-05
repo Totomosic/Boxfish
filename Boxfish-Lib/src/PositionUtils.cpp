@@ -863,6 +863,34 @@ namespace Boxfish
 		return move;
 	}
 
+	bool IsLegalMoveSlow(const Position& position, Move move)
+	{
+		Move buffer[MAX_MOVES];
+		MoveList list(buffer);
+		MoveGenerator generator(position);
+		generator.GetPseudoLegalMoves(list);
+		generator.FilterLegalMoves(list);
+		for (int i = 0; i < list.MoveCount; i++)
+		{
+			if (list.Moves[i] == move)
+				return true;
+		}
+		return false;
+	}
+
+	std::vector<Move> GetLegalMovesDebug(const Position& position)
+	{
+		std::vector<Move> result;
+		Move buffer[MAX_MOVES];
+		MoveList list(buffer);
+		MoveGenerator generator(position);
+		generator.GetPseudoLegalMoves(list);
+		generator.FilterLegalMoves(list);
+		for (int i = 0; i < list.MoveCount; i++)
+			result.push_back(list.Moves[i]);
+		return result;
+	}
+
 	std::ostream& operator<<(std::ostream& stream, const Position& position)
 	{
 		for (Rank rank = RANK_8; rank >= RANK_1; rank--)

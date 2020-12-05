@@ -36,3 +36,18 @@ namespace Boxfish
 	};
 
 }
+
+namespace std
+{
+
+	template<>
+	struct hash<Boxfish::ZobristHash>
+	{
+	public:
+		size_t operator()(const Boxfish::ZobristHash& hash) const
+		{
+			return hash.Hash;
+		}
+	};
+
+}

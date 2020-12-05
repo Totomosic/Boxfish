@@ -33,15 +33,18 @@ namespace Boxfish
 		void ApplyMoves(const std::vector<std::string>& moves);
 		void Eval();
 		void Perft(int depth);
-		void GoDepth(int depth);
-		void GoTime(int milliseconds);
-		void GoPonder();
+		void GoDepth(int depth, const std::unordered_set<Move>& includedMoves);
+		void GoTime(int milliseconds, const std::unordered_set<Move>& includedMoves);
+		void GoPonder(const std::unordered_set<Move>& includedMoves);
 		void Stop();
 		void Quit();
 
 		// Debug helpers
 		void Moves();
 		void ProbeTT();
+
+		// Utils
+		std::unordered_set<Move> GetMoveList(const std::vector<std::string>& args, int offset) const;
 
 	};
 

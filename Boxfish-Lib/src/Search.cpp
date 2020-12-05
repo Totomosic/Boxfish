@@ -71,7 +71,7 @@ namespace Boxfish
 	}
 
 	Search::Search(size_t transpositionTableSize, bool log)
-		: m_TranspositionTable(transpositionTableSize), m_Settings(), m_Limits(), m_PositionHistory(), m_MovePool(MOVE_POOL_SIZE), m_Nodes(0), m_SearchRootStartTime(), m_StartTime(),
+		: m_TranspositionTable(transpositionTableSize), m_Settings(), m_Limits(), m_PositionHistory(), m_OpeningBook(nullptr), m_MovePool(MOVE_POOL_SIZE), m_Nodes(0), m_SearchRootStartTime(), m_StartTime(),
 		m_WasStopped(false), m_ShouldStop(false), m_Log(log), m_OrderingTables()
 	{
 		m_OrderingTables.Clear();
@@ -100,6 +100,11 @@ namespace Boxfish
 	void Search::Reset()
 	{
 		m_PositionHistory.clear();
+	}
+
+	void Search::SetOpeningBook(const OpeningBook* book)
+	{
+		m_OpeningBook = book;
 	}
 
 	const TranspositionTableEntry* Search::ProbeTranspostionTable(const Position& position) const
@@ -153,13 +158,25 @@ namespace Boxfish
 		return total;
 	}
 
-	Move Search::SearchBestMove(const Position& position, const SearchLimits& limits)
+	Move Search::SearchBestMove(const Position& position, SearchLimits limits)
 	{
 		return SearchBestMove(position, limits, [](SearchResult) {});
 	}
 
-	Move Search::SearchBestMove(const Position& position, const SearchLimits& limits, const std::function<void(SearchResult)>& callback)
+	Move Search::SearchBestMove(const Position& position, SearchLimits limits, const std::function<void(SearchResult)>& callback)
 	{
+		// Don't use book moves when pondering
+		if (!limits.Infinite && m_OpeningBook != nullptr && position.GetTotalHalfMoves() <= m_OpeningBook->GetCardinality())
+		{
+			auto bookCollection = m_OpeningBook->Probe(position.Hash);
+			if (bookCollection)
+			{
+				BookEntry entry = bookCollection->PickRandom();
+				Move move = CreateMove(position, BitBoard::BitIndexToSquare(entry.From), BitBoard::BitIndexToSquare(entry.To));
+				limits.Only.insert(move);
+			}
+		}
+
 		SetLimits(limits);
 		m_OrderingTables.Clear();
 		m_WasStopped = false;
@@ -174,11 +191,15 @@ namespace Boxfish
 		return rootMove.PV[0];
 	}
 
-	void Search::Ponder(const Position& position, const std::function<void(SearchResult)>& callback)
+	void Search::Ponder(const Position& position, SearchLimits limits, const std::function<void(SearchResult)>& callback)
 	{
-		SearchLimits limits;
 		limits.Infinite = true;
 		SearchBestMove(position, limits, callback);
+	}
+
+	void Search::Ponder(const Position& position, const std::function<void(SearchResult)>& callback)
+	{
+		return Ponder(position, SearchLimits{}, callback);
 	}
 
 	void Search::Stop()
@@ -379,6 +400,8 @@ namespace Boxfish
 					std::cout << " multipv " << (pvIndex + 1);
 					if (hashFull >= 500)
 						std::cout << " hashfull " << hashFull;
+					if (m_Limits.Only.size() == 1)
+						std::cout << " bookmove";
 					std::cout << " pv";
 					for (const Move& move : rootPV)
 					{
@@ -1096,10 +1119,13 @@ namespace Boxfish
 		std::vector<RootMove> result;
 		for (int i = 0; i < list.MoveCount; i++)
 		{
-			RootMove mv;
-			mv.Score = SCORE_NONE;
-			mv.PV = { list.Moves[i] };
-			result.push_back(mv);
+			if (m_Limits.Only.empty() || (m_Limits.Only.find(list.Moves[i]) != m_Limits.Only.end()))
+			{
+				RootMove mv;
+				mv.Score = SCORE_NONE;
+				mv.PV = { list.Moves[i] };
+				result.push_back(mv);
+			}
 		}
 		return result;
 	}
