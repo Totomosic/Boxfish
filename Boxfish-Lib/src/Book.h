@@ -4,6 +4,7 @@
 #include "Move.h"
 
 #include <optional>
+#include <unordered_map>
 
 namespace Boxfish
 {

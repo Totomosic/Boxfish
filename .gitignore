@@ -7,3 +7,4 @@ Web/
 *.sln
 *.vcxproj*
 Makefile
+Scripts/EMBuild.bat

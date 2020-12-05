@@ -8,6 +8,7 @@ SOURCE_DIRECTORY = "../Boxfish-Lib/src"
 SOURCE_FILES = [
     "Attacks.cpp",
     "Bitboard.cpp",
+    "Book.cpp",
     "Boxfish.cpp",
     "Evaluation.cpp",
     "Format.cpp",
