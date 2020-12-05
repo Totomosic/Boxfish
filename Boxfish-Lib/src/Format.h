@@ -1,5 +1,6 @@
 #pragma once
 #include "MoveGenerator.h"
+#include <unordered_map>
 
 namespace Boxfish
 {
