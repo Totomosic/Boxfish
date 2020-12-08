@@ -2,6 +2,10 @@
 #include "MoveGenerator.h"
 #include <unordered_map>
 
+#ifdef SWIG
+#define BOX_API
+#endif
+
 namespace Boxfish
 {
 

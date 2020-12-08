@@ -6,6 +6,10 @@
 #include <optional>
 #include <unordered_map>
 
+#ifdef SWIG
+#define BOX_API
+#endif
+
 namespace Boxfish
 {
 

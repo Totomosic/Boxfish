@@ -3,6 +3,10 @@
 #include "Types.h"
 #include <vector>
 
+#ifdef SWIG
+#define BOX_API
+#endif
+
 namespace Boxfish
 {
 

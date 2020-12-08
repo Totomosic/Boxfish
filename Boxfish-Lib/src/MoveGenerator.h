@@ -4,6 +4,10 @@
 #include "Position.h"
 #include <array>
 
+#ifdef SWIG
+#define BOX_API
+#endif
+
 namespace Boxfish
 {
 

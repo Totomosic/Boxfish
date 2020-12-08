@@ -2,6 +2,10 @@
 #include <random>
 #include "Logging.h"
 
+#ifdef SWIG
+#define BOX_API
+#endif
+
 namespace Boxfish
 {
 

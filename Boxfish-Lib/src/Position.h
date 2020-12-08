@@ -2,6 +2,10 @@
 #include "Bitboard.h"
 #include "ZobristHash.h"
 
+#ifdef SWIG
+#define BOX_API
+#endif
+
 namespace Boxfish
 {
 
@@ -10,7 +14,7 @@ namespace Boxfish
 	struct BOX_API Position
 	{
 	public:
-		struct PositionInfo
+		struct BOX_API PositionInfo
 		{
 		public:
 			BitBoard TeamPieces[TEAM_MAX];

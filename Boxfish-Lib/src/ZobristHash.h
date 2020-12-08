@@ -1,6 +1,10 @@
 #pragma once
 #include "Types.h"
 
+#ifdef SWIG
+#define BOX_API
+#endif
+
 namespace Boxfish
 {
 

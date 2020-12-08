@@ -45,3 +45,8 @@ Example of the engine running [here](https://totomosic.github.io). (built to Web
 1. Run `Scripts/Linux-GenProjects.sh` to generate the Makefiles.
 2. Run `make -j<number_of_cores> Boxfish-Cli` to build Boxfish.
 3. Build outputs are located in the `bin` directory.
+
+## Building Python SWIG Bindings:
+1. Run the relevant GenProjects script
+2. Copy `SwigConfig.lua.example` to `SwigConfigWindows.lua` or `SwigConfigLinux.lua` depending on operating system
+3. 

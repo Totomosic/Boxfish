@@ -11,6 +11,10 @@
 #include <atomic>
 #include <unordered_set>
 
+#ifdef SWIG
+#define BOX_API
+#endif
+
 namespace Boxfish
 {
 

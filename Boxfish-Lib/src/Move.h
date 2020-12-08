@@ -1,5 +1,10 @@
 #pragma once
 #include "Position.h"
+#include <unordered_map>
+
+#ifdef SWIG
+#define BOX_API
+#endif
 
 namespace Boxfish
 {

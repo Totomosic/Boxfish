@@ -3,6 +3,10 @@
 #include "MoveGenerator.h"
 #include "Evaluation.h"
 
+#ifdef SWIG
+#define BOX_API
+#endif
+
 namespace Boxfish
 {
 

@@ -8,3 +8,6 @@ Web/
 *.vcxproj*
 Makefile
 Scripts/EMBuild.bat
+Boxfish_wrapper.cpp
+SwigConfigWindows.lua
+SwigConfigLinux.lua

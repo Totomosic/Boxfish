@@ -428,7 +428,7 @@ namespace Boxfish
 											std::cout << "Side to Move: " << ((currentPosition.TeamToPlay == TEAM_WHITE) ? 'w' : 'b') << std::endl;
 											std::cout << "Illegal move: " << str << std::endl;
 											std::cout << "Legal Moves: " << std::endl;
-											for (const Move& move : GetLegalMovesDebug(currentPosition))
+											for (const Move& move : GetLegalMovesSlow(currentPosition))
 												std::cout << FormatMove(move, currentPosition) << std::endl;
 										}
 									}

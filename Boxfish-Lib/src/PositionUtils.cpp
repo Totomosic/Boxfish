@@ -878,7 +878,7 @@ namespace Boxfish
 		return false;
 	}
 
-	std::vector<Move> GetLegalMovesDebug(const Position& position)
+	std::vector<Move> GetLegalMovesSlow(const Position& position)
 	{
 		std::vector<Move> result;
 		Move buffer[MAX_MOVES];

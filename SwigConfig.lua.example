@@ -1,0 +1,4 @@
+PYTHON_EXECUTABLE = "python"
+SWIG_EXECUTABLE = "<path_to_swig_executable>"
+PYTHON_INCLUDE_DIR = "<path>/Include"
+PYTHON_LIB_FILE = "<path>/python{version}.lib"

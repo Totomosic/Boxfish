@@ -132,7 +132,7 @@ namespace Boxfish
 		return (Piece)((int8_t)p + 1);
 	}
 
-	struct BOX_API Square
+	struct Square
 	{
 	public:
 		::Boxfish::File File;

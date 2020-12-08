@@ -3,6 +3,10 @@
 #include "Position.h"
 #include <limits>
 
+#ifdef SWIG
+#define BOX_API
+#endif
+
 namespace Boxfish
 {
 

@@ -251,8 +251,8 @@ namespace Boxfish
 			10, 10, 20, 20, 30, 20, 10, 10,
 			 5,  5, 10,  5, 10, 10,  5,  5,
 			 5,  0, 10, 15, 25,  0,  0,  5,
-			 5,  5,  5,  7, 15, 11,  5,-10,
-			 1,  1,  5, 10,  8, 10,  4, -2,
+			 5,  5,  5,  7, 15, 11,  5,  5,
+			 5, 10, 10,-20,-20, 10,  4,  5,
 			 0,  0,  0,  0,  0,  0,  0,  0
 		};
 		MirrorTable(s_PieceSquareTables[MIDGAME][TEAM_WHITE][PIECE_PAWN], whitePawnsTable);
@@ -959,7 +959,7 @@ namespace Boxfish
 			int count = safe.GetCount() + (behind & safe & ~result.Data.AttackedBy[OTHER_TEAM][PIECE_ALL]).GetCount();
 			int weight = position.GetTeamPieces(TEAM).GetCount() - 3 + std::min(blockedPawns, 9);
 
-			result.Space[MIDGAME][TEAM] = count * weight * weight / 32;
+			result.Space[MIDGAME][TEAM] = count * weight * weight / 24;
 			result.Space[ENDGAME][TEAM] = 0;
 		}
 		else

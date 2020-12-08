@@ -4,6 +4,10 @@
 #include "Evaluation.h"
 #include <memory>
 
+#ifdef SWIG
+#define BOX_API
+#endif
+
 namespace Boxfish
 {
 
