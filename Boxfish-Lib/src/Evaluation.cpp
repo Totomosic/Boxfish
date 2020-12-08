@@ -9,7 +9,7 @@ namespace Boxfish
 	constexpr bool UsePieceSquares = true;
 	constexpr bool UseBlockedPieces = true;
 	constexpr bool UseKingSafety = true;
-	constexpr bool UseThreats = true;
+	constexpr bool UseThreats = false;
 	constexpr bool UseSpace = true;
 	constexpr bool UseInitiative = true;
 
@@ -251,8 +251,8 @@ namespace Boxfish
 			10, 10, 20, 20, 30, 20, 10, 10,
 			 5,  5, 10,  5, 10, 10,  5,  5,
 			 5,  0, 10, 15, 25,  0,  0,  5,
-			 5,  5,  5,  7, 15, 10,  5,  5,
-			 5, 10, 10,-20,-20, 10, 10,  5,
+			 5,  5,  5,  7, 15, 11,  5,-10,
+			 1,  1,  5, 10,  8, 10,  4, -2,
 			 0,  0,  0,  0,  0,  0,  0,  0
 		};
 		MirrorTable(s_PieceSquareTables[MIDGAME][TEAM_WHITE][PIECE_PAWN], whitePawnsTable);
@@ -791,14 +791,14 @@ namespace Boxfish
 			constexpr Team OTHER_TEAM = OtherTeam(TEAM);
 			constexpr BitBoard OurSide =
 				(TEAM == TEAM_WHITE) ? ALL_SQUARES_BB & ~RANK_6_MASK & ~RANK_7_MASK & ~RANK_8_MASK
-									 : ALL_SQUARES_BB & ~RANK_1_MASK & ~RANK_2_MASK & ~RANK_3_MASK;
+				: ALL_SQUARES_BB & ~RANK_1_MASK & ~RANK_2_MASK & ~RANK_3_MASK;
 
 			SquareIndex kngSq = position.GetKingSquare(TEAM);
 			Square kingSquare = BitBoard::BitIndexToSquare(kngSq);
 
 			ValueType mg = 0;
 			ValueType eg = 0;
-			if (result.Data.Attackers[OTHER_TEAM] >= 2 && position.GetTeamPieces(OTHER_TEAM, PIECE_QUEEN).GetCount() > 0)
+			if (result.Data.Attackers[OTHER_TEAM] >= 2 && position.GetTeamPieces(OTHER_TEAM, PIECE_QUEEN) != ZERO_BB)
 			{
 				mg -= s_KingSafetyTable[std::min(result.Data.AttackUnits[OTHER_TEAM], MAX_ATTACK_UNITS - 1)];
 			}
@@ -828,11 +828,8 @@ namespace Boxfish
 				}
 			}
 
-			const BitBoard attackMask = result.Data.AttackedBy[OTHER_TEAM][PIECE_ALL] & s_KingFlanks[kingSquare.File] & OurSide;
-			const BitBoard attack2Mask = attackMask & result.Data.AttackedByTwice[OTHER_TEAM];
-			int tropismCount = attackMask.GetCount() + attack2Mask.GetCount();
-
-			mg -= 2 * tropismCount;
+			mg -= 20 * (position.GetBlockersForKing(TEAM)).GetCount();
+			mg += 20 * (bool)(result.Data.AttackedBy[TEAM][PIECE_KNIGHT] & result.Data.AttackedBy[TEAM][PIECE_KING]);
 
 			BitBoard pawns = position.GetTeamPieces(TEAM, PIECE_PAWN);
 			int minDistance = 6;
@@ -940,7 +937,7 @@ namespace Boxfish
 	{
 		if constexpr (UseSpace)
 		{
-			if (position.GetNonPawnMaterial() < 6000)
+			if (position.GetNonPawnMaterial() < 6250)
 			{
 				result.Space[MIDGAME][TEAM] = 0;
 				result.Space[ENDGAME][TEAM] = 0;
@@ -962,7 +959,7 @@ namespace Boxfish
 			int count = safe.GetCount() + (behind & safe & ~result.Data.AttackedBy[OTHER_TEAM][PIECE_ALL]).GetCount();
 			int weight = position.GetTeamPieces(TEAM).GetCount() - 3 + std::min(blockedPawns, 9);
 
-			result.Space[MIDGAME][TEAM] = count * weight * weight / 24;
+			result.Space[MIDGAME][TEAM] = count * weight * weight / 32;
 			result.Space[ENDGAME][TEAM] = 0;
 		}
 		else
