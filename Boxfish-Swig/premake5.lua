@@ -9,6 +9,11 @@ project "Boxfish-Swig"
     objdir ("../bin-int/" .. BoxfishOutputDir .. "/Boxfish-Swig")
     targetname ("_Boxfish")
 
+    configmap
+    {
+        ["Debug"] = "Release"
+    }
+
     prebuildcommands
     {
         "\"" .. PYTHON_EXECUTABLE .. "\" generate_swig.py --swig \"" .. SWIG_EXECUTABLE .. "\" " .. "\"../bin/" .. BoxfishOutputDir .. "/Boxfish-Swig\""
@@ -49,6 +54,9 @@ project "Boxfish-Swig"
         systemversion "latest"
 
         targetextension (".so")
+        targetprefix ("")
+
+        removeconfigurations { "Release", "Dist" }
 
         defines
         {
@@ -81,6 +89,16 @@ project "Boxfish-Swig"
         optimize "on"
 
     filter "configurations:Dist"
+        defines "BOX_DIST"
+        runtime "Release"
+        optimize "on"
+
+    filter "configurations:ReleaseShared"
+        defines "BOX_RELEASE"
+        runtime "Release"
+        optimize "on"
+
+    filter "configurations:DistShared"
         defines "BOX_DIST"
         runtime "Release"
         optimize "on"

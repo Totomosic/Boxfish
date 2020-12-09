@@ -68,3 +68,17 @@ project "Boxfish-Lib"
         defines "BOX_DIST"
         runtime "Release"
         optimize "on"
+
+    filter "configurations:ReleaseShared"
+        defines "BOX_RELEASE"
+        runtime "Release"
+        optimize "on"
+
+        buildoptions { "-fPIC" }
+
+    filter "configurations:DistShared"
+        defines "BOX_DIST"
+        runtime "Release"
+        optimize "on"
+
+        buildoptions { "-fPIC" }

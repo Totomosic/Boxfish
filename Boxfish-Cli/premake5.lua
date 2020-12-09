@@ -40,6 +40,8 @@ project "Boxfish-Cli"
     filter "system:linux"
         systemversion "latest"
 
+        removeconfigurations { "DistShared", "ReleaseShared" }
+
         defines
         {
             "BOX_PLATFORM_LINUX",

@@ -13,6 +13,13 @@ workspace "Boxfish"
         "MultiProcessorCompile"
     }
 
+    filter "system:linux"
+        configurations
+        {
+            "DistShared",
+            "ReleaseShared",
+        }
+
 include ("Paths.lua")
 
 include (BoxfishLibDir)
@@ -20,10 +27,12 @@ include (BoxfishCliDir)
 include (BoxfishTestDir)
 include (BoxfishBookDir)
 
-filter "system:windows"
+if os.target() == "windows" then
+    -- Windows
     include ("SwigConfigWindows.lua")
-
-filter "system:linux"
+else
+    -- Linux
     include ("SwigConfigLinux.lua")
+end
 
 include ("Boxfish-Swig")
