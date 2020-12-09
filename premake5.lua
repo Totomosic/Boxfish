@@ -29,10 +29,14 @@ include (BoxfishBookDir)
 
 if os.target() == "windows" then
     -- Windows
-    include ("SwigConfigWindows.lua")
+    if os.isfile("SwigConfigWindows.lua") then
+        include ("SwigConfigWindows.lua")
+    end
 else
     -- Linux
-    include ("SwigConfigLinux.lua")
+    if os.isfile("SwigConfigLinux.lua") then
+        include ("SwigConfigLinux.lua")
+    end
 end
 
 include ("Boxfish-Swig")
