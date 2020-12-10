@@ -103,48 +103,53 @@ namespace Boxfish
 		delete[] buffer;
 	}
 
-	void OpeningBook::AppendFromFile(const std::string& filename)
+	bool OpeningBook::AppendFromFile(const std::string& filename)
 	{
 		std::ifstream file(filename, std::ios::binary | std::ios::in);
-		size_t filesize = GetFileSize(filename);
-		if (filesize > sizeof(m_EntryCount) + sizeof(m_Cardinality))
+		if (file.good())
 		{
-			char* buffer = new char[filesize];
-			file.read(buffer, filesize);
-
-			size_t entryCount;
-			int cardinality;
-			const char* workingBuffer = buffer;
-			memcpy(&entryCount, workingBuffer, sizeof(entryCount));
-			workingBuffer += sizeof(entryCount);
-			memcpy(&cardinality, workingBuffer, sizeof(cardinality));
-			workingBuffer += sizeof(cardinality);
-
-			if (entryCount * GetSerializedEntrySize() + sizeof(cardinality) + sizeof(entryCount) == filesize)
+			size_t filesize = GetFileSize(filename);
+			if (filesize > sizeof(m_EntryCount) + sizeof(m_Cardinality))
 			{
-				for (size_t i = 0; i < entryCount; i++)
+				char* buffer = new char[filesize];
+				file.read(buffer, filesize);
+
+				size_t entryCount;
+				int cardinality;
+				const char* workingBuffer = buffer;
+				memcpy(&entryCount, workingBuffer, sizeof(entryCount));
+				workingBuffer += sizeof(entryCount);
+				memcpy(&cardinality, workingBuffer, sizeof(cardinality));
+				workingBuffer += sizeof(cardinality);
+
+				if (entryCount * GetSerializedEntrySize() + sizeof(cardinality) + sizeof(entryCount) == filesize)
 				{
-					BookEntry entry;
-					memcpy(&entry.Hash.Hash, workingBuffer, sizeof(entry.Hash.Hash));
-					workingBuffer += sizeof(entry.Hash.Hash);
-					memcpy(&entry.From, workingBuffer, sizeof(entry.From));
-					workingBuffer += sizeof(entry.From);
-					memcpy(&entry.To, workingBuffer, sizeof(entry.To));
-					workingBuffer += sizeof(entry.To);
-					memcpy(&entry.Count, workingBuffer, sizeof(entry.Count));
-					workingBuffer += sizeof(entry.Count);
-					AppendEntry(entry);
+					for (size_t i = 0; i < entryCount; i++)
+					{
+						BookEntry entry;
+						memcpy(&entry.Hash.Hash, workingBuffer, sizeof(entry.Hash.Hash));
+						workingBuffer += sizeof(entry.Hash.Hash);
+						memcpy(&entry.From, workingBuffer, sizeof(entry.From));
+						workingBuffer += sizeof(entry.From);
+						memcpy(&entry.To, workingBuffer, sizeof(entry.To));
+						workingBuffer += sizeof(entry.To);
+						memcpy(&entry.Count, workingBuffer, sizeof(entry.Count));
+						workingBuffer += sizeof(entry.Count);
+						AppendEntry(entry);
+					}
+					if (GetCardinality() < cardinality)
+						SetCardinality(cardinality);
 				}
-				if (GetCardinality() < cardinality)
-					SetCardinality(cardinality);
-			}
-			else
-			{
-				std::cout << "File size mismatch: Expected " << (entryCount * GetSerializedEntrySize()) << " got " << filesize << std::endl;
-			}
+				else
+				{
+					std::cout << "File size mismatch: Expected " << (entryCount * GetSerializedEntrySize()) << " got " << filesize << std::endl;
+				}
 
-			delete[] buffer;
+				delete[] buffer;
+			}
+			return true;
 		}
+		return false;
 	}
 
 	void OpeningBook::AppendEntry(const BookEntry& entry)
@@ -163,6 +168,13 @@ namespace Boxfish
 		}
 		collection.Entries.push_back(entry);
 		m_EntryCount++;
+	}
+
+	void OpeningBook::Clear()
+	{
+		m_EntryCount = 0;
+		m_Entries.clear();
+		m_Cardinality = 0;
 	}
 
 	std::optional<BookEntryCollection> OpeningBook::Probe(const ZobristHash& hash) const

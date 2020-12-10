@@ -52,8 +52,9 @@ namespace Boxfish
 		bool Serialize(void* buffer, size_t size) const;
 		void WriteToFile(const std::string& filename) const;
 
-		void AppendFromFile(const std::string& filename);
+		bool AppendFromFile(const std::string& filename);
 		void AppendEntry(const BookEntry& entry);
+		void Clear();
 
 		std::optional<BookEntryCollection> Probe(const ZobristHash& hash) const;
 

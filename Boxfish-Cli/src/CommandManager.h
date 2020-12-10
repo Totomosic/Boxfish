@@ -11,6 +11,8 @@ namespace Boxfish
 	private:
 		std::unordered_map<std::string, std::function<void(const std::vector<std::string>&)>> m_CommandMap;
 
+		OpeningBook m_OpeningBook;
+
 		Position m_CurrentPosition;
 		Search m_Search;
 		BoxfishSettings m_Settings;

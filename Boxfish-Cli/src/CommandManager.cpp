@@ -4,7 +4,7 @@ namespace Boxfish
 {
 
 	CommandManager::CommandManager()
-		: m_CommandMap(), m_CurrentPosition(CreateStartingPosition()), m_Search(256 * 1024 * 1024), m_Settings(), m_Searching(false), m_SearchThread()
+		: m_CommandMap(), m_OpeningBook(), m_CurrentPosition(CreateStartingPosition()), m_Search(256 * 1024 * 1024), m_Settings(), m_Searching(false), m_SearchThread()
 	{
 		m_CommandMap["help"] = [this](const std::vector<std::string>& args)
 		{
@@ -44,6 +44,7 @@ namespace Boxfish
 					if (it != args.end())
 					{
 						std::string value = *it;
+						it++;
 						while (it != args.end())
 						{
 							value += " " + *it;
@@ -235,6 +236,14 @@ namespace Boxfish
 		if (name == "skill level")
 		{
 			m_Settings.SkillLevel = std::min(std::max(0, std::stoi(value)), 20);
+		}
+		if (name == "book")
+		{
+			m_OpeningBook.Clear();
+			if (m_OpeningBook.AppendFromFile(value))
+				m_Search.SetOpeningBook(&m_OpeningBook);
+			else
+				std::cout << "Book file not found: " << value << std::endl;
 		}
 		m_Search.SetSettings(m_Settings);
 	}
