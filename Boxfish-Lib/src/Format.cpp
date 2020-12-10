@@ -295,7 +295,7 @@ namespace Boxfish
 		}
 		if (move.IsCapture() == isCapture && (promotion != PIECE_INVALID) == move.IsPromotion())
 			return move;
-		std::cout << "HERE" << std::endl;
+		BOX_ASSERT(false, "Invalid PGN Move");
 		return MOVE_NONE;
 	}
 

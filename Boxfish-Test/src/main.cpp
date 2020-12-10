@@ -365,4 +365,12 @@ namespace Test
 		}
 	}
 
+	TEST_CASE("PGN", "[FORMATTING]")
+	{
+		Init();
+		Position position = CreatePositionFromFEN("r2q3k/p2P3p/1p3p2/3QP1r1/8/B7/P5PP/2R3K1 w - -");
+		Move move = PGN::CreateMoveFromString(position, "Qxa8");
+		REQUIRE(move != MOVE_NONE);
+	}
+
 }
