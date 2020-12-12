@@ -891,6 +891,19 @@ namespace Boxfish
 		return result;
 	}
 
+	bool IsKnownDraw(const Position& position)
+	{
+		if (position.GetAllPieces() == position.GetPieces(PIECE_KING))
+			return true;
+		bool whiteOnlyBishops = position.GetTeamPieces(TEAM_WHITE) == position.GetTeamPieces(TEAM_WHITE, PIECE_KING, PIECE_BISHOP) && !MoreThanOne(position.GetTeamPieces(TEAM_WHITE, PIECE_BISHOP));
+		bool whiteOnlyKnights = position.GetTeamPieces(TEAM_WHITE) == position.GetTeamPieces(TEAM_WHITE, PIECE_KING, PIECE_KNIGHT) && !MoreThanOne(position.GetTeamPieces(TEAM_WHITE, PIECE_KNIGHT));
+		bool blackOnlyBishops = position.GetTeamPieces(TEAM_BLACK) == position.GetTeamPieces(TEAM_BLACK, PIECE_KING, PIECE_BISHOP) && !MoreThanOne(position.GetTeamPieces(TEAM_BLACK, PIECE_BISHOP));
+		bool blackOnlyKnights = position.GetTeamPieces(TEAM_BLACK) == position.GetTeamPieces(TEAM_BLACK, PIECE_KING, PIECE_KNIGHT) && !MoreThanOne(position.GetTeamPieces(TEAM_BLACK, PIECE_KNIGHT));
+		if ((whiteOnlyBishops || whiteOnlyKnights) && (blackOnlyBishops || blackOnlyKnights))
+			return true;
+		return false;
+	}
+
 	std::ostream& operator<<(std::ostream& stream, const Position& position)
 	{
 		for (Rank rank = RANK_8; rank >= RANK_1; rank--)

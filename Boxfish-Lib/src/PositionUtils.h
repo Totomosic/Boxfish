@@ -53,6 +53,7 @@ namespace Boxfish
 
 	bool IsLegalMoveSlow(const Position& position, Move move);
 	std::vector<Move> GetLegalMovesSlow(const Position& position);
+	bool IsKnownDraw(const Position& position);
 
 	std::ostream& operator<<(std::ostream& stream, const Position& position);
 

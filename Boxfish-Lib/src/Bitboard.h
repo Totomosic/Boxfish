@@ -61,6 +61,8 @@ namespace Boxfish
 		inline constexpr friend BitBoard& operator^=(BitBoard& left, const BitBoard& right) { left.Board ^= right.Board; return left; }
 		inline constexpr friend BitBoard operator<<(const BitBoard& left, int right) { return left.Board << right; }
 		inline constexpr friend BitBoard operator>>(const BitBoard& left, int right) { return left.Board >> right; }
+		inline constexpr friend bool operator==(const BitBoard& left, const BitBoard& right) { return left.Board == right.Board; }
+		inline constexpr friend bool operator!=(const BitBoard& left, const BitBoard& right) { return left.Board != right.Board; }
 		friend std::ostream& operator<<(std::ostream& stream, const BitBoard& board);
 
 	public:

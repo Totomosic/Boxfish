@@ -224,6 +224,7 @@ namespace Boxfish
 		std::cout << m_CurrentPosition << std::endl;
 		std::cout << "FEN: " << GetFENFromPosition(m_CurrentPosition) << std::endl;
 		std::cout << "Hash: " << std::hex << m_CurrentPosition.Hash.Hash << std::dec << std::endl;
+		std::cout << "Known Draw: " << (IsKnownDraw(m_CurrentPosition) ? "true" : "false") << std::endl;
 	}
 
 	void CommandManager::SetOption(std::string name, const std::string& value)
