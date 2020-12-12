@@ -57,7 +57,6 @@ namespace Boxfish
 	static ValueType s_PassedPawnRankWeights[GAME_STAGE_MAX][TEAM_MAX][RANK_MAX];
 	static BitBoard s_SupportedPawnMasks[TEAM_MAX][SQUARE_MAX];
 
-	static BitBoard s_KingRings[TEAM_MAX][SQUARE_MAX];
 	static constexpr BitBoard s_KingFlanks[FILE_MAX] = {
 		QueenSide & ~FILE_D_MASK,
 		QueenSide,
@@ -75,7 +74,7 @@ namespace Boxfish
 	};
 
 	static constexpr int s_MobilityOffsets[PIECE_MAX] = {
-		0, 4, 6, 6, 13, 0,
+		0, 3, 6, 6, 12, 0,
 	};
 
 	static constexpr ValueType s_TropismWeights[GAME_STAGE_MAX][PIECE_MAX] = {
@@ -252,7 +251,7 @@ namespace Boxfish
 			 5,  5, 10,  5, 10, 10,  5,  5,
 			 5,  0, 10, 15, 25,  0,  0,  5,
 			 5,  5,  5,  7, 15, 11,  5,  5,
-			 5, 10, 10,-20,-20, 10,  4,  5,
+			 5, 10, 10,-10,-10, 10,  5,  5,
 			 0,  0,  0,  0,  0,  0,  0,  0
 		};
 		MirrorTable(s_PieceSquareTables[MIDGAME][TEAM_WHITE][PIECE_PAWN], whitePawnsTable);
@@ -262,12 +261,12 @@ namespace Boxfish
 
 		ValueType whiteKnightsTable[SQUARE_MAX] = {
 			-50,-40,-30,-30,-30,-30,-40,-50,
-			-40,-20,  0,  0,  0,  0,-20,-40,
+			-40,  0,  0,  0,  0,  0,  0,-40,
 			-30,  0, 28, 25, 25, 28,  0,-30,
 			-30,  5, 15, 20, 20, 15,  5,-30,
 			-30,  0, 15, 20, 20, 15,  0,-30,
 			-30,  5, 10, 15, 15, 10,  5,-30,
-			-40,-20,  0,  5,  5,  0,-20,-40,
+			-40,  0,  0,  5,  5,  0,  0,-40,
 			-50,-40,-30,-30,-30,-30,-40,-50,
 		};
 		MirrorTable(s_PieceSquareTables[MIDGAME][TEAM_WHITE][PIECE_KNIGHT], whiteKnightsTable);
@@ -282,7 +281,7 @@ namespace Boxfish
 			-10,  5,  5, 15, 15,  5,  5,-10,
 			-10,  0, 10, 25, 25, 10,  0,-10,
 			-10, 10, 10, 10, 10, 10, 10,-10,
-			-10, 15, 10,  3,  3, 10, 15,-10,
+			-10, 15, 10,  5,  5, 10, 15,-10,
 			-20,-10,-10,-10,-10,-10,-10,-20,
 		};
 		MirrorTable(s_PieceSquareTables[MIDGAME][TEAM_WHITE][PIECE_BISHOP], whiteBishopsTable);
@@ -347,17 +346,6 @@ namespace Boxfish
 		MirrorTable(s_PieceSquareTables[ENDGAME][TEAM_BLACK][PIECE_KING], s_PieceSquareTables[ENDGAME][TEAM_WHITE][PIECE_KING]);
 	}
 
-	void InitKingRings()
-	{
-		for (SquareIndex square = a1; square < SQUARE_MAX; square++)
-		{
-			BitBoard ring = GetNonSlidingAttacks<PIECE_KING>(square) | square;
-
-			s_KingRings[TEAM_WHITE][square] = ring;
-			s_KingRings[TEAM_BLACK][square] = ring;
-		}
-	}
-
 	void InitDistanceTable()
 	{
 		for (SquareIndex i = a1; i < SQUARE_MAX; i++)
@@ -388,7 +376,6 @@ namespace Boxfish
 			InitPhase();
 			InitDistanceTable();
 			InitSafetyTables();
-			InitKingRings();
 			InitMaterialTable();
 			InitPieceSquareTables();
 			InitPawnShieldMasks();
@@ -418,7 +405,8 @@ namespace Boxfish
 	BitBoard CalculateKingAttackRegion(const Position& position)
 	{
 		Square sq = BitBoard::BitIndexToSquare(position.GetKingSquare(TEAM));
-		return s_KingRings[TEAM][BitBoard::SquareToBitIndex({ std::clamp(sq.File, FILE_B, FILE_G), std::clamp(sq.Rank, RANK_2, RANK_7) })];
+		SquareIndex square = BitBoard::SquareToBitIndex({ std::clamp(sq.File, FILE_B, FILE_G), std::clamp(sq.Rank, RANK_2, RANK_7) });
+		return GetNonSlidingAttacks<PIECE_KING>(square) | square;
 	}
 
 	bool IsPawnSupported(const Position& position, SquareIndex square, Team team)
@@ -708,10 +696,10 @@ namespace Boxfish
 			result.Data.AttackedBy[TEAM][PIECE_ALL] |= attacks;
 
 			BitBoard attacksOnKing = attacks & result.Data.KingAttackZone[OTHER_TEAM];
-			if (attacksOnKing)
+			if (attacksOnKing != ZERO_BB)
 			{
 				result.Data.Attackers[TEAM]++;
-				result.Data.AttackUnits[TEAM] += s_AttackUnits[PIECE] * attacksOnKing.GetCount();
+				result.Data.AttackUnits[TEAM] += s_AttackUnits[PIECE] * (attacks & result.Data.AttackedBy[OTHER_TEAM][PIECE_KING]).GetCount();
 			}
 			// Bishop and Rook X-raying king attack zone
 			else if (PIECE == PIECE_BISHOP && (GetSlidingAttacks<PIECE_BISHOP>(square, position.GetPieces(PIECE_PAWN)) & result.Data.KingAttackZone[OTHER_TEAM]))
@@ -723,8 +711,8 @@ namespace Boxfish
 			mg += s_MobilityWeights[MIDGAME][PIECE] * (reachableSquares - s_MobilityOffsets[PIECE]);
 			eg += s_MobilityWeights[ENDGAME][PIECE] * (reachableSquares - s_MobilityOffsets[PIECE]);
 
-			mg += s_TropismWeights[MIDGAME][PIECE] * CalculateTropism(position.GetKingSquare(OTHER_TEAM), square);
-			eg += s_TropismWeights[ENDGAME][PIECE] * CalculateTropism(position.GetKingSquare(OTHER_TEAM), square);
+			//mg += s_TropismWeights[MIDGAME][PIECE] * CalculateTropism(position.GetKingSquare(OTHER_TEAM), square);
+			//eg += s_TropismWeights[ENDGAME][PIECE] * CalculateTropism(position.GetKingSquare(OTHER_TEAM), square);
 
 			if constexpr (PIECE == PIECE_KNIGHT || PIECE == PIECE_BISHOP)
 			{
@@ -744,24 +732,24 @@ namespace Boxfish
 					eg += OutpostBonus / 4;
 				}
 				int distance = s_DistanceTable[square][position.GetKingSquare(TEAM)];
-				mg -= distance * 3;
+				mg -= distance * (4 - (PIECE == PIECE_BISHOP));
 
 				// Minor piece behind pawn
-				if (Shift<Down>(position.GetTeamPieces(TEAM, PIECE_PAWN)) & square)
+				if (Shift<Down>(position.GetPieces(PIECE_PAWN)) & square)
 				{
 					mg += 10;
 				}
 			}
 			if constexpr (PIECE == PIECE_BISHOP)
 			{
-				if (MoreThanOne(attacks & Center))
+				if (MoreThanOne(GetSlidingAttacks<PIECE_BISHOP>(square, position.GetPieces(PIECE_PAWN)) & Center))
 					mg += 30;
 			}
 			if constexpr (PIECE == PIECE_ROOK)
 			{
 				int pawnCountOnFile = (FILE_MASKS[BitBoard::FileOfIndex(square)] & position.GetPieces(PIECE_PAWN)).GetCount();
-				mg += 25 * (2 - pawnCountOnFile);
-				eg += 10 * (2 - pawnCountOnFile);
+				mg += 12 * (2 - pawnCountOnFile);
+				eg += 5 * (2 - pawnCountOnFile);
 			}
 			if constexpr (PIECE == PIECE_QUEEN)
 			{
@@ -828,7 +816,7 @@ namespace Boxfish
 				}
 			}
 
-			mg -= 20 * (position.GetBlockersForKing(TEAM)).GetCount();
+			mg -= 3 * (position.GetBlockersForKing(TEAM)).GetCount();
 			mg += 20 * (bool)(result.Data.AttackedBy[TEAM][PIECE_KNIGHT] & result.Data.AttackedBy[TEAM][PIECE_KING]);
 
 			BitBoard pawns = position.GetTeamPieces(TEAM, PIECE_PAWN);
@@ -959,7 +947,7 @@ namespace Boxfish
 			int count = safe.GetCount() + (behind & safe & ~result.Data.AttackedBy[OTHER_TEAM][PIECE_ALL]).GetCount();
 			int weight = position.GetTeamPieces(TEAM).GetCount() - 3 + std::min(blockedPawns, 9);
 
-			result.Space[MIDGAME][TEAM] = count * weight * weight / 24;
+			result.Space[MIDGAME][TEAM] = count * weight * weight / 30;
 			result.Space[ENDGAME][TEAM] = 0;
 		}
 		else
@@ -1033,8 +1021,8 @@ namespace Boxfish
 		result.Data.KingAttackZone[TEAM_WHITE] = CalculateKingAttackRegion<TEAM_WHITE>(position);
 		result.Data.KingAttackZone[TEAM_BLACK] = CalculateKingAttackRegion<TEAM_BLACK>(position);
 
-		result.Data.Attackers[TEAM_WHITE] += (result.Data.KingAttackZone[TEAM_BLACK] & result.Data.AttackedBy[TEAM_WHITE][PIECE_PAWN]).GetCount();
-		result.Data.Attackers[TEAM_BLACK] += (result.Data.KingAttackZone[TEAM_WHITE] & result.Data.AttackedBy[TEAM_BLACK][PIECE_PAWN]).GetCount();
+		result.Data.Attackers[TEAM_WHITE] = (result.Data.KingAttackZone[TEAM_BLACK] & result.Data.AttackedBy[TEAM_WHITE][PIECE_PAWN]).GetCount();
+		result.Data.Attackers[TEAM_BLACK] = (result.Data.KingAttackZone[TEAM_WHITE] & result.Data.AttackedBy[TEAM_BLACK][PIECE_PAWN]).GetCount();
 
 		result.Data.KingAttackZone[TEAM_WHITE] &= ~whiteDoublePawnAttacks;
 		result.Data.KingAttackZone[TEAM_BLACK] &= ~blackDoublePawnAttacks;
@@ -1072,7 +1060,7 @@ namespace Boxfish
 
 	bool IsEndgame(const Position& position)
 	{
-		return position.GetNonPawnMaterial() <= 2000;
+		return position.GetNonPawnMaterial() <= 1200;
 	}
 
 	ValueType GetPieceValue(const Position& position, Piece piece)

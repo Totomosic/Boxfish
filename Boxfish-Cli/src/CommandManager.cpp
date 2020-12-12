@@ -4,7 +4,7 @@ namespace Boxfish
 {
 
 	CommandManager::CommandManager()
-		: m_CommandMap(), m_OpeningBook(), m_CurrentPosition(CreateStartingPosition()), m_Search(256 * 1024 * 1024), m_Settings(), m_Searching(false), m_SearchThread()
+		: m_CommandMap(), m_OpeningBook(), m_CurrentPosition(CreateStartingPosition()), m_Search(128 * 1024 * 1024), m_Settings(), m_Searching(false), m_SearchThread()
 	{
 		m_CommandMap["help"] = [this](const std::vector<std::string>& args)
 		{
@@ -385,6 +385,14 @@ namespace Boxfish
 			std::cout << "Score: " << ttEntry->GetScore() << std::endl;
 			std::cout << "Depth: " << ttEntry->GetDepth() << std::endl;
 			std::cout << "Is PV: " << (ttEntry->IsPv() ? "true" : "false") << std::endl;
+
+			Position position = m_CurrentPosition;
+			while (ttEntry != nullptr)
+			{
+				std::cout << UCI::FormatMove(ttEntry->GetMove()) << std::endl;
+				ApplyMove(position, ttEntry->GetMove());
+				ttEntry = m_Search.ProbeTranspostionTable(position);
+			}
 		}
 		else
 		{

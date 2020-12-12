@@ -3,6 +3,7 @@
 #include "Move.h"
 #include "Evaluation.h"
 #include <memory>
+#include <iostream>
 
 #ifdef SWIG
 #define BOX_API
@@ -41,13 +42,17 @@ namespace Boxfish
 		inline void Update(ZobristHash hash, Move move, int depth, ValueType score, EntryFlag flag, int16_t age, bool isPv)
 		{
 			BOX_ASSERT(flag >= 1 && flag <= 3, "Invalid flag");
-			Hash = hash;
-			BestMove = move;
-			Depth = (int8_t)depth;
-			Score = score;
-			Age = age;
-			Flag = flag;
-			IsPvEntry = isPv;
+			if (move != MOVE_NONE || hash != Hash)
+				BestMove = move;
+			if (flag == EXACT || hash != Hash || (depth + 7 > Depth - 4) || Age < 0)
+			{
+				Hash = hash;
+				Depth = (int8_t)depth;
+				Score = score;
+				Age = age;
+				Flag = flag;
+				IsPvEntry = isPv;
+			}
 		}
 	};
 

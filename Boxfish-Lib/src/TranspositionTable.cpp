@@ -1,4 +1,5 @@
 #include "TranspositionTable.h"
+#include <bitset>
 
 namespace Boxfish
 {

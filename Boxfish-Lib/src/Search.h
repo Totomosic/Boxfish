@@ -35,7 +35,6 @@ namespace Boxfish
 		Move* PV = nullptr;
 		ZobristHash* PositionHistory = nullptr;
 		int Ply = 0;
-		int PlySinceCaptureOrPawnPush = 0;
 		int MoveCount = 0;
 		Move CurrentMove = MOVE_NONE;
 		Move KillerMoves[2] = { MOVE_NONE, MOVE_NONE };
@@ -43,6 +42,7 @@ namespace Boxfish
 		ValueType Contempt = 0;
 		Move ExcludedMove = MOVE_NONE;
 		bool TTIsPv;
+		bool TTHit;
 	};
 
 	struct BOX_API SearchResult
@@ -154,8 +154,6 @@ namespace Boxfish
 		ValueType StaticEvalPosition(const Position& position, ValueType alpha, ValueType beta, int ply) const;
 
 		void UpdateQuietStats(const Position& position, SearchStack* stack, int depth, Move move);
-		template<bool IsPvNode>
-		bool ReplaceTT(int depth, int age, EntryFlag flag, const TranspositionTableEntry* entry);
 
 		std::vector<RootMove> GenerateRootMoves(const Position& position, SearchStack* stack);
 		int ChooseBestMove(const std::vector<RootMove>& moves, int skillLevel, int maxPVs) const;
