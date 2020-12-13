@@ -9,7 +9,7 @@ namespace Boxfish
 	constexpr bool UsePieceSquares = true;
 	constexpr bool UseBlockedPieces = true;
 	constexpr bool UseKingSafety = true;
-	constexpr bool UseThreats = false;
+	constexpr bool UseThreats = true;
 	constexpr bool UseSpace = true;
 	constexpr bool UseInitiative = true;
 
