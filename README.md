@@ -3,7 +3,6 @@
 
 # Boxfish
 C++ UCI Chess engine inspired by [Stockfish](https://stockfishchess.org/).
-Example of the engine running [here](https://totomosic.github.io). (built to WebAssembly with Emscripten)
 
 ## Features
 - Bitboards and magic bitboard move generation
