@@ -122,6 +122,47 @@ namespace Boxfish
 						int milliseconds = std::stoi(args[1]);
 						GoTime(milliseconds, GetMoveList(args, 2));
 					}
+					else
+					{
+						int wtime = 0;
+						int btime = 0;
+						int winc = 0;
+						int binc = 0;
+						int movestogo = 0;
+
+						size_t moveStartIndex = 0;
+						for (size_t i = 0; i < args.size(); i++)
+						{
+							const std::string& token = args[i];
+							if (token == "wtime" && i + 1 < args.size())
+								wtime = std::stoi(args[++i]);
+							else if (token == "btime" && i + 1 < args.size())
+								btime = std::stoi(args[++i]);
+							else if (token == "winc" && i + 1 < args.size())
+								winc = std::stoi(args[++i]);
+							else if (token == "binc" && i + 1 < args.size())
+								binc = std::stoi(args[++i]);
+							else if (token == "movestogo" && i + 1 < args.size())
+								movestogo = std::stoi(args[++i]);
+							else
+							{
+								moveStartIndex = i;
+								break;
+							}
+						}
+						int colorTime = m_CurrentPosition.TeamToPlay == TEAM_WHITE ? wtime : btime;
+						int colorIncrement = m_CurrentPosition.TeamToPlay == TEAM_WHITE ? winc : binc;
+						int allocatedTime = 0;
+
+						if (colorIncrement > 0)
+							allocatedTime = int(colorTime * (1 + m_CurrentPosition.TotalTurns / 40.0f) / 16 + colorIncrement);
+						if (movestogo > 0)
+							allocatedTime = colorTime / (std::min(movestogo, 100) + 1) * 3 / 2;
+						else
+							allocatedTime = colorTime / 20;
+
+						GoTime(allocatedTime, {});
+					}
 				}
 			}
 		};
